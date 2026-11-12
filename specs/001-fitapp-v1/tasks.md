@@ -38,7 +38,7 @@ a commit.
 - [x] T007 [P] Create env/example.json with empty values and wire `--dart-define-from-file` usage in README
 - [x] T008 [P] Write README.md skeleton (what it is, progression rule, setup, run, test, build APK, layout, roadmap, generated-code policy: committed) and docs/ARCHITECTURE.md skeleton
 - [x] T009 [P] Create .github/workflows/ci.yml: pub get → build_runner + `git diff --exit-code` → format check → analyze → `flutter test --coverage` → `flutter build apk --debug`
-- [ ] T010 Configure git user.email to the owner's GitHub no-reply address, create private GitHub repo `fitapp` with `gh repo create` (owner approval), push, and confirm CI is green; verify no secrets/IDE files are tracked
+- [x] T010 Configure git user.email to the owner's GitHub no-reply address, create private GitHub repo `fitapp` with `gh repo create` (owner approval), push, and confirm CI is green; verify no secrets/IDE files are tracked
 
 **Checkpoint**: M0 done – `flutter analyze` clean, CI green.
 

@@ -34,7 +34,8 @@ flutter run --dart-define-from-file=env/dev.json
 
 ```sh
 flutter analyze
-flutter test
+flutter test                      # unit, data, widget, and the end-to-end widget test in test/e2e
+flutter test integration_test     # needs a device or emulator
 ```
 
 ## Build APK
@@ -62,25 +63,50 @@ storeFile=/absolute/path/to/upload-keystore.jks
 ```
 
 Then run `flutter build apk --release`; the APK is at `build/app/outputs/flutter-apk/app-release.apk`.
+It is signed with `android/key.properties` and the keystore when present, otherwise debug-signed. A
+debug-signed APK is fine for personal sideloading but NOT for the Play Store.
 Neither the keystore (`*.jks`, `*.keystore`) nor `android/key.properties` is ever committed.
+
+## Install on your phone
+
+Enable install from unknown sources on the phone, copy the APK to it and open it. Or, with USB debugging:
+
+```sh
+adb install -r build/app/outputs/flutter-apk/app-release.apk
+```
 
 ## Project layout
 
 ```
 lib/
   main.dart
-  app/                 app widget, router, theme
-  core/                formatting, ISO-week utils, haptics, result types
+  app/                 app.dart, backdrop.dart, router.dart, theme/ (app_theme.dart, tokens.dart)
+  core/                format.dart, haptics.dart
   domain/              pure Dart: progression.dart, stats.dart
   data/
-    db/                drift database, tables, migrations, seed library
-    repositories/      WorkoutRepository, ExerciseRepository
-    sync/              (Phase 2) push/pull, delete queue
-  features/            train, workout, history, progress, exercises, settings
-  widgets/             shared UI kit
-test/                  mirrors lib/
-integration_test/      key end-to-end flows
+    db/                app_database.dart, tables.dart, seed_library.dart (+ generated *.g.dart)
+    repositories/      WorkoutRepository, ExerciseRepository, SettingsRepository
+    models.dart        plain data/read models
+    providers.dart     Riverpod providers
+    watch.dart         watchQuery: stream that re-runs a loader on table updates
+  features/
+    shell/             bottom-navigation shell
+    train/             start/resume workout
+    workout/           workout screen, rest timer, widgets/ (exercise card, set table/sheet, ...)
+    history/           finished workouts, edit/resume/delete
+    progress/          overview and per-exercise detail
+    exercises/         exercise picker and custom exercise sheet
+    settings/          settings screen
+  widgets/             shared UI kit (buttons, cards, charts, guard.dart, ...)
+test/                  unit, data, widget, and e2e/ (end-to-end widget test)
+integration_test/      key end-to-end flows (device/emulator)
 ```
+
+## Toolchain
+
+- Flutter 3.50 stable (Dart 3.14). Material is imported from `package:material_ui/material_ui.dart`.
+- State management: Riverpod 3, without codegen.
+- Database: drift. The generated output is committed and regenerated with `dart run build_runner build`.
 
 ## Generated code policy
 
@@ -91,6 +117,12 @@ dart run build_runner build
 ```
 
 CI re-runs the generator and fails if `git diff` is not empty.
+
+## Known limitations / not yet done
+
+- Rest-timer notification in the background (SHOULD, PRD section 5.3) is not implemented.
+- No audible rest-end sound on Android: the current sound uses `SystemSound`, which is effectively silent there.
+- Phase 2 sync (M7) has not been started.
 
 ## Roadmap
 

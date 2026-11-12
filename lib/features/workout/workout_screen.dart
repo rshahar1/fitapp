@@ -29,23 +29,36 @@ final canResumeProvider = FutureProvider.autoDispose.family<bool, String>((
 });
 
 /// Live workout (no [workoutId]) or a finished workout in edit mode.
-class WorkoutScreen extends ConsumerWidget {
+class WorkoutScreen extends ConsumerStatefulWidget {
   const new({this.workoutId, super.key});
 
   final String? workoutId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final id = workoutId;
+  ConsumerState<WorkoutScreen> createState() => _WorkoutScreenState();
+}
+
+class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
+  /// The live workout this screen opened with. Kept after finishing so the
+  /// screen doesn't swap to "no workout" while the summary is shown.
+  String? _liveId;
+
+  @override
+  Widget build(BuildContext context) {
+    final id = widget.workoutId ?? _liveId;
     if (id != null) return _WorkoutBody(workoutId: id);
     final active = ref.watch(activeWorkoutProvider);
     return active.when(
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (_, _) => const _Missing(message: 'Could not load the workout.'),
-      data: (w) => w == null
-          ? const _Missing(message: 'No workout in progress.')
-          : _WorkoutBody(workoutId: w.id),
+      data: (w) {
+        if (w == null) {
+          return const _Missing(message: 'No workout in progress.');
+        }
+        _liveId = w.id;
+        return _WorkoutBody(workoutId: w.id);
+      },
     );
   }
 }
@@ -96,7 +109,13 @@ class _WorkoutView extends ConsumerWidget {
   bool get isLive => !detail.isFinished;
 
   Future<void> _finish(BuildContext context, WidgetRef ref) async {
+    // Capture everything before the first await: finishing changes the
+    // streams this widget is built from.
     final repo = ref.read(workoutRepositoryProvider);
+    final rest = ref.read(restTimerProvider.notifier);
+    final haptics = ref.read(hapticsProvider);
+    final router = GoRouter.of(context);
+    final rootContext = Navigator.of(context, rootNavigator: true).context;
     if (detail.setCount == 0) {
       final discard = await confirmDestructive(
         context,
@@ -109,24 +128,20 @@ class _WorkoutView extends ConsumerWidget {
         context,
         () => repo.discardWorkout(detail.workout.id),
       );
-      if (ok && context.mounted) {
-        await ref.read(restTimerProvider.notifier).dismiss();
-        if (context.mounted) context.go(Routes.train);
-      }
+      if (!ok) return;
+      await rest.dismiss();
+      router.go(Routes.train);
       return;
     }
     FinishResult? result;
     final ok = await guard(context, () async {
       result = await repo.finishWorkout(detail.workout.id);
     });
-    if (!ok || !context.mounted) return;
-    await ref.read(restTimerProvider.notifier).dismiss();
-    if (result!.outcomes.any((o) => o.toBase > o.fromBase)) {
-      ref.read(hapticsProvider).success();
-    }
-    if (!context.mounted) return;
-    await showFinishSummary(context, result!);
-    if (context.mounted) context.go(Routes.train);
+    if (!ok) return;
+    await rest.dismiss();
+    if (result!.outcomes.any((o) => o.toBase > o.fromBase)) haptics.success();
+    if (rootContext.mounted) await showFinishSummary(rootContext, result!);
+    router.go(Routes.train);
   }
 
   Future<void> _resume(BuildContext context, WidgetRef ref) async {
@@ -180,7 +195,10 @@ class _WorkoutView extends ConsumerWidget {
                           builder: (_) => StatTile(
                             label: 'Duration',
                             value: formatClock(
-                              DateTime.now().toUtc().difference(w.startedAt),
+                              ref
+                                  .read(clockProvider)()
+                                  .toUtc()
+                                  .difference(w.startedAt),
                             ),
                           ),
                         )

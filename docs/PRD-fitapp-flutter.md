@@ -1,0 +1,555 @@
+# FitApp: Product Requirements Document (Flutter)
+
+| | |
+|---|---|
+| **Version** | 2.1, 12 Nov 2026 (see the changelog in section 17) |
+| **Platform** | Android first (APK), iOS later |
+| **Framework** | Flutter (Dart), built from https://flutter.dev |
+| **Status** | Ready to implement from scratch in a new repository |
+| **Supersedes** | v1 PRD and the Expo / React Native prototype (`gym-tracker`, private GitHub repo) |
+
+> **How to use this document in a new Claude session**
+> Paste or attach this file and say: *"Implement this PRD milestone by milestone, starting with M0. After each
+> milestone, run `flutter analyze` and `flutter test`, show me the result, and commit."* Section 13 lists the
+> milestones and their acceptance criteria. Section 12 lists test scenarios that must pass. Everything marked
+> **MUST** is required; **SHOULD** is strongly recommended; **LATER** is out of scope for v1.
+
+---
+
+## 1. Product overview
+
+A minimalist, fast, offline-first gym workout logger built around one idea: **automatic progressive overload**.
+The user logs sets between exercises with large tap targets and almost no typing. The app pre-fills every set
+from the user's plan and last session, and moves the working weight up automatically when they earn it.
+
+### 1.1 Goals
+1. Log a full set in **one tap** when the user did what was planned.
+2. Apply the progression rule (section 4) automatically and correctly, including when past workouts are
+   edited, resumed or deleted.
+3. Show progress clearly: charts per exercise, personal records, and "compared to last session" deltas.
+4. Work **fully offline**. A gym with no signal must never block logging.
+5. Clean, safe, well-tested codebase that follows Flutter and Dart best practices.
+
+### 1.2 Non-goals (explicitly out of scope)
+- **Social features, friends, feed and leaderboards were dropped by the owner.** Do not build friend tables,
+  feeds, sharing or leaderboards. Do not add `visibility` or friendship columns "for later".
+- Exercise videos or "How to" content.
+- AI-generated workouts.
+- **Warm-up sets, and set types in general, in v1.** The owner dropped warm-up sets. Do not add a set-type column,
+  W/D/F badges or special warm-up handling. (Drop and failure sets are LATER, section 14.)
+- Smart-watch apps.
+- Paid features or ads.
+
+### 1.3 Target user and context
+A lifter in a gym, phone in hand between sets, often sweaty, distracted, and on poor or no connectivity. Every
+screen must be usable one-handed, at a glance, in a dark gym.
+
+---
+
+## 2. Design direction
+
+### 2.1 Model: Hevy (https://www.hevyapp.com)
+Use **Hevy as the model for overall design, information architecture and high-level UX**. Take inspiration from
+its patterns; **do not copy its branding, logo, name, icons, illustrations, copy or exact layouts.** The app has
+its own name and identity: **FitApp**.
+
+Hevy patterns to adopt:
+
+| Hevy pattern | How it applies here |
+|---|---|
+| Workout screen header with live **Duration · Volume · Sets** and a prominent **Finish** button | **MUST** (M3) |
+| Exercise card: exercise name (accent colored), `⋮` menu, optional **notes** field, per-exercise **rest timer** | Name, menu and rest timer **MUST** (60 s default, configurable: section 5.7); notes **SHOULD** |
+| **Set table** with columns **SET · PREVIOUS · KG · REPS · ✓** | **MUST**. "Previous" shows the same set from the last session, e.g. `22.5 kg × 10` |
+| Completed set rows highlighted in the accent color, with a checked box | **MUST** |
+| Set type badges: **W** (warm-up), **D** (drop), **F** (failure) | **Not in v1.** Warm-up was dropped by the owner; D and F are **LATER**. Every set is a normal set. |
+| **+ Add Set** under the table and a full-width **Add Exercise** button at the bottom | **MUST** |
+| Exercise detail page with **Summary / History** tabs; chart with metric chips (**Heaviest Weight · One Rep Max · Best Set Volume**); **PR** badge | **MUST** (M5), but there is no "How to" tab |
+| Bottom navigation with a few clear destinations | **MUST** (section 6) |
+| Routines (saved workout templates) | **LATER** (roadmap) |
+
+### 2.2 Visual identity (keep these customizations from the prototype)
+The owner explicitly approved this look. Hevy is the *structure* model; this is the *skin*.
+
+- **Always dark.** Pure black background with dark grey grouped cards. There is no light theme in v1.
+- **One accent color** for every action: buttons, active tab, checkmarks, completed rows.
+- **A fixed color per metric**, used everywhere (numbers, chart lines, metric bars), so values can be read
+  without labels.
+- **Subtle backdrop** behind every screen: a soft accent glow from the top-right corner, a faint grid fading out
+  toward the middle, a thin barely-visible rising curve near the top, and a very faint blue glow bottom-left.
+  It must stay **not conspicuous**: cards are opaque and content is never harder to read.
+- Pill-shaped bold uppercase primary buttons, small uppercase grey section headers, rounded cards (radius 14),
+  and hairline separators inside grouped lists.
+- **Haptics:** a selection tick on taps and steppers, a success pulse when a set is logged or the base weight
+  goes up, and a warning pulse when a set is cleared.
+
+#### Design tokens (MUST be defined once in a theme file, never hard-coded in widgets)
+
+| Token | Value | Use |
+|---|---|---|
+| `background` | `#000000` | Screen background |
+| `surface` | `#1C1C1E` | Cards, grouped rows |
+| `surfaceHigh` | `#2C2C2E` | Pressed rows, steppers, chips, separators |
+| `textPrimary` | `#FFFFFF` | |
+| `textSecondary` | `#8E8E93` | Labels, captions |
+| `textTertiary` | `#5A5A5F` | Chevrons, empty check circles |
+| `accent` | `#11D16C` | Primary actions, active states, success |
+| `onAccent` | `#000000` | Text and icons on the accent color |
+| `accentSoft` | `#11D16C` at 15% opacity | Badges, timer pill, completed row tint |
+| `danger` | `#FF453A` | Destructive actions, missed reps |
+| `metricSets` | `#FF453A` | Sets |
+| `metricReps` | `#11D16C` | Reps |
+| `metricVolume` | `#64D2FF` | Volume |
+| `metricWeight` | `#FF9F0A` | Weight |
+
+Spacing scale: 2 / 4 / 8 / 16 / 24 / 32 / 64. Minimum tap target: **48×48 dp** (steppers 56×60).
+Numbers use tabular figures.
+
+### 2.3 UX rules (learned from the prototype; MUST follow)
+1. **Nothing may shift layout right after a tap.** The rest timer lives in a **fixed footer** next to Finish,
+   not above the set list. A timer appearing at the top pushed rows down and caused mis-taps.
+2. **One-tap logging:** tapping a set's check box logs it exactly as prescribed. Tapping the row opens a
+   **bottom sheet** with big weight and reps steppers, Log/Update, and Clear set.
+3. Unlogged rows show the prescribed values **dimmed**. Logged rows are full brightness.
+4. A working set that missed its target reps shows the reps in **red** (`8 / 10`).
+5. The overload set is visually marked (accent ↑ badge plus an accent outline or label).
+6. Destructive actions (remove exercise, delete workout, discard empty workout) always ask for confirmation.
+7. Steppers: weight steps by the exercise's increment; reps step by 1; nothing goes below 0.
+8. Interactive elements carry semantic labels for screen readers (e.g. *"Set 3, overload: 10 reps at 22.5 kg.
+   Opens editor."*). Decorative layers (the backdrop) are excluded from semantics.
+
+---
+
+## 3. Core concepts and glossary
+
+| Term | Meaning |
+|---|---|
+| **Exercise** | A movement, e.g. *Incline Dumbbell Bench Press*. Either from the built-in library or user-created (custom). |
+| **Per hand** | A flag on dumbbell exercises. The weight is per hand, so **volume counts both hands (×2)**. |
+| **Plan** (exercise state) | Per user and exercise: `baseWeight`, `targetReps`, `targetSets` (≥ 2), `increment`. |
+| **Working sets** | Sets 1 … N−1, prescribed at `baseWeight`. |
+| **Overload set** | Set N (the last set), prescribed at `baseWeight + increment`, **always**. |
+| **Session** | One exercise inside one finished workout. |
+| **Volume** | Σ weight × reps (× 2 if per hand). |
+| **Est. 1RM** | Epley formula: `w × (1 + reps / 30)`, rounded to 0.1. 1 rep gives `w`, 0 reps gives 0. |
+
+---
+
+## 4. Progression engine (the heart of the app; MUST be pure Dart with 100% test coverage)
+
+### 4.1 Prescription
+For a plan `{base, reps, sets=N, inc}` the sets are `1..N`. Sets `1..N−1` use `base`; set `N` uses
+`base + inc` and is flagged `isOverload`. All weights are rounded to the nearest **0.25 kg** to avoid
+floating-point drift (`roundWeight(kg) = round(kg × 4) / 4`).
+
+Validation: `targetSets ≥ 2`, `targetReps ≥ 1`, `increment > 0`, `baseWeight ≥ 0`. Otherwise throw.
+
+### 4.2 Evaluation when a workout is finished
+Given the plan and the logged sets (order-independent, keyed by set number):
+
+| Condition (checked in this order) | Result | `reason` |
+|---|---|---|
+| Any working set (1..N−1) not logged | base unchanged | `incomplete` |
+| Any working set with `reps < targetReps` **or** `weight < baseWeight` | base unchanged | `missed_reps` |
+| Overload set (N) not logged | base unchanged | `no_overload_set` |
+| Overload set logged at `weight ≤ baseWeight` | base unchanged | `overload_not_heavier` |
+| Otherwise | **next base = weight actually lifted on set N** (rounded) | `progressed` |
+
+Notes:
+- Reps on the overload set do **not** matter. It always counts as an attempt.
+- If the user lifted more than prescribed on set N (e.g. +5 instead of +2.5), the next base is that heavier weight.
+- Hitting the reps at a *lighter* weight than base does not count.
+- Exercises without a plan are logged but never progressed.
+
+### 4.3 Finishing a workout (MUST be transactional)
+For each exercise with a plan and at least one logged set:
+1. `plan = snapshot ?? currentPlan` (a resumed workout keeps the plan it was originally done with).
+2. `result = evaluate(plan, sets)`.
+3. Store a **snapshot** on the workout-exercise row: plan base, reps, sets, increment, and `resultBaseWeight`.
+4. If `result.progressed` **and** the current base still equals `plan.baseWeight`, set the current base to
+   `result.nextBaseWeight`. Do not overwrite a base weight the user edited by hand in the meantime.
+5. Set `endedAt`.
+
+Show a summary: `⬆ Incline DB Press: 20 kg → 22.5 kg` or `• Lat Pulldown: stays at 50 kg`.
+If no sets were logged at all, offer to **discard** the workout instead.
+
+### 4.4 Editing history safely (`canRewriteBase`)
+A finished workout may be **edited**, **resumed** or **deleted**. The current base weight may be rewritten
+**only if both** of these hold:
+- this workout is the **latest finished session** containing that exercise, **and**
+- the current base equals the `resultBaseWeight` this workout produced (compare after `roundWeight`).
+
+Otherwise history is corrected but the current plan is left alone.
+
+| Action | Behavior |
+|---|---|
+| **Edit** a finished workout (change, add or clear sets; add or remove exercises) | Changes save immediately. After each change, re-evaluate against the **snapshot** plan, update the snapshot's `resultBaseWeight`, and rewrite the current base if `canRewriteBase`. An exercise with no snapshot uses the current plan, and only if it is the latest session. |
+| **Resume** ("finished by mistake") | Allowed **only for the most recent finished workout overall**, and only if no other workout is in progress. Undo its progression (restore `plan.baseWeight` if `canRewriteBase`), clear `resultBaseWeight`, set `endedAt = null`. Finishing again re-applies progression. |
+| **Delete** | Undo its progression if `canRewriteBase`, then delete the workout and its children (cascade). |
+| **Clear set** | Remove the logged set. It returns to "not logged". |
+
+---
+
+## 5. Functional requirements
+
+### 5.1 Exercise library
+- **MUST** ship with this seed library (fixed UUIDs so local and cloud rows match later):
+
+| # | Name | Muscle group | Per hand | Default increment (kg) |
+|---|---|---|---|---|
+| 1 | Barbell Bench Press | Chest | no | 2.5 |
+| 2 | Incline Dumbbell Bench Press | Chest | yes | 2.5 |
+| 3 | Cable Fly | Chest | no | 2.5 |
+| 4 | Barbell Back Squat | Legs | no | 5 |
+| 5 | Romanian Deadlift | Legs | no | 5 |
+| 6 | Leg Press | Legs | no | 5 |
+| 7 | Leg Curl | Legs | no | 2.5 |
+| 8 | Deadlift | Back | no | 5 |
+| 9 | Lat Pulldown | Back | no | 2.5 |
+| 10 | Seated Cable Row | Back | no | 2.5 |
+| 11 | Dumbbell Row | Back | yes | 2.5 |
+| 12 | Overhead Press | Shoulders | no | 2.5 |
+| 13 | Dumbbell Lateral Raise | Shoulders | yes | 1 |
+| 14 | Barbell Curl | Arms | no | 2.5 |
+| 15 | Dumbbell Hammer Curl | Arms | yes | 2 |
+| 16 | Triceps Pushdown | Arms | no | 2.5 |
+
+  UUID scheme: `00000000-0000-4000-8000-` followed by the number as 12-digit zero-padded hex (`…000000000001` to `…000000000010`).
+  Library seeding is idempotent and updates names, groups and increments on every app start.
+- **MUST** support exercise search, grouping by muscle group, and creating a **custom exercise** by typing a name
+  that doesn't exist (name, per-hand flag, increment). Names are unique per user, case-insensitive.
+
+### 5.2 Plan setup
+- The first time an exercise appears in a workout without a plan, show an inline **plan setup** card: base weight
+  (stepper, steps by increment), target reps (default 10), sets (default 3, min 2), and increment as segmented
+  chips **+1 / +2 / +2.5 / +5** (default: the exercise's default increment). Button: *Start with this plan*.
+- Plans are editable from the exercise detail page.
+
+### 5.3 Live workout (Hevy-style)
+- **Start workout** from the home tab, or **Continue** if one is in progress. At most one workout is active.
+- Header: elapsed **Duration**, live **Volume**, **Sets** done, and a **Finish** button.
+- Per exercise, a card with the name, plan summary (`3 × 10 @ 20 kg · overload +2.5 · per hand`), and a `⋮`
+  menu (Remove exercise, Edit plan).
+- **Set table:** SET (number, or ↑ for overload) · PREVIOUS (same set number from the
+  previous session of this exercise, e.g. `20 kg × 10`, or `—`) · KG · REPS · ✓.
+  Rows are pre-filled from the prescription; tap ✓ for one-tap logging, or tap the row for the bottom-sheet
+  editor. Logging the same set number again **overwrites** it (no duplicates).
+- **+ Add Set** adds an extra set row. Extra sets beyond N are logged but don't affect progression.
+- **Compared to previous** card under each exercise once a set is logged: Sets, Reps, Volume, Top weight, each
+  with ▲ / ▼ / – and the % change, colored with the metric colors. Shows "First session" if there is no previous.
+- **Rest timer (MUST):** starts on each logged set and **counts down** from the rest target in a fixed footer pill.
+  The target is the exercise's own rest time if set, otherwise the **default rest time from Settings (60 s out of
+  the box, configurable: section 5.7)**. At 0 it gives a haptic pulse (and a sound if enabled), then keeps showing
+  **overtime** counting up (e.g. `+0:12`) in a muted style. Logging the next set restarts it; tapping the pill
+  dismisses it. It is computed from a stored start timestamp (not a ticking counter), so it stays correct when the
+  app is backgrounded. A system notification when the app is in the background is **SHOULD**.
+- **Add Exercise** opens the exercise picker (modal) and appends the exercise to *this* workout.
+- **Exercise notes** (**SHOULD**): free text per exercise in this workout.
+
+### 5.4 History
+- List of finished workouts grouped by month. Each row shows the date, exercise names, total **volume**
+  (metric-volume color), set count and duration.
+- Tapping a row opens the workout in **edit mode** (same screen as live logging): "changes save automatically",
+  and footer buttons **Done**, **Resume** (only if allowed) and **Delete**.
+
+### 5.5 Home / Train tab
+- Date kicker, title, a hero card with **Start workout** or **Continue workout**, and stat tiles: *This week*,
+  *Week streak*, *Total workouts*. Below them, the 3 most recent workouts.
+- **Weekly streak:** consecutive ISO weeks (Monday start) with at least 1 workout, ending this week or last week.
+  The current week doesn't break the streak while it's in progress. It must work across year boundaries
+  (2026 has an ISO week 53).
+
+### 5.6 Progress / analytics
+- **Workouts per week** bar chart for the last 8 ISO weeks (current week highlighted in the accent color).
+- List of trained exercises (most recent first) showing the **current base weight** (metric-weight color).
+- **Exercise detail** (tabs *Summary* / *History*):
+  - Metric tiles: Current base, Heaviest set, Est. 1RM, Sessions.
+  - **Line chart** (smooth curve, glow, gradient fill, highlighted last point), with chips
+    **Working weight · Volume · Est. 1RM** (Hevy-style). Working weight = heaviest non-overload set of the
+    session. Show the last 20 sessions.
+  - **PR badge** when the latest session set a record.
+  - Last session vs the one before it ("compared to previous").
+  - History: sessions newest first, each with its sets as `reps (green) … weight (orange)` rows. Tap one to open
+    that workout.
+  - Plan card with **Edit**.
+- **Personal records:** heaviest weight, best Est. 1RM, best single-set volume. Detect which PR types a new set
+  beats (strictly greater than all history).
+
+### 5.7 Settings and units
+- A **Settings** screen, opened from a gear icon in the Train tab header (route `/settings`).
+- **Default rest time** (MUST): stepper in 5 s steps, range 10 s to 10 min, default **60 s**, plus preset chips
+  30 / 60 / 90 / 120 / 180 s. Stored in the local `settings` table and applied to the next logged set.
+- **Per-exercise rest time** (MUST): in plan setup and *Edit plan*, a *Rest time* row with **Default (60 s)** or a
+  custom value (same stepper). Stored on the exercise plan; empty means "use the default".
+- **Rest-timer alert** (SHOULD): haptic on/off and sound on/off, both default on.
+- **Units:** kg only in v1. A kg/lb setting is **LATER**; store kg internally regardless.
+
+---
+
+## 6. Navigation and screens
+
+```
+Bottom navigation (3 tabs)
+├── Train      (home: start or continue, stats, recent; gear icon opens Settings)
+├── History    (by month → workout editor)
+└── Progress   (weekly chart, exercises → exercise detail)
+
+Full-screen routes
+├── /workout               live workout (active)
+├── /workout/:id           finished workout in edit mode
+├── /exercise/:id          exercise detail (Summary / History)
+├── /add-exercise?workout= exercise picker (modal)
+└── /settings              settings (default rest time, section 5.7)
+```
+The Android back gesture must behave correctly everywhere. Bottom sheets close on back.
+
+---
+
+## 7. Data model (local, source of truth)
+
+All ids are **client-generated UUID v4** (so offline creation and future sync are idempotent). Timestamps are
+ISO-8601 UTC. Every syncable table has `updated_at` and `dirty` (1 = changed locally, not yet pushed).
+
+```
+exercises          id PK, name, muscle_group?, is_per_hand, default_increment, is_custom, dirty
+exercise_state     exercise_id PK → exercises, base_weight, target_reps, target_sets, increment,
+                   rest_seconds? (NULL = use the default rest time), updated_at, dirty
+workouts           id PK, name?, started_at, ended_at?, notes?, updated_at, dirty
+workout_exercises  id PK, workout_id → workouts (cascade), exercise_id → exercises, position,
+                   notes?,
+                   plan_base_weight?, plan_target_reps?, plan_target_sets?, plan_increment?,   -- snapshot
+                   result_base_weight?,                                                       -- snapshot
+                   updated_at, dirty
+sets               id PK, workout_exercise_id → workout_exercises (cascade), set_no, weight, reps,
+                   is_overload, completed_at, updated_at, dirty,
+                   UNIQUE(workout_exercise_id, set_no)
+pending_deletes    table_name, row_id, PK(table_name, row_id)      -- delete queue for future sync
+settings           key PK, value                                   -- local-only in v1, e.g. default_rest_seconds = 60
+```
+- Use real schema **migrations** with a version number. Never drop user data on upgrade.
+- Foreign keys **ON**. Writes that touch several rows (finish, resume, recalculate, delete) run in **one
+  transaction**.
+
+---
+
+## 8. Backend and sync (Phase 2, **LATER**; design it in now, build it after v1)
+
+- **Supabase** (Postgres + Auth + row-level security). Auth: Google sign-in, Apple sign-in for iOS, email
+  magic link as fallback.
+- Server schema mirrors section 7 plus `user_id` on every row, and a `profiles` table. **RLS: owner-only**
+  (`user_id = auth.uid()`) on every table. The global exercise library (`owner_id IS NULL`) is readable by
+  everyone. **No friendship tables.**
+- **Push sync:** replay `pending_deletes` **first** (children first: sets → workout_exercises → workouts), then
+  upsert dirty rows in FK order (custom exercises → exercise_state → workouts → workout_exercises → sets), then
+  clear `dirty` only if `updated_at` is unchanged since it was read. A failure leaves rows dirty for retry.
+  Deletes go first because a cleared-then-relogged set has a new id with the same
+  `(workout_exercise_id, set_no)`, which would hit the unique constraint.
+- **Pull / restore:** on sign-in on a new device, download the user's rows into the local DB (new in v2; the
+  prototype lacked it).
+- Sync triggers: app start, app returns to the foreground, after finishing a workout. Silent on failure.
+- Supabase migrations live in `supabase/migrations/` and are tested (e.g. against a local Postgres or PGlite).
+
+---
+
+## 9. Technical architecture (Flutter)
+
+### 9.1 Stack (verify each package is current, maintained and null-safe on pub.dev before adding it)
+| Concern | Choice |
+|---|---|
+| Language | Dart (latest stable), sound null safety |
+| SDK | Flutter **stable** channel, latest version at implementation time |
+| State management | `flutter_riverpod` (with code generation optional) |
+| Routing | `go_router` |
+| Local DB | `drift` (type-safe SQLite, migrations, in-memory DB for tests) with its Flutter SQLite libs |
+| Charts | `fl_chart` (or `CustomPainter` for the glow line and backdrop) |
+| IDs | `uuid` |
+| Haptics | Flutter's built-in `HapticFeedback` (no package needed) |
+| Dates and formatting | `intl` |
+| Backend (Phase 2) | `supabase_flutter` |
+| Lints | `flutter_lints` minimum; prefer `very_good_analysis` (strict) |
+| Tests | `flutter_test`, `mocktail` if needed, drift's in-memory database |
+
+Prefer the platform's built-in widgets (Material 3 with a custom dark `ThemeData` and `ThemeExtension` for the
+metric colors) over third-party UI kits.
+
+### 9.2 Project structure (feature-first, layered)
+```
+lib/
+  main.dart
+  app/                 app widget, router, theme (tokens, ThemeData, ThemeExtension), backdrop painter
+  core/                formatting (formatKg), ISO-week utils, haptics wrapper, result types
+  domain/              PURE Dart, no Flutter imports:
+    progression.dart   prescribe, evaluate, roundWeight, canRewriteBase
+    stats.dart         volume, Epley 1RM, PRs, summarizeSession, diffSummary, weekly streak
+  data/
+    db/                drift database, tables, migrations, seed library
+    repositories/      WorkoutRepository, ExerciseRepository (all business writes, transactions)
+    sync/              (Phase 2) push/pull, delete queue
+  features/
+    train/             home tab
+    workout/           live and edit workout screen, set table, set sheet, plan setup, rest timer
+    history/
+    progress/          weekly chart, exercise list, exercise detail
+    exercises/         picker, custom exercise
+    settings/          settings screen (default rest time, alerts)
+  widgets/             shared UI kit: Button, Card, Group/Row, SectionHeader, Stepper, Chips, MetricTile,
+                       Delta, Stat, LineChart, BarChart
+test/                  mirrors lib/ (domain, data, widgets, features)
+integration_test/      key end-to-end flows
+```
+Rules: widgets never touch the DB directly (they go through repositories via providers); the domain layer is
+pure and fully unit-tested; no business logic in widgets; no hard-coded colors or sizes outside the theme.
+
+### 9.3 Code quality and safety (MUST)
+- `flutter analyze` with zero warnings, `dart format` clean, `flutter test` green. All three run on every
+  milestone and in CI.
+- **No secrets in the repo, ever.** Config comes from `--dart-define-from-file=env/dev.json`; commit only
+  `env/example.json` with empty values. The Supabase anon key is not a secret, but keep it out of git anyway.
+- **Android signing:** the release keystore (`*.jks`/`*.keystore`) and `android/key.properties` are **never
+  committed**. Document how to create them in the README.
+- **`.gitignore`** MUST cover at least: `.dart_tool/`, `build/`, `.flutter-plugins`,
+  `.flutter-plugins-dependencies`, `.pub-cache/`, `.pub/`, `*.iml`, `.idea/`, `.vscode/`,
+  `android/local.properties`, `android/key.properties`, `android/.gradle/`, `android/app/release/`, `*.jks`,
+  `*.keystore`, `*.p8`, `*.p12`, `*.mobileprovision`, `ios/Pods/`, `ios/.symlinks/`,
+  `ios/Flutter/Generated.xcconfig`, `ios/Flutter/flutter_export_environment.sh`, `env/*.json` (except
+  `env/example.json`), `.env*`, `coverage/`, `*.log`, `.DS_Store`, `supabase/.temp/`.
+  Generated code (`*.g.dart`, `*.freezed.dart`): either commit it consistently or generate it in CI; pick one
+  and document it.
+- **Repo hygiene:** a README (what it is, the progression rule, setup, run, test, build APK, project layout,
+  roadmap), `docs/ARCHITECTURE.md` (data flow, progression and edit rules, sync design), `.editorconfig`,
+  `analysis_options.yaml`. **No LICENSE file** (private project; the owner decides later). No IDE folders in git.
+- **Git:** private GitHub repo under the owner's account; commits use the owner's **GitHub no-reply email**;
+  small, focused commits with clear messages; never commit generated build output.
+- **CI (SHOULD):** a GitHub Actions workflow on push and PR: `flutter pub get`, `dart format --set-exit-if-changed`,
+  `flutter analyze`, `flutter test`, and `flutter build apk --debug`.
+- **Accessibility:** `Semantics` labels on all interactive controls, 48 dp minimum targets, sufficient
+  contrast on the dark theme, and the backdrop excluded from semantics.
+- **Errors:** never crash on bad data. DB errors are caught and logged, and the user sees a short message.
+  Sync errors are silent and retried.
+
+### 9.4 Building the APK (no third-party cloud needed)
+- Prerequisites on the Mac: Flutter SDK, Android SDK (command-line tools or Android Studio), JDK 17.
+  `flutter doctor` must be green for Android.
+- Debug APK for personal use: `flutter build apk --debug`, or a release APK signed with the owner's keystore:
+  `flutter build apk --release` → `build/app/outputs/flutter-apk/app-release.apk`. Install it by copying it to
+  the phone and opening it.
+- Android application id: `com.fitapp.app` (changeable before any store release). App name: **FitApp**.
+
+---
+
+## 10. Non-functional requirements
+| Area | Requirement |
+|---|---|
+| Offline | 100% of v1 features work with no network. |
+| Performance | Logging a set updates the UI in < 100 ms; app cold start < 2 s on a mid-range Android phone. |
+| Data safety | No data loss on app kill mid-workout (every set persists immediately). Migrations preserve data. |
+| Orientation | Portrait only. |
+| Min Android | Flutter's current default minimum SDK. |
+| Privacy | No analytics or trackers in v1. Data stays on the device until Phase 2 sync, which the user opts into by signing in. |
+
+---
+
+## 11. Acceptance examples (worked scenarios)
+Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per hand).
+
+1. Sets `20×10, 20×10, 22.5×6` → **progressed**, next base **22.5**. Next prescription is `22.5, 22.5, 25`.
+2. Next session `22.5×10, 22.5×8, 25×4` → **missed_reps**, base stays **22.5**.
+3. Session-1 volume = (20·10 + 20·10 + 22.5·6) × 2 = **1070 kg**. Session-2 volume vs session 1 shows
+   ▲/▼ with %.
+4. Finish by mistake after session 1, then **Resume** → base back to **20**; change set 2 to 8 reps and finish →
+   `missed_reps`, base **20**.
+5. Edit the latest finished workout: set 2 → 9 reps → base **20**; back to 10 reps → base **22.5**.
+6. Two sessions (20→22.5, then 22.5→25). Edit the *first* one to fail → its stored result becomes 20, but the
+   current base stays **25**.
+7. User manually sets base to 30 after finishing, then resumes and re-finishes → the result is judged on the
+   snapshot plan (progressed to 22.5), but the current base stays **30**.
+8. Delete the latest finished workout → its increase is undone. Delete an older one → the current base is unchanged.
+
+---
+
+## 12. Test plan (MUST pass; port these from the prototype's 55 tests)
+**Domain (pure unit tests)**
+- `prescribe`: base, base, base+inc; 4-set and +5 variants; invalid plans throw.
+- `evaluate`: progressed; exceeding target reps; missed reps on set 2; reps hit at a lighter weight than base;
+  heavier-than-prescribed overload; overload missing; overload not heavier; working set missing; order-independence.
+- `roundWeight`: removes float drift (`0.1 + 0.2 + 22.2 → 22.5`).
+- `canRewriteBase`: latest and matching → true; plan edited since, not latest, or never applied → false.
+- Stats: per-hand volume; Epley (100×10 → 133.3, ×1 → 100, ×0 → 0); PRs and `newPRTypes`; session summary and
+  diff; ISO week keys (9 Nov 2026 → 2026-W46, 1 Jan 2027 → 2026-W53); workouts per week; streak with an
+  in-progress current week, with a gap, and across the year boundary.
+
+**Data (drift in-memory)**
+- Library seeded with 16 exercises; migration and seeding are idempotent.
+- Full flow: plan → session → progression → prescription → missed session → history.
+- Re-logging a set overwrites it; exercises without a plan don't progress.
+- Snapshot written on finish; resume, edit, delete and manual-edit scenarios from section 11; resume blocked
+  while another workout is active or when the workout is not the most recent; recalculation after clearing a set;
+  legacy workouts without snapshots.
+- `previousSession` lookup; workout list with volume (per-hand ×2) and exercise names.
+- (Phase 2) Sync ordering: deletes before upserts; dirty cleared only if unchanged; failure keeps rows dirty;
+  library exercises are never pushed; deleting a workout queues one server delete.
+
+**Widgets and integration**
+- Set row: dimmed when unlogged, check box logs as prescribed, missed reps shown in red.
+- Rest timer appears in the footer without shifting the list.
+- Rest timer counts down from the default (60 s out of the box), uses a per-exercise override when set, pulses at 0
+  and then shows overtime; it stays correct after the app is backgrounded (computed from a stored start time).
+- Changing the default rest time in Settings persists across restarts and applies to the next logged set; the
+  per-exercise value `NULL` falls back to the default.
+- End-to-end: start workout → add exercise → set up plan → log 3 sets → finish → exercise detail shows the new
+  base and a chart point.
+
+---
+
+## 13. Milestones (implement in order; each ends with analyze + test green and a commit)
+| # | Milestone | Done when |
+|---|---|---|
+| **M0** | Project setup: `flutter create --org com.fitapp --project-name fitapp --platforms android,ios`, then set the Android `applicationId` to `com.fitapp.app`; lints, `.gitignore`, `.editorconfig`, README skeleton, env handling, private GitHub repo named `fitapp`, CI workflow | `flutter analyze` clean; CI green; no secrets or IDE files tracked |
+| **M1** | Domain layer: progression and stats in pure Dart | All domain tests in section 12 pass |
+| **M2** | Data layer: drift schema, migrations, seed library, repositories (finish, resume, recalculate, delete, clear, previous session, history queries) | All data tests pass; scenarios in section 11 verified in tests |
+| **M3** | Theme and UI kit (tokens, backdrop, buttons, groups, stepper, chips, metric tiles), bottom navigation, Train tab, live workout screen (Hevy-style header, set table with PREVIOUS column, one-tap logging, bottom-sheet editor, plan setup, countdown rest timer in the footer, Settings screen with the default rest time, compare-to-previous, finish summary, discard empty) | A full workout can be logged on a real phone; widget tests pass |
+| **M4** | History tab and edit mode (auto-save, Done, Resume, Delete, clear set, remove exercise, add exercise to a past workout) | Section 11 scenarios 4–8 work in the UI |
+| **M5** | Progress tab and exercise detail (weekly bars, exercise list with base weight, metric tiles, glow line chart with chips, PR badge, history, plan edit) | Charts render with 1, 2 and 20+ sessions |
+| **M6** | Polish: haptics, accessibility labels, empty states, app icon and splash (black), release APK build documented and verified on the phone | APK installed and used for a real workout |
+| **M7** (LATER) | Phase 2: Supabase auth, push sync, pull/restore, RLS migrations with tests | Sign in on a second phone restores full history |
+
+---
+
+## 14. Roadmap (after v1, not in scope now)
+- Sign-in with cloud backup and restore (M7)
+- Routines and workout templates (Hevy-style folders), and "repeat last workout"
+- Drop and failure set types (warm-up sets are intentionally not planned)
+- Rest-timer notifications when the app is in the background, if not done in M3
+- kg / lb setting
+- Plate calculator
+- Deload suggestion after repeated `missed_reps` (e.g. −10% after 3 failed sessions)
+- iOS release (Sign in with Apple required if Google sign-in is offered)
+
+## 15. Decisions log (from the prototype phase)
+| Decision | Why |
+|---|---|
+| Offline-first with local SQLite as the source of truth | Gyms often have poor signal |
+| Supabase over Firebase for the backend | Relational data and SQL aggregates; RLS; no per-read billing. InstantDB rejected because it is shutting down (services end 31 Aug 2027) |
+| Snapshots on each workout exercise | Makes resume, edit and delete of history correct without replaying all sessions |
+| Only the latest workout can be resumed | Resuming older ones would scramble progression order; older ones are edited in place |
+| Rest timer in the footer | A timer appearing at the top shifted rows and caused mis-taps |
+| Friends and social dropped | Owner's decision (Nov 2026) |
+| Flutter instead of Expo for v2 | Owner's decision; local APK builds without a third-party cloud (`flutter build apk`) |
+| App name **FitApp** | Owner's decision (12 Nov 2026); replaces the working title "Gym Tracker" |
+| No warm-up sets, and no set types in v1 | Owner's decision; keeps the set table and progression simple |
+| Rest timer default **60 s**, configurable (global default plus per-exercise override) | Owner's decision; stored in Settings and on the exercise plan |
+| Keep the approved dark green look | Owner's decision; Hevy is the structure model only, not the palette |
+
+## 16. Open items
+1. **App icon artwork:** a black background with a green mark. To be designed; a simple placeholder is fine for M6.
+
+There are no other open questions. The earlier ones (app name, warm-up sets, rest-timer default, color palette) were
+resolved on 12 Nov 2026; see the decisions log.
+
+## 17. Changelog
+- **2.1 (12 Nov 2026):**
+  - App named **FitApp**; project, org and Android id renamed (`fitapp`, `com.fitapp`, `com.fitapp.app`).
+  - Warm-up sets removed everywhere (no set types in v1; no `set_type` column).
+  - Rest timer: counts down from a **60 s default that is configurable** (global default in a new Settings screen,
+    plus a per-exercise override stored on the plan). New `settings` table and `/settings` route.
+  - Confirmed: keep the dark green look; Hevy is the structure model only.
+- **2.0 (11 Nov 2026):** first Flutter PRD, based on the Expo / React Native prototype and the Hevy reference.

@@ -4,7 +4,7 @@ description: "Task list for FitApp v1 implementation"
 
 # Tasks: FitApp v1 – Offline Workout Logger with Automatic Progressive Overload
 
-**Status (2026-11-12)**: M0-M5 implemented; M6 partially done (icon/splash, docs, release build verified locally). Pending: T010 (GitHub repo + CI, awaiting owner approval), T056 (rest-end sound via audioplayers), T057 (rest-timer background notification), T085-T086 (need the real phone). T083 is done except the keystore, which the owner creates.
+**Status (2026-11-12)**: M0-M5 implemented; M6 partially done (icon/splash, docs, release build verified locally). Private repo created and CI green (T010). Pending: T056 (rest-end sound via audioplayers), T057 (rest-timer background notification), T085-T086 (need the real phone). T083 is done except the keystore, which the owner creates.
 
 **Input**: Design documents from `/specs/001-fitapp-v1/`
 

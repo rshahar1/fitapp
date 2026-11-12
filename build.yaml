@@ -1,0 +1,9 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          store_date_time_values_as_text: true
+          named_parameters: true
+          databases:
+            fitapp: lib/data/db/app_database.dart

@@ -17,8 +17,11 @@ abstract final class AppColors {
   static const metricVolume = Color(0xFF64D2FF);
   static const metricWeight = Color(0xFFFF9F0A);
 
-  /// Backdrop-only: very faint blue glow, bottom-left.
-  static const backdropBlue = Color(0xFF0A84FF);
+  /// Backdrop header wash: background at 45 % alpha.
+  static const backdropHeaderScrim = Color(0x73000000);
+
+  /// Backdrop bottom darkening: background at 65 % alpha.
+  static const backdropBottomScrim = Color(0xA6000000);
 }
 
 /// Spacing scale.

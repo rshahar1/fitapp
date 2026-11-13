@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-13
 
-**Status**: Draft — waiting for the owner's choice of photo
+**Status**: Approved — photo chosen 2026-11-13
 
 **Input**: User description: "Replace the blank black background with a blurred, darkened
 background image (the owner suggested a specific gym photo, or a similar one). Keep it subtle so it
@@ -82,5 +82,8 @@ before; nothing moves when scrolling except the content.
 
 - The image is blurred and darkened ahead of time (bundled already processed) rather than at
   runtime, for speed and consistent results.
-- Photo choice is pending the owner's review of a preview of their suggested image; if it cannot be
-  licensed for bundling, a free-licensed or owner-provided photo with a similar look is used.
+- Photo (owner decision 2026-11-13, after reviewing previews of 6 options): Pexels photo 6389516
+  "Close-up shot of a barbell" by Tima Miroshnichenko (Pexels License), "whole barbell" layout: a
+  heavily blurred full-screen fill of the photo, with the full-width photo (lightly blurred) feathered
+  in so the barbell sits in the open area at ~60% of screen height, a dark wash behind the header and
+  a darker bottom. The owner's linked photo was previewed but not chosen.

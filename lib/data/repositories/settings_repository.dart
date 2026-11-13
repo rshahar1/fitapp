@@ -23,19 +23,29 @@ class RestAlertPrefs {
 /// A running rest timer, persisted so it survives process death.
 @immutable
 class ActiveRest {
-  const new({required this.startedAt, required this.targetSeconds});
+  const new({
+    required this.startedAt,
+    required this.targetSeconds,
+    this.exerciseName,
+  });
 
   final DateTime startedAt;
   final int targetSeconds;
+
+  /// Shown in the rest notification; null for timers saved before 002.
+  final String? exerciseName;
+
+  DateTime get endsAt => startedAt.add(Duration(seconds: targetSeconds));
 
   @override
   bool operator ==(Object other) =>
       other is ActiveRest &&
       other.startedAt == startedAt &&
-      other.targetSeconds == targetSeconds;
+      other.targetSeconds == targetSeconds &&
+      other.exerciseName == exerciseName;
 
   @override
-  int get hashCode => Object.hash(startedAt, targetSeconds);
+  int get hashCode => Object.hash(startedAt, targetSeconds, exerciseName);
 }
 
 /// Local key/value settings (PRD §5.7).
@@ -54,6 +64,8 @@ class SettingsRepository {
   static const _kSound = 'rest_alert_sound';
   static const _kRestStart = 'active_rest_started_at';
   static const _kRestTarget = 'active_rest_target_seconds';
+  static const _kRestExercise = 'active_rest_exercise';
+  static const _kPermissionAsked = 'notif_permission_asked';
 
   /// Clamps to 10 s..10 min and snaps to 5 s steps.
   static int normalizeRest(int seconds) {
@@ -107,16 +119,34 @@ class SettingsRepository {
     final start = DateTime.tryParse(m[_kRestStart] ?? '');
     final target = int.tryParse(m[_kRestTarget] ?? '');
     if (start == null || target == null) return null;
-    return ActiveRest(startedAt: start.toUtc(), targetSeconds: target);
+    return ActiveRest(
+      startedAt: start.toUtc(),
+      targetSeconds: target,
+      exerciseName: m[_kRestExercise],
+    );
   }
 
   Future<void> writeActiveRest(ActiveRest? rest) => _db.transaction(() async {
     if (rest == null) {
       await _remove(_kRestStart);
       await _remove(_kRestTarget);
+      await _remove(_kRestExercise);
     } else {
       await _put(_kRestStart, rest.startedAt.toUtc().toIso8601String());
       await _put(_kRestTarget, rest.targetSeconds.toString());
+      final name = rest.exerciseName;
+      if (name == null) {
+        await _remove(_kRestExercise);
+      } else {
+        await _put(_kRestExercise, name);
+      }
     }
   });
+
+  /// Whether the automatic notification-permission prompt was already shown.
+  Future<bool> notificationPermissionAsked() async =>
+      (await _all())[_kPermissionAsked] == 'true';
+
+  Future<void> markNotificationPermissionAsked() =>
+      _put(_kPermissionAsked, 'true');
 }

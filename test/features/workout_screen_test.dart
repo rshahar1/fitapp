@@ -3,12 +3,12 @@ import 'package:drift/native.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/haptics.dart';
+import 'package:fitapp/core/rest_alerts.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/exercise_repository.dart';
 import 'package:fitapp/data/repositories/settings_repository.dart';
 import 'package:fitapp/data/repositories/workout_repository.dart';
-import 'package:fitapp/features/workout/rest_timer_controller.dart';
 import 'package:fitapp/features/workout/workout_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,6 +24,13 @@ class _FakeHaptics implements Haptics {
   void tick() => calls.add('tick');
   @override
   void warning() => calls.add('warning');
+}
+
+class _ChimeCounter extends NoopRestAlerts {
+  int chimes = 0;
+
+  @override
+  Future<void> playChime() async => chimes++;
 }
 
 class _Env {
@@ -44,7 +51,8 @@ class _Env {
   late final ExerciseRepository exercises;
   late final SettingsRepository settings;
   final haptics = _FakeHaptics();
-  int sounds = 0;
+  final alerts = _ChimeCounter();
+  int get sounds => alerts.chimes;
 
   late String workoutId;
   late String weId;
@@ -68,7 +76,7 @@ class _Env {
       databaseProvider.overrideWithValue(db),
       clockProvider.overrideWithValue(() => now),
       hapticsProvider.overrideWithValue(haptics),
-      restSoundProvider.overrideWithValue(() => sounds++),
+      restAlertsProvider.overrideWithValue(alerts),
     ],
     child: MaterialApp(theme: buildAppTheme(), home: const WorkoutScreen()),
   );

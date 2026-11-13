@@ -2,9 +2,9 @@ import 'package:drift/drift.dart' show DatabaseConnection, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:fitapp/app/app.dart';
 import 'package:fitapp/core/haptics.dart';
+import 'package:fitapp/core/rest_alerts.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
-import 'package:fitapp/features/workout/rest_timer_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -32,7 +32,7 @@ Future<void> runWorkoutFlow(
       overrides: [
         databaseProvider.overrideWithValue(db),
         hapticsProvider.overrideWithValue(_NoHaptics()),
-        restSoundProvider.overrideWithValue(() {}),
+        restAlertsProvider.overrideWithValue(const NoopRestAlerts()),
       ],
       child: const FitApp(),
     ),

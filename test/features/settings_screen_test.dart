@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' show DatabaseConnection, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/core/haptics.dart';
+import 'package:fitapp/core/rest_alerts.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/settings_repository.dart';
@@ -19,14 +20,42 @@ class _FakeHaptics implements Haptics {
   void warning() {}
 }
 
+class _FakeAlerts extends NoopRestAlerts {
+  new(this.current);
+
+  AlertStatus current;
+  final calls = <String>[];
+
+  @override
+  Future<AlertStatus> status() async => current;
+
+  @override
+  Future<void> openNotificationSettings() async => calls.add('notifications');
+
+  @override
+  Future<void> openExactAlarmSettings() async => calls.add('exact');
+}
+
 void main() {
   late AppDatabase db;
   late SettingsRepository settings;
+  var alerts = _FakeAlerts(
+    const AlertStatus(
+      notifications: AlertPermission.granted,
+      exactAlarms: true,
+    ),
+  );
 
   setUp(() {
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     db = AppDatabase(DatabaseConnection(NativeDatabase.memory()));
     settings = SettingsRepository(db);
+    alerts = _FakeAlerts(
+      const AlertStatus(
+        notifications: AlertPermission.granted,
+        exactAlarms: true,
+      ),
+    );
   });
   tearDown(() => db.close());
 
@@ -44,6 +73,7 @@ void main() {
         overrides: [
           databaseProvider.overrideWithValue(db),
           hapticsProvider.overrideWithValue(_FakeHaptics()),
+          restAlertsProvider.overrideWithValue(alerts),
         ],
         child: MaterialApp(
           theme: buildAppTheme(),
@@ -80,6 +110,36 @@ void main() {
     await tester.pumpAndSettle();
     final prefs = await tester.runAsync(settings.alertPrefs);
     expect(prefs, const RestAlertPrefs(haptic: false, sound: false));
+    await unmount(tester);
+  });
+
+  testWidgets('alert status rows show On when allowed', (tester) async {
+    await pump(tester);
+    expect(find.text('On'), findsNWidgets(2));
+    await tester.tap(find.text('Notifications'));
+    await tester.pumpAndSettle();
+    expect(alerts.calls, isEmpty);
+    await unmount(tester);
+  });
+
+  testWidgets('tapping Off rows opens the right settings', (tester) async {
+    alerts.current = const AlertStatus(
+      notifications: AlertPermission.denied,
+      exactAlarms: false,
+    );
+    await pump(tester);
+    expect(find.text('Off — tap to enable'), findsOneWidget);
+    expect(
+      find.text('Off — alerts may be late while the phone is idle'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Notifications'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Precise timing'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Precise timing'));
+    await tester.pumpAndSettle();
+    expect(alerts.calls, ['notifications', 'exact']);
     await unmount(tester);
   });
 }

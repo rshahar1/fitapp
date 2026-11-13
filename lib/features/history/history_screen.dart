@@ -2,20 +2,24 @@ import 'package:fitapp/app/router.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
+import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/providers.dart';
+import 'package:fitapp/domain/activity_types.dart';
+import 'package:fitapp/features/activities/activity_icons.dart';
+import 'package:fitapp/features/activities/activity_sheet.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Finished workouts grouped by month, newest first.
+/// Finished workouts and activities grouped by month, newest first.
 class HistoryScreen extends ConsumerWidget {
   const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final history = ref.watch(historyProvider);
+    final history = ref.watch(historyEntriesProvider);
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -30,8 +34,8 @@ class HistoryScreen extends ConsumerWidget {
           data: (items) => items.isEmpty
               ? const EmptyState(
                   icon: Icons.history,
-                  title: 'No workouts yet',
-                  message: 'Finished workouts show up here.',
+                  title: 'Nothing logged yet',
+                  message: 'Finished workouts and activities show up here.',
                 )
               : _HistoryList(items: items),
         ),
@@ -43,14 +47,14 @@ class HistoryScreen extends ConsumerWidget {
 class _HistoryList extends StatelessWidget {
   const new({required this.items});
 
-  final List<WorkoutListItem> items;
+  final List<HistoryEntry> items;
 
   @override
   Widget build(BuildContext context) {
-    final months = <String, List<WorkoutListItem>>{};
+    final months = <String, List<HistoryEntry>>{};
     for (final item in items) {
       months
-          .putIfAbsent(formatMonth(item.startedAt.toLocal()), () => [])
+          .putIfAbsent(formatMonth(_startedAt(item).toLocal()), () => [])
           .add(item);
     }
     return ListView(
@@ -65,9 +69,80 @@ class _HistoryList extends StatelessWidget {
         ),
         for (final entry in months.entries) ...[
           SectionHeader(entry.key),
-          Group(children: [for (final item in entry.value) _Row(item: item)]),
+          Group(
+            children: [
+              for (final item in entry.value)
+                switch (item) {
+                  WorkoutHistoryEntry(:final workout) => _Row(item: workout),
+                  ActivityHistoryEntry(:final activity) => _ActivityRow(
+                    activity: activity,
+                  ),
+                },
+            ],
+          ),
         ],
       ],
+    );
+  }
+}
+
+DateTime _startedAt(HistoryEntry e) => switch (e) {
+  WorkoutHistoryEntry(:final workout) => workout.startedAt,
+  ActivityHistoryEntry(:final activity) => activity.startedAt,
+};
+
+class _IconBadge extends StatelessWidget {
+  const new({required this.icon, required this.color, required this.bg});
+
+  final IconData icon;
+  final Color color;
+  final Color bg;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: Sizes.tap - Space.s,
+      height: Sizes.tap - Space.s,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(Radii.chip),
+      ),
+      child: Icon(icon, size: 22, color: color),
+    );
+  }
+}
+
+class _ActivityRow extends StatelessWidget {
+  const new({required this.activity});
+
+  final ActivityRow activity;
+
+  @override
+  Widget build(BuildContext context) {
+    final date = formatDateShort(activity.startedAt.toLocal());
+    final label = activityLabel(activity.typeId);
+    final minutes = activity.durationMinutes;
+    final note = activity.notes;
+    final subtitle = [
+      label,
+      if (minutes != null) formatActivityMinutes(minutes),
+      ?note,
+    ].join(' · ');
+    return Semantics(
+      button: true,
+      label: '$date, $subtitle',
+      excludeSemantics: true,
+      child: GroupRow(
+        leading: _IconBadge(
+          icon: activityIcon(activity.typeId),
+          color: context.metrics.volume,
+          bg: AppColors.surfaceHigh,
+        ),
+        title: date,
+        subtitle: subtitle,
+        showChevron: true,
+        onTap: () => showActivitySheet(context, existing: activity),
+      ),
     );
   }
 }
@@ -101,6 +176,12 @@ class _Row extends StatelessWidget {
             ),
             child: Row(
               children: [
+                const _IconBadge(
+                  icon: gymWorkoutIcon,
+                  color: AppColors.accent,
+                  bg: AppColors.accentSoft,
+                ),
+                const SizedBox(width: Space.m),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

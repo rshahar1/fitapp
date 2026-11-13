@@ -83,7 +83,10 @@ void main() {
 
   testWidgets('shows the empty state', (tester) async {
     await pumpScreen(tester);
-    expect(find.text('No workouts yet'), findsOneWidget);
-    expect(find.text('Finished workouts show up here.'), findsOneWidget);
+    expect(find.text('Nothing logged yet'), findsOneWidget);
+    expect(
+      find.text('Finished workouts and activities show up here.'),
+      findsOneWidget,
+    );
   });
 }

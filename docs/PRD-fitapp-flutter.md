@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.2, 13 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.3, 13 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -21,6 +21,8 @@
 A minimalist, fast, offline-first gym workout logger built around one idea: **automatic progressive overload**.
 The user logs sets between exercises with large tap targets and almost no typing. The app pre-fills every set
 from the user's plan and last session, and moves the working weight up automatically when they earn it.
+Other sports (functional training, cycling, snowboarding, running) can be logged as lightweight activities
+that count toward consistency, without any sport-specific metrics.
 
 ### 1.1 Goals
 1. Log a full set in **one tap** when the user did what was planned.
@@ -29,6 +31,7 @@ from the user's plan and last session, and moves the working weight up automatic
 3. Show progress clearly: charts per exercise, personal records, and "compared to last session" deltas.
 4. Work **fully offline**. A gym with no signal must never block logging.
 5. Clean, safe, well-tested codebase that follows Flutter and Dart best practices.
+6. Log other sport activities (date, optional duration and note) so the weekly stats reflect all training.
 
 ### 1.2 Non-goals (explicitly out of scope)
 - **Social features, friends, feed and leaderboards were dropped by the owner.** Do not build friend tables,
@@ -131,6 +134,8 @@ Numbers use tabular figures.
 | **Overload set** | Set N (the last set), prescribed at `baseWeight + increment`, **always**. It is a stretch target only: it never affects the result. |
 | **Session** | One exercise inside one finished workout. |
 | **Volume** | Σ weight × reps (× 2 if per hand). |
+| **Activity** | A logged non-gym sport session: type, date, optional duration and note. No sport-specific metrics. Counts toward This week, Week streak and the weekly bars; never toward volume, exercise stats or progression. |
+| **Activity type** | One entry of the code-level registry (`id`, `label`): `functional`, `cycling`, `snowboarding`, `running`. |
 | **Est. 1RM** | Epley formula: `w × (1 + reps / 30)`, rounded to 0.1. 1 rep gives `w`, 0 reps gives 0. |
 
 ---
@@ -249,20 +254,28 @@ back to the exercise plan.
 - **Exercise notes** (**SHOULD**): free text per exercise in this workout.
 
 ### 5.4 History
-- List of finished workouts grouped by month. Each row shows the date, exercise names, total **volume**
-  (metric-volume color), set count and duration.
-- Tapping a row opens the workout in **edit mode** (same screen as live logging): "changes save automatically",
+- Finished workouts and logged activities in one list, newest first, grouped by month. Each row has an icon:
+  a dumbbell for gym workouts, the sport's own icon for activities. Workout rows show the date, exercise names,
+  total **volume** (metric-volume color), set count and duration; activity rows show the type, date, duration
+  and note.
+- Tapping a workout row opens it in **edit mode** (same screen as live logging): "changes save automatically",
   and footer buttons **Done**, **Resume** (only if allowed) and **Delete**.
+- Tapping an activity row opens the activity sheet to edit it or delete it (delete asks for confirmation).
 
 ### 5.5 Home / Train tab
 - Date kicker, title, a hero card with **Start workout** or **Continue workout**, and stat tiles: *This week*,
-  *Week streak*, *Total workouts*. Below them, the 3 most recent workouts.
+  *Week streak*, *Total workouts*. Below them, the 3 most recent workouts (gym workouts only).
+- **Log activity** button opens a sheet: activity type, date (default today, never in the future), optional
+  duration in minutes (1 to 1440) and optional note (max 200 chars). Types come from the registry
+  (`lib/domain/activity_types.dart`); adding a sport is one registry entry plus one icon.
+- *This week* and *Week streak* count gym workouts **and** activities. *Total workouts* counts gym workouts only.
 - **Weekly streak:** consecutive ISO weeks (Monday start) with at least 1 workout, ending this week or last week.
   The current week doesn't break the streak while it's in progress. It must work across year boundaries
   (2026 has an ISO week 53).
 
 ### 5.6 Progress / analytics
-- **Workouts per week** bar chart for the last 8 ISO weeks (current week highlighted in the accent color).
+- **Workouts per week** bar chart for the last 8 ISO weeks (current week highlighted in the accent color);
+  activities count as well as gym workouts. Volume, exercise stats and progression ignore activities.
 - List of trained exercises (most recent first) showing the **current base weight** (metric-weight color).
 - **Exercise detail** (tabs *Summary* / *History*):
   - Metric tiles: Current base, Heaviest set, Est. 1RM, Sessions.
@@ -292,8 +305,8 @@ back to the exercise plan.
 
 ```
 Bottom navigation (3 tabs)
-├── Train      (home: start or continue, stats, recent; gear icon opens Settings)
-├── History    (by month → workout editor)
+├── Train      (home: start or continue, Log activity sheet, stats, recent; gear icon opens Settings)
+├── History    (workouts and activities by month → workout editor or activity sheet)
 └── Progress   (weekly chart, exercises → exercise detail)
 
 Full-screen routes
@@ -329,10 +342,12 @@ workout_exercises  id PK, workout_id → workouts (cascade), exercise_id → exe
 sets               id PK, workout_exercise_id → workout_exercises (cascade), set_no, weight, reps,
                    is_overload, completed_at, updated_at, dirty,
                    UNIQUE(workout_exercise_id, set_no)
+activities         id PK, type_id, started_at, duration_minutes?, notes?, updated_at, dirty,
+                   index on started_at                              -- non-gym sport activities
 pending_deletes    table_name, row_id, PK(table_name, row_id)      -- delete queue for future sync
 settings           key PK, value                                   -- local-only in v1, e.g. default_rest_seconds = 60
 ```
-- Schema version is 3 (v2 templates, v3 template plans and `template_exercise_id`). Use real schema **migrations** with a version number (drift `stepByStep`). Never drop user data on upgrade.
+- Schema version is 4 (v2 templates, v3 template plans and `template_exercise_id`, v4 `activities`). Use real schema **migrations** with a version number (drift `stepByStep`). Never drop user data on upgrade.
 - Foreign keys **ON**. Writes that touch several rows (finish, resume, recalculate, delete) run in **one
   transaction**.
 
@@ -387,14 +402,16 @@ lib/
   domain/              PURE Dart, no Flutter imports:
     progression.dart   prescribe, evaluate, roundWeight, canRewriteBase
     stats.dart         volume, Epley 1RM, PRs, summarizeSession, diffSummary, weekly streak
+    activity_types.dart ActivityType registry, activityTypeById, activityLabel, validateActivity
   data/
     db/                drift database, tables, migrations, seed library
-    repositories/      WorkoutRepository, ExerciseRepository, TemplateRepository (all business writes, transactions); plan_store.dart (PlanStore: validated plan reads/writes)
+    repositories/      WorkoutRepository, ExerciseRepository, TemplateRepository, ActivityRepository (activity_repository.dart) (all business writes, transactions); plan_store.dart (PlanStore: validated plan reads/writes)
     sync/              (Phase 2) push/pull, delete queue
   features/
     train/             home tab
     workout/           live and edit workout screen, set table, set sheet, plan setup, rest timer
-    history/
+    history/            merged workouts and activities list
+    activities/         activity sheet, activity_icons.dart (type id to icon)
     progress/          weekly chart, exercise list, exercise detail
     exercises/         picker, custom exercise
     settings/          settings screen (default rest time, alerts)
@@ -496,6 +513,7 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
   while another workout is active or when the workout is not the most recent; recalculation after clearing a set;
   legacy workouts without snapshots.
 - Template progression (feature 005): per-template plans seeded on create, edit, save-from-workout and upgrade; finish, edit, resume and delete touch only the linked template plan; two templates with the same exercise progress independently; orphan sessions and unlinked live sessions; v2 to v3 migration.
+- Sport activities (feature 006): registry (known ids, `activityLabel` fallback "Activity", `validateActivity`: unknown type, future day, duration outside 1 to 1440, note over 200 chars trimmed); `ActivityRepository` create, update, delete (queues `pending_deletes`), list, watch; merged `historyEntries` newest first; stats where activities count toward This week, Week streak and weekly bars but not Total workouts, volume or progression; v3 to v4 migration keeps existing data; widget tests for the Log activity sheet, History icons and edit/delete with confirmation.
 - `previousSession` lookup; workout list with volume (per-hand ×2) and exercise names.
 - (Phase 2) Sync ordering: deletes before upserts; dirty cleared only if unchanged; failure keeps rows dirty;
   library exercises are never pushed; deleting a workout queues one server delete.
@@ -529,6 +547,7 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 ## 14. Roadmap (after v1, not in scope now)
 - Sign-in with cloud backup and restore (M7)
 - Template folders and "repeat last workout" (templates themselves exist since feature 003)
+- Sport-specific tracking (distance, pace, route, ...) for activities
 - Drop and failure set types (warm-up sets are intentionally not planned)
 - Rest-timer notifications when the app is in the background, if not done in M3
 - kg / lb setting
@@ -551,6 +570,10 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 | Rest timer default **60 s**, configurable (global default plus per-exercise override) | Owner's decision; stored in Settings and on the exercise plan |
 | Progression decided by the working sets only (1..N−1); the overload set never decides and there is no jump to a heavier lifted weight | Owner's decision (13 Nov 2026); simpler and predictable: next base is always base + increment |
 | Each template exercise has its own plan; template workouts progress the template plan, never the exercise's own plan | Owner's decision (13 Nov 2026); the same exercise can progress differently in different templates. Ad-hoc workouts keep using the exercise plan |
+| Log other sports from the Train tab ("Log activity") and show them in History | Owner's decision (13 Nov 2026); one place to log, one list to review |
+| Activities can be edited and deleted from History | Owner's decision (13 Nov 2026); same expectation as workouts, delete is confirmed |
+| Activities count toward This week, Week streak and the weekly bars; Total workouts stays gym only; never volume or progression | Owner's decision (13 Nov 2026); consistency covers all training, "workouts" stays gym |
+| Distinct icons per row in History, including a dumbbell for gym workouts | Owner's decision (13 Nov 2026); tell sports and gym apart at a glance |
 | Keep the approved dark green look | Owner's decision; Hevy is the structure model only, not the palette |
 
 ## 16. Open items
@@ -576,3 +599,8 @@ resolved on 12 Nov 2026; see the decisions log.
     plan; ad-hoc workouts keep using `exercise_state`.
   - `canRewriteBase` works per plan; orphaned sessions never change any plan. Schema v3, `stepByStep` migrations.
   - New scenarios 9 and 10 in section 11.
+- **2.3 (13 Nov 2026):** feature 006, sport activities (owner decisions of 13 Nov 2026).
+  - Lightweight logging of Functional training, Cycling, Snowboarding and Running; no sport-specific metrics.
+  - Code-level registry `lib/domain/activity_types.dart`, `ActivityRepository`, new `activities` table (schema v4,
+    `from3To4`), merged History list with icons, edit and delete.
+  - Activities count toward This week, Week streak and the weekly bars; Total workouts stays gym only.

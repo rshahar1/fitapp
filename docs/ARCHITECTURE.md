@@ -4,7 +4,7 @@
 
 - Widgets (in `lib/features/` and `lib/widgets/`) never touch the database directly.
 - Widgets read and mutate state through Riverpod providers.
-- Providers call repositories (`WorkoutRepository`, `ExerciseRepository`, `TemplateRepository`), which own all business writes and transactions.
+- Providers call repositories (`WorkoutRepository`, `ExerciseRepository`, `TemplateRepository`, `ActivityRepository`), which own all business writes and transactions.
 - Repositories use the drift database (local SQLite, source of truth); the progression logic in `lib/domain/` is pure Dart.
 - Providers live in `lib/data/providers.dart` (Riverpod 3, no codegen).
 - Read models are streams built with `watchQuery` in `lib/data/watch.dart`: it runs a loader and re-runs it whenever any table it reads is updated, so screens refresh automatically after writes.
@@ -37,6 +37,15 @@ Implementation in `WorkoutRepository`:
 - Editing a finished workout re-evaluates against the snapshot and rewrites the base if `canRewriteBase`; resume (latest finished workout only, none in progress) and delete undo progression under the same condition.
 - Legacy sessions without a snapshot use the current plan of their source only if they are the latest session of that plan; otherwise they are not re-evaluated.
 - Summary on finish lists each progressed or unchanged exercise; a workout with no logged sets is offered for discard.
+
+## Sport activities
+
+- Registry: `lib/domain/activity_types.dart` (pure Dart) holds the ordered `activityTypes` list of `ActivityType(id, label)` with stable ids `functional`, `cycling`, `snowboarding`, `running`, plus `activityTypeById`, `activityLabel` ("Activity" for unknown ids) and `validateActivity` (known type, day not in the future, duration 1 to 1440 minutes, note at most 200 chars after trimming). Rows store only `type_id`, so adding a sport is one registry entry plus one icon.
+- Icons are a UI concern: `lib/features/activities/activity_icons.dart` maps type ids to icons; gym workouts use a dumbbell icon.
+- Table `activities`: `id` (UUID), `type_id`, `started_at`, `duration_minutes` (nullable), `notes` (nullable), `updated_at`, `dirty`, index on `started_at`. Deletes are queued in `pending_deletes`.
+- `ActivityRepository` owns create, update, delete, list and watch.
+- Merged history: `WorkoutRepository.historyEntries()` merges finished workouts and activities newest first as a sealed `HistoryEntry` (`WorkoutHistoryEntry` | `ActivityHistoryEntry`), exposed by `historyEntriesProvider`. History groups it by month; tapping an activity opens the sheet to edit or delete (delete confirmed).
+- Stats: week stats use the union of finished-workout dates and activity dates, so activities count toward This week, Week streak and the Progress weekly bars. Total workouts stays gym only, the Train Recent list stays workouts only, and activities never affect volume, exercise stats or progression.
 
 ## Rest timer
 
@@ -73,8 +82,8 @@ All operations run in a drift transaction, so a failure leaves no partial state.
 
 ## Schema versioning and migration testing
 
-- `schemaVersion` is 3. Migrations use drift's generated `stepByStep` (`lib/data/db/app_database.steps.dart`): v1 to v2 creates both template tables and the `templates_name_ci` index; v2 to v3 adds the plan columns to `template_exercises` (filled from `exercise_state`) and `workout_exercises.template_exercise_id` with its index. `onCreate` creates the index too.
-- Schema dumps are in `drift_schemas/`; generated migration test helpers and tests are in `test/drift/`, plus `test/data/migration_test.dart` (upgrades keep existing workouts and sets; v3 copies exercise plans into templates).
+- `schemaVersion` is 4. Migrations use drift's generated `stepByStep` (`lib/data/db/app_database.steps.dart`): v1 to v2 creates both template tables and the `templates_name_ci` index; v2 to v3 adds the plan columns to `template_exercises` (filled from `exercise_state`) and `workout_exercises.template_exercise_id` with its index; v3 to v4 (`from3To4`) creates `activities` and its `started_at` index. `onCreate` creates the index too.
+- Schema dumps are in `drift_schemas/`; generated migration test helpers and tests are in `test/drift/`, plus `test/data/migration_test.dart` (upgrades keep existing workouts and sets; v3 copies exercise plans into templates; v4 keeps all existing data).
 - After a schema change, run `dart run drift_dev make-migrations` to produce the new dump and helpers.
 
 ## Error handling
@@ -92,7 +101,7 @@ All operations run in a drift transaction, so a failure leaves no partial state.
 ## Sync design (Phase 2)
 
 - Supabase (Postgres, Auth, RLS owner-only on every table); the server schema mirrors the local one plus `user_id`.
-- Push: replay `pending_deletes` first (sets, then workout_exercises, then workouts), then upsert dirty rows in FK order (custom exercises, exercise_state, templates, template_exercises, ...; deletes always first), clearing `dirty` only if `updated_at` is unchanged since read.
+- Push: replay `pending_deletes` first (sets, then workout_exercises, then workouts), then upsert dirty rows in FK order (custom exercises, exercise_state, templates, template_exercises, workouts, workout_exercises, sets, activities; deletes always first), clearing `dirty` only if `updated_at` is unchanged since read.
 - Failures leave rows dirty for retry; sync is silent on failure.
 - Server-side library (`owner_id IS NULL`) is readable by all; there are no friendship tables.
 - Pull/restore downloads the user's rows into the local DB on a new device; triggers are app start, foreground, and after finishing a workout.

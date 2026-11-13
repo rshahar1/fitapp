@@ -1,0 +1,288 @@
+import 'package:fitapp/app/theme/tokens.dart';
+import 'package:fitapp/core/format.dart';
+import 'package:fitapp/core/haptics.dart';
+import 'package:fitapp/data/db/app_database.dart';
+import 'package:fitapp/data/providers.dart';
+import 'package:fitapp/domain/activity_types.dart';
+import 'package:fitapp/features/activities/activity_icons.dart';
+import 'package:fitapp/widgets/guard.dart';
+import 'package:fitapp/widgets/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
+
+/// Opens the log / edit activity sheet.
+Future<void> showActivitySheet(BuildContext context, {ActivityRow? existing}) =>
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => _ActivitySheet(existing: existing),
+    );
+
+/// "45 min" / "1 h 30 min" / "2 h".
+String formatActivityMinutes(int minutes) {
+  final h = minutes ~/ 60;
+  final m = minutes % 60;
+  if (h == 0) return '$m min';
+  if (m == 0) return '$h h';
+  return '$h h $m min';
+}
+
+DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);
+
+class _ActivitySheet extends ConsumerStatefulWidget {
+  const new({required this.existing});
+
+  final ActivityRow? existing;
+
+  @override
+  ConsumerState<_ActivitySheet> createState() => _ActivitySheetState();
+}
+
+class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
+  late final _note = TextEditingController(text: widget.existing?.notes);
+  late String? _typeId = widget.existing?.typeId;
+  late DateTime _date = _day(
+    (widget.existing?.startedAt ?? ref.read(clockProvider)()).toLocal(),
+  );
+  late bool _hasDuration = widget.existing?.durationMinutes != null;
+  late int _minutes = widget.existing?.durationMinutes ?? 30;
+  bool _saving = false;
+
+  bool get _isEdit => widget.existing != null;
+
+  @override
+  void dispose() {
+    _note.dispose();
+    super.dispose();
+  }
+
+  String _dateLabel(DateTime now) {
+    final today = _day(now);
+    if (_date == today) return 'Today';
+    if (_date == today.subtract(const Duration(days: 1))) return 'Yesterday';
+    return formatDateShort(_date);
+  }
+
+  Future<void> _pickDate() async {
+    final today = _day(ref.read(clockProvider)());
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _date.isAfter(today) ? today : _date,
+      firstDate: DateTime(today.year - 5, today.month, today.day),
+      lastDate: today,
+    );
+    if (picked != null && mounted) setState(() => _date = _day(picked));
+  }
+
+  Future<void> _save() async {
+    final typeId = _typeId;
+    if (typeId == null) return;
+    final now = ref.read(clockProvider)().toLocal();
+    final existing = widget.existing;
+    final DateTime startedAt;
+    if (existing != null && _day(existing.startedAt.toLocal()) == _date) {
+      startedAt = existing.startedAt;
+    } else {
+      startedAt = DateTime(
+        _date.year,
+        _date.month,
+        _date.day,
+        now.hour,
+        now.minute,
+      );
+    }
+    final repo = ref.read(activityRepositoryProvider);
+    final duration = _hasDuration ? _minutes : null;
+    final notes = _note.text;
+    setState(() => _saving = true);
+    final ok = await guard(
+      context,
+      () => existing == null
+          ? repo.create(
+              typeId: typeId,
+              startedAt: startedAt,
+              durationMinutes: duration,
+              notes: notes,
+            )
+          : repo.update(
+              existing.id,
+              typeId: typeId,
+              startedAt: startedAt,
+              durationMinutes: duration,
+              notes: notes,
+            ),
+    );
+    if (!mounted) return;
+    setState(() => _saving = false);
+    if (ok) {
+      ref.read(hapticsProvider).success();
+      Navigator.of(context).pop();
+    }
+  }
+
+  Future<void> _delete() async {
+    final ok = await confirmDestructive(
+      context,
+      title: 'Delete activity?',
+      message: 'This activity will be deleted. This cannot be undone.',
+      confirmLabel: 'Delete',
+    );
+    if (!ok || !mounted) return;
+    final repo = ref.read(activityRepositoryProvider);
+    final done = await guard(context, () => repo.delete(widget.existing!.id));
+    if (done && mounted) Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    final now = ref.watch(clockProvider)();
+    final options = [
+      ...activityTypes,
+      if (widget.existing != null &&
+          activityTypeById(widget.existing!.typeId) == null)
+        ActivityType(widget.existing!.typeId, 'Activity'),
+    ];
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          Space.m,
+          0,
+          Space.m,
+          Space.m + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              _isEdit ? 'Edit activity' : 'Log activity',
+              style: text.titleLarge,
+            ),
+            const SizedBox(height: Space.m),
+            Wrap(
+              spacing: Space.s,
+              runSpacing: Space.s,
+              children: [
+                for (final t in options)
+                  _TypeTile(
+                    type: t,
+                    isSelected: t.id == _typeId,
+                    onTap: () => setState(() => _typeId = t.id),
+                  ),
+              ],
+            ),
+            const SizedBox(height: Space.m),
+            Group(
+              children: [
+                GroupRow(
+                  title: 'Date',
+                  trailing: Text(
+                    _dateLabel(now),
+                    style: text.bodyLarge?.copyWith(color: AppColors.accent),
+                  ),
+                  showChevron: true,
+                  onTap: _pickDate,
+                ),
+              ],
+            ),
+            const SizedBox(height: Space.m),
+            Text('DURATION', style: text.labelSmall),
+            const SizedBox(height: Space.s),
+            ChipSelector<bool>(
+              options: const [false, true],
+              selected: _hasDuration,
+              labelOf: (v) => v ? 'Set' : 'None',
+              onSelected: (v) => setState(() => _hasDuration = v),
+            ),
+            if (_hasDuration) ...[
+              const SizedBox(height: Space.m),
+              AppStepper(
+                label: 'Duration',
+                value: _minutes.toDouble(),
+                step: 5,
+                min: 5,
+                max: maxActivityMinutes.toDouble(),
+                format: (v) => formatActivityMinutes(v.toInt()),
+                onChanged: (v) => setState(() => _minutes = v.toInt()),
+              ),
+            ],
+            const SizedBox(height: Space.m),
+            TextField(
+              controller: _note,
+              maxLength: maxActivityNoteLength,
+              maxLines: 3,
+              minLines: 1,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(labelText: 'Note (optional)'),
+            ),
+            const SizedBox(height: Space.m),
+            AppButton(
+              label: 'Save',
+              expand: true,
+              onPressed: _typeId == null || _saving ? null : _save,
+            ),
+            if (_isEdit)
+              TextButton(
+                onPressed: _delete,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.danger,
+                  minimumSize: const Size.fromHeight(Sizes.tap),
+                ),
+                child: const Text('Delete'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TypeTile extends StatelessWidget {
+  const new({
+    required this.type,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final ActivityType type;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = isSelected ? AppColors.onAccent : AppColors.textPrimary;
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: type.label,
+      excludeSemantics: true,
+      onTap: onTap,
+      child: Material(
+        color: isSelected ? AppColors.accent : AppColors.surfaceHigh,
+        shape: const StadiumBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: Sizes.tap),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Space.m),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(activityIcon(type.id), size: 20, color: fg),
+                  const SizedBox(width: Space.s),
+                  Text(
+                    type.label,
+                    style: TextStyle(fontWeight: FontWeight.w700, color: fg),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

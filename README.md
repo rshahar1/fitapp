@@ -3,7 +3,8 @@
 FitApp is an offline-first gym logger for Android (Flutter) with automatic progressive overload. You set a
 plan per exercise (base weight, reps, sets, increment) and log sets during a workout; when you finish, the
 app decides whether to raise the base weight for next time. All data lives in a local SQLite database
-(drift); cloud sync is a later phase.
+(drift); cloud sync is a later phase. Besides gym workouts you can log other sports as simple activities
+(see below).
 
 ## The progression rule
 
@@ -88,9 +89,19 @@ Templates are reusable exercise lists you start in one tap from the Train tab. O
 - A workout started from a template links each exercise to its template exercise. Finishing, editing, resuming or deleting that workout progresses or undoes the template plan only. The exercise's own plan is not touched, so the same exercise in two templates progresses independently. Ad-hoc workouts, and exercises added ad hoc, keep using the exercise's own plan.
 - In the live workout, cards from a template show "· template plan" and "Edit plan" edits the template plan.
 
+## Other sport activities
+
+The Train tab has a **Log activity** button for Functional training, Cycling, Snowboarding and Running: pick
+the type and date (today by default, never in the future) and optionally a duration and a note. **History**
+lists workouts and activities together by month, with a dumbbell icon for gym workouts and a sport icon for
+activities; tap an activity to edit or delete it. Activities count toward **This week**, **Week streak** and
+the Progress weekly bars; **Total workouts** counts gym workouts only, and activities never affect volume,
+exercise stats or progression. The sports are a code-level registry in `lib/domain/activity_types.dart`;
+adding one means one registry entry plus one icon in `lib/features/activities/activity_icons.dart`.
+
 ## Database schema and migrations
 
-The schema is at version 3 (v2 adds `templates` and `template_exercises`; v3 adds the plan columns on `template_exercises` and `workout_exercises.template_exercise_id`). Migrations use drift's generated `stepByStep` helper (`lib/data/db/app_database.steps.dart`). Schema dumps live in `drift_schemas/` and the migration tests in `test/drift/` (plus `test/data/migration_test.dart`). After any schema change, regenerate the dumps and test helpers with:
+The schema is at version 4 (v2 adds `templates` and `template_exercises`; v3 adds the plan columns on `template_exercises` and `workout_exercises.template_exercise_id`; v4 adds `activities`). Migrations use drift's generated `stepByStep` helper (`lib/data/db/app_database.steps.dart`). Schema dumps live in `drift_schemas/` and the migration tests in `test/drift/` (plus `test/data/migration_test.dart`). After any schema change, regenerate the dumps and test helpers with:
 
 ```sh
 dart run drift_dev make-migrations
@@ -103,10 +114,10 @@ lib/
   main.dart
   app/                 app.dart, backdrop.dart, router.dart, theme/ (app_theme.dart, tokens.dart)
   core/                format.dart, haptics.dart, rest_alerts.dart, platform_rest_alerts.dart
-  domain/              pure Dart: progression.dart, stats.dart
+  domain/              pure Dart: progression.dart, stats.dart, activity_types.dart (sport registry)
   data/
     db/                app_database.dart, tables.dart, seed_library.dart (+ generated *.g.dart)
-    repositories/      WorkoutRepository, ExerciseRepository, SettingsRepository, TemplateRepository (template_repository.dart), plan_store.dart (PlanStore: validated plan reads/writes)
+    repositories/      WorkoutRepository, ExerciseRepository, SettingsRepository, TemplateRepository (template_repository.dart), ActivityRepository (activity_repository.dart), plan_store.dart (PlanStore: validated plan reads/writes)
     models.dart        plain data/read models
     providers.dart     Riverpod providers
     watch.dart         watchQuery: stream that re-runs a loader on table updates
@@ -114,13 +125,14 @@ lib/
     shell/             bottom-navigation shell
     train/             start/resume workout
     workout/           workout screen, rest timer, widgets/ (exercise card, set table/sheet, ...)
-    history/           finished workouts, edit/resume/delete
+    history/           workouts and activities by month, edit/resume/delete
+    activities/        log/edit activity sheet, activity_icons.dart
     progress/          overview and per-exercise detail
     exercises/         exercise picker and custom exercise sheet
     templates/         template editor screen (create/edit/reorder/delete)
     settings/          settings screen
   widgets/             shared UI kit (buttons, cards, charts, guard.dart, ...)
-drift_schemas/         drift schema dumps (v1, v2, v3)
+drift_schemas/         drift schema dumps (v1 to v4)
 test/                  unit, data, widget, drift/ (migration tests), and e2e/ (end-to-end widget test)
 integration_test/      key end-to-end flows (device/emulator)
 ```
@@ -165,6 +177,7 @@ at ~60 % of the screen height on any screen shape.
 
 - Sign-in with cloud backup and restore
 - "Repeat last workout"
+- Sport-specific tracking for activities (distance, pace, ...)
 - Drop and failure set types
 - kg / lb setting
 - Plate calculator

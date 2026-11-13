@@ -1,5 +1,13 @@
 <!--
 Sync Impact Report
+- Version change: 1.1.0 → 1.2.0 (feature 006, sport activities)
+- Modified principles: IV (`ActivityRepository` added to the repositories that own business writes);
+  VII (lightweight sport activity logging is in scope, owner request; sport-specific metrics and
+  tracking modules remain out of scope until requested)
+- Added sections: none | Removed sections: none
+- Deferred TODOs: none
+
+Previous report (1.1.0)
 - Version change: 1.0.0 → 1.1.0 (feature 005, template progression)
 - Modified principles: II (history safety is per plan; flag name `canRewriteBase`);
   IV (business writes also go through `TemplateRepository`); VII (routines/templates removed from
@@ -67,7 +75,7 @@ Rationale: correctness of history edits is subtle; only tests make refactoring s
   sync), `features/<feature>/`, `widgets/` (shared UI kit); `test/` mirrors `lib/`.
 - Widgets MUST NOT touch the database; they reach repositories through Riverpod providers.
   No business logic in widgets.
-- All business writes go through repositories (`WorkoutRepository`, `ExerciseRepository`, `TemplateRepository`).
+- All business writes go through repositories (`WorkoutRepository`, `ExerciseRepository`, `TemplateRepository`, `ActivityRepository`).
 - Colors, spacing, radii and type MUST come from the theme (tokens + `ThemeExtension`); no
   hard-coded colors or sizes in widgets.
 - Prefer Flutter/Material 3 built-ins over third-party UI kits; every added package MUST be
@@ -108,6 +116,9 @@ Rationale: a personal health log is private data; leaked keys are irreversible.
 - Explicit non-goals MUST NOT appear in code or schema: no social/friends/feed/leaderboards, no
   `visibility` or friendship columns, no warm-up sets, no set-type column or W/D/F badges, no light
   theme, no videos, no AI workouts, no ads or paid features.
+- Lightweight logging of sport activities besides gym workouts (feature 006, owner request) is in
+  scope. Sport-specific metrics and tracking modules (distance, pace, routes, ...) remain out of
+  scope until the owner requests them.
 - Phase 2 is designed for (UUIDs, `dirty`, `pending_deletes`) but not built.
 
 Rationale: the owner explicitly dropped these; speculative code is maintenance debt.
@@ -141,4 +152,4 @@ Rationale: the owner explicitly dropped these; speculative code is maintenance d
   version (MAJOR: principle removed/redefined; MINOR: principle/section added; PATCH: wording).
 - Reviews verify compliance with principles II, III and VI on every milestone.
 
-**Version**: 1.1.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-13
+**Version**: 1.2.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-13

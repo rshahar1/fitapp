@@ -111,3 +111,33 @@ class Settings extends Table {
   @override
   Set<Column<Object>> get primaryKey => {key};
 }
+
+/// A user-created workout template (feature 003).
+@DataClassName('TemplateRow')
+class Templates extends Table with SyncColumns {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get lastUsedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// An exercise in a template, in order.
+@DataClassName('TemplateExerciseRow')
+class TemplateExercises extends Table with SyncColumns {
+  TextColumn get id => text()();
+  TextColumn get templateId =>
+      text().references(Templates, #id, onDelete: KeyAction.cascade)();
+  TextColumn get exerciseId => text().references(Exercises, #id)();
+  IntColumn get position => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+
+  @override
+  List<Set<Column<Object>>> get uniqueKeys => [
+    {templateId, exerciseId},
+  ];
+}

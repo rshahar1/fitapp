@@ -14,6 +14,8 @@ part 'app_database.g.dart';
     Sets,
     PendingDeletes,
     Settings,
+    Templates,
+    TemplateExercises,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -28,7 +30,7 @@ class AppDatabase extends _$AppDatabase {
   DateTime now() => _clock().toUtc();
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -37,7 +39,12 @@ class AppDatabase extends _$AppDatabase {
       await _createIndexes();
     },
     onUpgrade: (m, from, to) async {
-      // Future migrations go here, step by step. Never drop user data.
+      // Step by step; never drop user data.
+      if (from < 2) {
+        await m.createTable(templates);
+        await m.createTable(templateExercises);
+      }
+      await _createIndexes();
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -56,6 +63,10 @@ class AppDatabase extends _$AppDatabase {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS workout_exercises_exercise '
       'ON workout_exercises (exercise_id, workout_id)',
+    );
+    await customStatement(
+      'CREATE UNIQUE INDEX IF NOT EXISTS templates_name_ci '
+      'ON templates (lower(name))',
     );
   }
 

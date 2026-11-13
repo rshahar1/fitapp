@@ -5,6 +5,7 @@ import 'package:fitapp/core/format.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/providers.dart';
+import 'package:fitapp/features/activities/activity_sheet.dart';
 import 'package:fitapp/widgets/guard.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -118,6 +119,14 @@ class TrainScreen extends ConsumerWidget {
                   ),
                 ],
               ),
+            ),
+            const SizedBox(height: Space.s),
+            AppButton(
+              label: 'Log activity',
+              expand: true,
+              icon: Icons.add,
+              variant: AppButtonVariant.secondary,
+              onPressed: () => showActivitySheet(context),
             ),
             SectionHeader(
               'Templates',

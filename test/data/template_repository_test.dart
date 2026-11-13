@@ -143,7 +143,7 @@ void main() {
       expect(() => templates.startWorkout(id), throwsStateError);
     });
 
-    test('progression is identical to a manually built workout', () async {
+    test('progresses the template plan, not the exercise plan', () async {
       await h.plan();
       final id = await templates.create(
         name: 'Chest',
@@ -155,7 +155,11 @@ void main() {
         await h.workouts.logSet(we, setNo: i + 1, weight: s.$1, reps: s.$2);
       }
       await h.workouts.finishWorkout(w);
-      expect(await h.base(), 22.5);
+      expect(await h.base(), 20);
+      expect(
+        (await templates.template(id))!.plans[inclineId]!.baseWeight,
+        22.5,
+      );
     });
   });
 

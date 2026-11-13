@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:fitapp/data/db/app_database.steps.dart';
 import 'package:fitapp/data/db/seed_library.dart' as seed;
 import 'package:fitapp/data/db/tables.dart';
 
@@ -30,7 +31,7 @@ class AppDatabase extends _$AppDatabase {
   DateTime now() => _clock().toUtc();
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -39,12 +40,32 @@ class AppDatabase extends _$AppDatabase {
       await _createIndexes();
     },
     onUpgrade: (m, from, to) async {
-      // Step by step; never drop user data.
-      if (from < 2) {
-        await m.createTable(templates);
-        await m.createTable(templateExercises);
-      }
-      await _createIndexes();
+      // Step by step against the versioned schemas; never drop user data.
+      await stepByStep(
+        from1To2: (m, schema) async {
+          await m.createTable(schema.templates);
+          await m.createTable(schema.templateExercises);
+        },
+        from2To3: (m, schema) async {
+          // Feature 005: per-template plans + session link.
+          final te = schema.templateExercises;
+          for (final c in <GeneratedColumn<Object>>[
+            te.baseWeight,
+            te.targetReps,
+            te.targetSets,
+            te.increment,
+            te.restSeconds,
+          ]) {
+            await m.addColumn(te, c);
+          }
+          await m.addColumn(
+            schema.workoutExercises,
+            schema.workoutExercises.templateExerciseId,
+          );
+          await _seedTemplatePlans();
+        },
+      )(m, from, to);
+      await _createIndexes(version: to);
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -52,7 +73,26 @@ class AppDatabase extends _$AppDatabase {
     },
   );
 
-  Future<void> _createIndexes() async {
+  /// Copies each exercise's current plan into template exercises that have
+  /// no plan yet (migration to v3).
+  Future<void> _seedTemplatePlans() async {
+    const sub =
+        'FROM exercise_state es '
+        'WHERE es.exercise_id = template_exercises.exercise_id';
+    await customStatement(
+      'UPDATE template_exercises SET '
+      'base_weight = (SELECT base_weight $sub), '
+      'target_reps = (SELECT target_reps $sub), '
+      'target_sets = (SELECT target_sets $sub), '
+      'increment = (SELECT increment $sub), '
+      'rest_seconds = (SELECT rest_seconds $sub), '
+      'dirty = 1 '
+      'WHERE base_weight IS NULL AND EXISTS (SELECT 1 $sub)',
+    );
+  }
+
+  /// Creates the indexes that exist at schema [version] (default: latest).
+  Future<void> _createIndexes({int? version}) async {
     await customStatement(
       'CREATE UNIQUE INDEX IF NOT EXISTS exercises_name_ci '
       'ON exercises (lower(name))',
@@ -67,6 +107,11 @@ class AppDatabase extends _$AppDatabase {
     await customStatement(
       'CREATE UNIQUE INDEX IF NOT EXISTS templates_name_ci '
       'ON templates (lower(name))',
+    );
+    if ((version ?? schemaVersion) < 3) return;
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS workout_exercises_template_exercise '
+      'ON workout_exercises (template_exercise_id)',
     );
   }
 

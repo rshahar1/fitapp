@@ -54,11 +54,17 @@ void main() {
       expect(await h.base(), 22.5);
     });
 
-    test('clearing a set recalculates', () async {
+    test('clearing a working set recalculates', () async {
+      final (_, we) = await h.session(_progressed);
+      await h.workouts.clearSet(we, 2);
+      expect(await h.base(), 20);
+      await h.workouts.logSet(we, setNo: 2, weight: 20, reps: 10);
+      expect(await h.base(), 22.5);
+    });
+
+    test('clearing the overload set changes nothing (owner rule)', () async {
       final (_, we) = await h.session(_progressed);
       await h.workouts.clearSet(we, 3);
-      expect(await h.base(), 20);
-      await h.workouts.logSet(we, setNo: 3, weight: 22.5, reps: 5);
       expect(await h.base(), 22.5);
     });
 

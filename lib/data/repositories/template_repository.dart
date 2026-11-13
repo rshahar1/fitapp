@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/models.dart';
+import 'package:fitapp/data/repositories/plan_store.dart';
 import 'package:fitapp/data/watch.dart';
 import 'package:uuid/uuid.dart';
 
@@ -46,9 +47,12 @@ class TemplateRepository {
     return row == null ? null : await _summary(row);
   }
 
+  /// Creates a template. Each exercise's template plan is `plans[id]` when
+  /// given, otherwise a copy of the exercise's own plan (or none).
   Future<String> create({
     required String name,
     required List<String> exerciseIds,
+    Map<String, StoredPlan> plans = const {},
   }) => _db.transaction(() async {
     final clean = await _validate(name, exerciseIds);
     final now = _db.now();
@@ -63,15 +67,18 @@ class TemplateRepository {
             updatedAt: now,
           ),
         );
-    await _writeExercises(id, _distinct(exerciseIds));
+    await _writeExercises(id, _distinct(exerciseIds), plans);
     return id;
   });
 
   /// Saves name and the complete ordered exercise list in one transaction.
+  /// New exercises get `plans[id]` or a copy of the exercise's own plan; kept
+  /// exercises change plan only when [plans] has an entry for them.
   Future<void> update(
     String id, {
     required String name,
     required List<String> exerciseIds,
+    Map<String, StoredPlan> plans = const {},
   }) => _db.transaction(() async {
     final clean = await _validate(name, exerciseIds, excludeId: id);
     await (_db.update(_db.templates)..where((t) => t.id.equals(id))).write(
@@ -81,29 +88,42 @@ class TemplateRepository {
         dirty: const Value(true),
       ),
     );
-    await _writeExercises(id, _distinct(exerciseIds));
+    await _writeExercises(id, _distinct(exerciseIds), plans);
   });
 
   Future<void> delete(String id) => _db.transaction(() async {
+    final teIds = await (_db.select(
+      _db.templateExercises,
+    )..where((t) => t.templateId.equals(id))).map((r) => r.id).get();
+    await _unlinkLiveSessions(teIds);
     await _queueDelete('templates', id);
     await (_db.delete(_db.templates)..where((t) => t.id.equals(id))).go();
   });
 
-  /// Creates a template from a workout's exercises (in workout order).
-  Future<String> saveFromWorkout(
-    String workoutId, {
-    required String name,
-  }) async {
-    final rows =
-        await (_db.select(_db.workoutExercises)
-              ..where((t) => t.workoutId.equals(workoutId))
-              ..orderBy([(t) => OrderingTerm.asc(t.position)]))
-            .get();
-    return await create(
-      name: name,
-      exerciseIds: [for (final r in rows) r.exerciseId],
-    );
-  }
+  /// Creates a template from a workout's exercises (in workout order). Each
+  /// plan is seeded from the plan that session currently uses.
+  Future<String> saveFromWorkout(String workoutId, {required String name}) =>
+      _db.transaction(() async {
+        final rows =
+            await (_db.select(_db.workoutExercises)
+                  ..where((t) => t.workoutId.equals(workoutId))
+                  ..orderBy([(t) => OrderingTerm.asc(t.position)]))
+                .get();
+        final plans = <String, StoredPlan>{};
+        for (final r in rows) {
+          final teId = r.templateExerciseId;
+          final te = teId == null ? null : await _db.templateExercise(teId);
+          final plan = te != null
+              ? StoredPlan.ofTemplate(te)
+              : await _db.exercisePlan(r.exerciseId);
+          if (plan != null) plans.putIfAbsent(r.exerciseId, () => plan);
+        }
+        return await create(
+          name: name,
+          exerciseIds: [for (final r in rows) r.exerciseId],
+          plans: plans,
+        );
+      });
 
   /// Starts a live workout with the template's exercises, all or nothing.
   Future<String> startWorkout(String templateId) => _db.transaction(() async {
@@ -113,8 +133,15 @@ class TemplateRepository {
     if (active.isNotEmpty) {
       throw StateError('A workout is already in progress');
     }
-    final summary = await template(templateId);
-    if (summary == null) throw StateError('Template not found');
+    if (await template(templateId) == null) {
+      throw StateError('Template not found');
+    }
+    final te = _db.templateExercises;
+    final items =
+        await (_db.select(te)
+              ..where((t) => t.templateId.equals(templateId))
+              ..orderBy([(t) => OrderingTerm.asc(t.position)]))
+            .get();
     final now = _db.now();
     final workoutId = _uuid.v4();
     await _db
@@ -126,16 +153,17 @@ class TemplateRepository {
             updatedAt: now,
           ),
         );
-    for (final (i, e) in summary.exercises.indexed) {
+    for (final (i, item) in items.indexed) {
       await _db
           .into(_db.workoutExercises)
           .insert(
             WorkoutExercisesCompanion.insert(
               id: _uuid.v4(),
               workoutId: workoutId,
-              exerciseId: e.id,
+              exerciseId: item.exerciseId,
               position: i,
               updatedAt: now,
+              templateExerciseId: Value(item.id),
             ),
           );
     }
@@ -159,11 +187,15 @@ class TemplateRepository {
     final q = _db.select(te).join([innerJoin(e, e.id.equalsExp(te.exerciseId))])
       ..where(te.templateId.equals(row.id))
       ..orderBy([OrderingTerm.asc(te.position)]);
-    final exercises = [for (final r in await q.get()) r.readTable(e)];
+    final rows = await q.get();
     return TemplateSummary(
       id: row.id,
       name: row.name,
-      exercises: exercises,
+      exercises: [for (final r in rows) r.readTable(e)],
+      plans: {
+        for (final r in rows)
+          r.readTable(te).exerciseId: StoredPlan.ofTemplate(r.readTable(te)),
+      },
       createdAt: row.createdAt,
       lastUsedAt: row.lastUsedAt,
     );
@@ -197,12 +229,20 @@ class TemplateRepository {
 
   /// Diffs the template's rows against [ids]: deletes removed rows (queued
   /// for sync), re-positions kept rows, inserts new ones.
-  Future<void> _writeExercises(String templateId, List<String> ids) async {
+  Future<void> _writeExercises(
+    String templateId,
+    List<String> ids,
+    Map<String, StoredPlan> plans,
+  ) async {
     final existing = await (_db.select(
       _db.templateExercises,
     )..where((t) => t.templateId.equals(templateId))).get();
     final byExercise = {for (final r in existing) r.exerciseId: r};
     final now = _db.now();
+    await _unlinkLiveSessions([
+      for (final r in existing)
+        if (!ids.contains(r.exerciseId)) r.id,
+    ]);
     for (final r in existing) {
       if (!ids.contains(r.exerciseId)) {
         await _queueDelete('template_exercises', r.id);
@@ -214,18 +254,31 @@ class TemplateRepository {
     for (final (i, exerciseId) in ids.indexed) {
       final row = byExercise[exerciseId];
       if (row == null) {
+        final given = plans[exerciseId];
+        final plan = given == null
+            ? await _db.exercisePlan(exerciseId)
+            : _db.validatedPlan(given);
+        final id = _uuid.v4();
         await _db
             .into(_db.templateExercises)
             .insert(
               TemplateExercisesCompanion.insert(
-                id: _uuid.v4(),
+                id: id,
                 templateId: templateId,
                 exerciseId: exerciseId,
                 position: i,
                 updatedAt: now,
               ),
             );
-      } else if (row.position != i) {
+        if (plan != null) await _db.writeTemplatePlan(id, plan);
+        continue;
+      }
+      final given = plans[exerciseId];
+      if (given != null &&
+          _db.validatedPlan(given) != StoredPlan.ofTemplate(row)) {
+        await _db.writeTemplatePlan(row.id, given);
+      }
+      if (row.position != i) {
         await (_db.update(
           _db.templateExercises,
         )..where((t) => t.id.equals(row.id))).write(
@@ -237,6 +290,31 @@ class TemplateRepository {
         );
       }
     }
+  }
+
+  /// Template exercises [teIds] are going away: sessions of unfinished
+  /// workouts that still have no snapshot fall back to the exercise's own
+  /// plan. Everything else keeps the (then dangling) link and never rewrites
+  /// a plan (research R3).
+  Future<void> _unlinkLiveSessions(List<String> teIds) async {
+    if (teIds.isEmpty) return;
+    final we = _db.workoutExercises;
+    final live = _db.selectOnly(_db.workouts)
+      ..addColumns([_db.workouts.id])
+      ..where(_db.workouts.endedAt.isNull());
+    await (_db.update(we)..where(
+          (t) =>
+              t.templateExerciseId.isIn(teIds) &
+              t.planBaseWeight.isNull() &
+              t.workoutId.isInQuery(live),
+        ))
+        .write(
+          WorkoutExercisesCompanion(
+            templateExerciseId: const Value(null),
+            updatedAt: Value(_db.now()),
+            dirty: const Value(true),
+          ),
+        );
   }
 
   Future<void> _queueDelete(String table, String id) => _db

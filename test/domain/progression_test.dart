@@ -109,23 +109,49 @@ void main() {
       final e = evaluate(plan(), [s(1, 17.5, 10), s(2, 20, 10), s(3, 22.5, 6)]);
       expect(e.reason, EvalReason.missedReps);
     });
-    test(
-      'heavier than prescribed overload sets next base to lifted weight',
-      () {
-        final e = evaluate(plan(), [s(1, 20, 10), s(2, 20, 10), s(3, 25, 3)]);
-        expect(e.nextBaseWeight, 25);
-      },
-    );
-    test('overload missing', () {
-      final e = evaluate(plan(), [s(1, 20, 10), s(2, 20, 10)]);
-      expect(e.reason, EvalReason.noOverloadSet);
-      expect(e.reason.code, 'no_overload_set');
-      expect(e.nextBaseWeight, 20);
+    test('heavier overload set does not change the result (base + inc)', () {
+      final e = evaluate(plan(), [s(1, 20, 10), s(2, 20, 10), s(3, 25, 3)]);
+      expect(e.reason, EvalReason.progressed);
+      expect(e.nextBaseWeight, 22.5);
     });
-    test('overload not heavier', () {
-      final e = evaluate(plan(), [s(1, 20, 10), s(2, 20, 10), s(3, 20, 12)]);
-      expect(e.reason, EvalReason.overloadNotHeavier);
-      expect(e.reason.code, 'overload_not_heavier');
+    test('overload set not logged still progresses', () {
+      final e = evaluate(plan(), [s(1, 20, 10), s(2, 20, 10)]);
+      expect(e.reason, EvalReason.progressed);
+      expect(e.nextBaseWeight, 22.5);
+    });
+    test('overload set lighter than base still progresses', () {
+      final e = evaluate(plan(), [s(1, 20, 10), s(2, 20, 10), s(3, 15, 4)]);
+      expect(e.reason, EvalReason.progressed);
+      expect(e.nextBaseWeight, 22.5);
+    });
+    test('owner example: cable fly 20 kg, +2.5 -> 22.5', () {
+      final e = evaluate(plan(), [s(1, 20, 10), s(2, 20, 10), s(3, 22.5, 0)]);
+      expect(e.nextBaseWeight, 22.5);
+    });
+    test('next base uses the chosen increment and is rounded', () {
+      final e = evaluate(plan(base: 100, inc: 5), [
+        s(1, 100, 10),
+        s(2, 100, 10),
+      ]);
+      expect(e.nextBaseWeight, 105);
+      final f = evaluate(plan(base: 19.9, inc: 1), [
+        s(1, 20, 10),
+        s(2, 20, 10),
+      ]);
+      expect(f.nextBaseWeight, 21);
+    });
+    test('2-set plan: only set 1 decides', () {
+      final e = evaluate(plan(sets: 2), [s(1, 20, 10)]);
+      expect(e.reason, EvalReason.progressed);
+      expect(e.nextBaseWeight, 22.5);
+      expect(evaluate(plan(sets: 2), const []).reason, EvalReason.incomplete);
+    });
+    test('only three reasons exist', () {
+      expect(EvalReason.values.map((r) => r.code), [
+        'incomplete',
+        'missed_reps',
+        'progressed',
+      ]);
     });
     test('working set missing', () {
       final e = evaluate(plan(), [s(1, 20, 10), s(3, 22.5, 10)]);
@@ -149,13 +175,9 @@ void main() {
       ]);
       expect(e.nextBaseWeight, 22.5);
     });
-    test('overload weight is rounded', () {
-      final e = evaluate(plan(), [
-        s(1, 20, 10),
-        s(2, 20, 10),
-        s(3, 0.1 + 0.2 + 22.2, 6),
-      ]);
-      expect(e.nextBaseWeight, 22.5);
+    test('working set weight is rounded before comparing', () {
+      final e = evaluate(plan(), [s(1, 0.1 + 0.2 + 19.7, 10), s(2, 20, 10)]);
+      expect(e.reason, EvalReason.progressed);
     });
     test('scenario 2: missed reps keeps 22.5', () {
       final e = evaluate(plan(base: 22.5), [
@@ -181,7 +203,7 @@ void main() {
     test('latest and matching -> true', () {
       expect(
         canRewriteBase(
-          isLatestSessionForExercise: true,
+          isLatestSessionForPlan: true,
           currentBase: 22.5,
           resultBaseWeight: 22.5,
         ),
@@ -191,7 +213,7 @@ void main() {
     test('matching after rounding -> true', () {
       expect(
         canRewriteBase(
-          isLatestSessionForExercise: true,
+          isLatestSessionForPlan: true,
           currentBase: 0.1 + 0.2 + 22.2,
           resultBaseWeight: 22.5,
         ),
@@ -201,7 +223,7 @@ void main() {
     test('plan edited since -> false', () {
       expect(
         canRewriteBase(
-          isLatestSessionForExercise: true,
+          isLatestSessionForPlan: true,
           currentBase: 30,
           resultBaseWeight: 22.5,
         ),
@@ -211,7 +233,7 @@ void main() {
     test('not latest -> false', () {
       expect(
         canRewriteBase(
-          isLatestSessionForExercise: false,
+          isLatestSessionForPlan: false,
           currentBase: 22.5,
           resultBaseWeight: 22.5,
         ),
@@ -221,7 +243,7 @@ void main() {
     test('never applied -> false', () {
       expect(
         canRewriteBase(
-          isLatestSessionForExercise: true,
+          isLatestSessionForPlan: true,
           currentBase: 22.5,
           resultBaseWeight: null,
         ),

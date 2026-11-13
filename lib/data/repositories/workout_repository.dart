@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:drift/drift.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/models.dart';
+import 'package:fitapp/data/repositories/plan_store.dart';
 import 'package:fitapp/data/watch.dart';
 import 'package:fitapp/domain/progression.dart';
 import 'package:fitapp/domain/stats.dart';
@@ -200,9 +201,9 @@ class WorkoutRepository {
         for (final we in wes) {
           final sets = setsByWe[we.id]!;
           if (sets.isEmpty) continue;
-          final current = await _currentPlan(we.exerciseId);
-          final plan =
-              snapshotOf(we) ?? (current == null ? null : planFromRow(current));
+          final source = await _sourceOf(we);
+          final current = await _planOf(source);
+          final plan = snapshotOf(we) ?? current?.toPlan();
           if (plan == null) continue;
           final result = evaluate(plan, sets.map(loggedFromRow));
           await _writeSnapshot(we.id, plan, result.nextBaseWeight);
@@ -210,7 +211,7 @@ class WorkoutRepository {
           if (current != null &&
               result.progressed &&
               roundWeight(current.baseWeight) == plan.baseWeight) {
-            await _setBase(we.exerciseId, result.nextBaseWeight);
+            await _setBase(source, result.nextBaseWeight);
             toBase = result.nextBaseWeight;
           }
           outcomes.add(
@@ -290,6 +291,22 @@ class WorkoutRepository {
     await _deleteWorkoutRows(workoutId);
   });
 
+  /// Creates or replaces the plan this session uses: the exercise's own plan
+  /// for an ad-hoc session, the template exercise's plan for a template
+  /// session (feature 005). Throws [StateError] for an orphaned session.
+  Future<void> savePlan(String workoutExerciseId, StoredPlan plan) =>
+      _db.transaction(() async {
+        final source = await _sourceOf(await _we(workoutExerciseId));
+        switch (source.kind) {
+          case PlanSourceKind.exercise:
+            await _db.writeExercisePlan(source.exerciseId, plan);
+          case PlanSourceKind.template:
+            await _db.writeTemplatePlan(source.templateExerciseId!, plan);
+          case PlanSourceKind.orphan:
+            throw StateError('This template exercise no longer exists');
+        }
+      });
+
   /// Re-evaluates one session of a finished workout (after an edit).
   Future<void> recalculate(String workoutExerciseId) =>
       _db.transaction(() => _recalculate(workoutExerciseId));
@@ -309,7 +326,8 @@ class WorkoutRepository {
     final details = <WorkoutExerciseDetail>[];
     for (final we in await _wesOf(workoutId)) {
       final exercise = await _exercise(we.exerciseId);
-      final plan = await _currentPlan(we.exerciseId);
+      final source = await _sourceOf(we);
+      final plan = await _planOf(source);
       final prev = await previousSession(we.exerciseId, before: workout);
       details.add(
         WorkoutExerciseDetail(
@@ -319,6 +337,7 @@ class WorkoutRepository {
           sets: await _setsOf(we.id),
           previous: prev,
           restSeconds: plan?.restSeconds,
+          planSource: source.kind,
         ),
       );
     }
@@ -420,8 +439,9 @@ class WorkoutRepository {
     final we = await _we(workoutExerciseId);
     final workout = await _workout(we.workoutId);
     if (workout.endedAt == null) return; // live workouts evaluate on finish
-    final current = await _currentPlan(we.exerciseId);
-    final isLatest = await _isLatestSession(we.exerciseId, we.workoutId);
+    final source = await _sourceOf(we);
+    final current = await _planOf(source);
+    final isLatest = await _isLatestSession(source, we.workoutId);
     final snapshot = snapshotOf(we);
     final Plan plan;
     final double? oldResult;
@@ -432,7 +452,7 @@ class WorkoutRepository {
       // Legacy session without a snapshot: use the current plan, only if this
       // is the latest session. Its result is assumed to be the current base.
       if (current == null || !isLatest) return;
-      plan = planFromRow(current);
+      plan = current.toPlan();
       oldResult = current.baseWeight;
     }
     final sets = await _setsOf(we.id);
@@ -440,12 +460,12 @@ class WorkoutRepository {
     final rewrite =
         current != null &&
         canRewriteBase(
-          isLatestSessionForExercise: isLatest,
+          isLatestSessionForPlan: isLatest,
           currentBase: current.baseWeight,
           resultBaseWeight: oldResult,
         );
     await _writeSnapshot(we.id, plan, result.nextBaseWeight);
-    if (rewrite) await _setBase(we.exerciseId, result.nextBaseWeight);
+    if (rewrite) await _setBase(source, result.nextBaseWeight);
   }
 
   /// Restores the snapshot base if this session's progression is still the
@@ -453,25 +473,53 @@ class WorkoutRepository {
   Future<void> _undoProgression(WorkoutExerciseRow we) async {
     final snapshot = snapshotOf(we);
     if (snapshot == null) return;
-    final current = await _currentPlan(we.exerciseId);
+    final source = await _sourceOf(we);
+    final current = await _planOf(source);
     if (current == null) return;
-    final isLatest = await _isLatestSession(we.exerciseId, we.workoutId);
+    final isLatest = await _isLatestSession(source, we.workoutId);
     if (canRewriteBase(
-      isLatestSessionForExercise: isLatest,
+      isLatestSessionForPlan: isLatest,
       currentBase: current.baseWeight,
       resultBaseWeight: we.resultBaseWeight,
     )) {
-      await _setBase(we.exerciseId, snapshot.baseWeight);
+      await _setBase(source, snapshot.baseWeight);
     }
   }
 
-  /// Whether [workoutId] is the latest finished workout containing
-  /// [exerciseId] (by start time, then id).
-  Future<bool> _isLatestSession(String exerciseId, String workoutId) async {
+  /// Resolves which plan [we] uses and progresses (feature 005).
+  Future<_PlanSource> _sourceOf(WorkoutExerciseRow we) async {
+    final teId = we.templateExerciseId;
+    if (teId == null) return _PlanSource.exercise(we.exerciseId);
+    final te = await _db.templateExercise(teId);
+    return te == null
+        ? _PlanSource.orphan(we.exerciseId, teId)
+        : _PlanSource.template(we.exerciseId, teId);
+  }
+
+  Future<StoredPlan?> _planOf(_PlanSource source) async {
+    switch (source.kind) {
+      case PlanSourceKind.exercise:
+        return await _db.exercisePlan(source.exerciseId);
+      case PlanSourceKind.template:
+        final te = await _db.templateExercise(source.templateExerciseId!);
+        return te == null ? null : StoredPlan.ofTemplate(te);
+      case PlanSourceKind.orphan:
+        return null;
+    }
+  }
+
+  /// Whether [workoutId] is the latest finished workout with a session of
+  /// [source] (by start time, then id). Ad-hoc sessions of an exercise and
+  /// sessions of each template exercise are separate histories.
+  Future<bool> _isLatestSession(_PlanSource source, String workoutId) async {
     final w = _db.workouts;
     final we = _db.workoutExercises;
+    final ofSource = source.kind == PlanSourceKind.exercise
+        ? we.exerciseId.equals(source.exerciseId) &
+              we.templateExerciseId.isNull()
+        : we.templateExerciseId.equals(source.templateExerciseId!);
     final q = _db.select(w).join([innerJoin(we, we.workoutId.equalsExp(w.id))])
-      ..where(we.exerciseId.equals(exerciseId) & w.endedAt.isNotNull())
+      ..where(ofSource & w.endedAt.isNotNull())
       ..orderBy([OrderingTerm.desc(w.startedAt), OrderingTerm.desc(w.id)])
       ..limit(1);
     final row = await q.getSingleOrNull();
@@ -501,16 +549,34 @@ class WorkoutRepository {
         ),
       );
 
-  Future<void> _setBase(String exerciseId, double base) =>
-      (_db.update(
-        _db.exerciseState,
-      )..where((p) => p.exerciseId.equals(exerciseId))).write(
-        ExerciseStateCompanion(
-          baseWeight: Value(roundWeight(base)),
-          updatedAt: Value(_db.now()),
-          dirty: const Value(true),
-        ),
-      );
+  Future<void> _setBase(_PlanSource source, double base) async {
+    final b = Value(roundWeight(base));
+    final ts = Value(_db.now());
+    switch (source.kind) {
+      case PlanSourceKind.exercise:
+        await (_db.update(
+          _db.exerciseState,
+        )..where((p) => p.exerciseId.equals(source.exerciseId))).write(
+          ExerciseStateCompanion(
+            baseWeight: b,
+            updatedAt: ts,
+            dirty: const Value(true),
+          ),
+        );
+      case PlanSourceKind.template:
+        await (_db.update(
+          _db.templateExercises,
+        )..where((t) => t.id.equals(source.templateExerciseId!))).write(
+          TemplateExercisesCompanion(
+            baseWeight: b,
+            updatedAt: ts,
+            dirty: const Value(true),
+          ),
+        );
+      case PlanSourceKind.orphan:
+        break; // never rewrites any plan
+    }
+  }
 
   Future<void> _deleteWorkoutRows(String workoutId) async {
     await _queueDelete('workouts', workoutId);
@@ -535,8 +601,7 @@ class WorkoutRepository {
   Future<Plan?> _effectivePlan(WorkoutExerciseRow we) async {
     final snapshot = snapshotOf(we);
     if (snapshot != null) return snapshot;
-    final current = await _currentPlan(we.exerciseId);
-    return current == null ? null : planFromRow(current);
+    return (await _planOf(await _sourceOf(we)))?.toPlan();
   }
 
   Future<WorkoutRow> _workout(String id) =>
@@ -549,10 +614,6 @@ class WorkoutRepository {
   Future<ExerciseRow> _exercise(String id) =>
       (_db.select(_db.exercises)..where((e) => e.id.equals(id))).getSingle();
 
-  Future<PlanRow?> _currentPlan(String exerciseId) => (_db.select(
-    _db.exerciseState,
-  )..where((p) => p.exerciseId.equals(exerciseId))).getSingleOrNull();
-
   Future<List<WorkoutExerciseRow>> _wesOf(String workoutId) =>
       (_db.select(_db.workoutExercises)
             ..where((t) => t.workoutId.equals(workoutId))
@@ -564,4 +625,19 @@ class WorkoutRepository {
             ..where((s) => s.workoutExerciseId.equals(weId))
             ..orderBy([(s) => OrderingTerm.asc(s.setNo)]))
           .get();
+}
+
+/// The plan a workout exercise uses (feature 005).
+class _PlanSource {
+  const new exercise(this.exerciseId)
+    : kind = PlanSourceKind.exercise,
+      templateExerciseId = null;
+  const new template(this.exerciseId, String this.templateExerciseId)
+    : kind = PlanSourceKind.template;
+  const new orphan(this.exerciseId, String this.templateExerciseId)
+    : kind = PlanSourceKind.orphan;
+
+  final PlanSourceKind kind;
+  final String exerciseId;
+  final String? templateExerciseId;
 }

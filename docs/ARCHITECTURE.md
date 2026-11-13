@@ -17,17 +17,25 @@ widget -> provider (lib/data/providers.dart) -> repository -> drift (SQLite)
 
 ## Progression and edit rules
 
-Rules follow PRD sections 4.2 to 4.4. The evaluation itself (`lib/domain/progression.dart`) is pure Dart: sets 1..N-1 at base, set N at base + increment, weights rounded to 0.25 kg. Checked in order: working set missing gives `incomplete`; working set under target reps or under base weight gives `missed_reps`; overload set missing gives `no_overload_set`; overload weight <= base gives `overload_not_heavier`; otherwise next base is the weight lifted on set N (`progressed`). Overload-set reps do not matter, and exercises without a plan never progress.
+Rules follow PRD sections 4.2 to 4.4. The evaluation itself (`lib/domain/progression.dart`) is pure Dart: sets 1..N-1 at base, set N at base + increment, weights rounded to 0.25 kg. Only the working sets decide. Checked in order: working set missing gives `incomplete`; working set under target reps or under base weight gives `missed_reps`; otherwise `progressed` with next base `roundWeight(base + increment)`. The overload set never affects the result, and exercises without a plan never progress.
+
+### Plan sources
+
+A plan lives in one of two places, and each workout exercise resolves to one source:
+
+- **Exercise plan**: `exercise_state`, used by ad-hoc workouts and exercises added ad hoc.
+- **Template plan**: the plan on a `template_exercises` row. A workout started from a template sets `workout_exercises.template_exercise_id` (nullable, indexed, no FK) on each exercise.
+- **Orphan**: the template exercise was deleted. Its finished sessions never change any plan. A live session with no snapshot is unlinked and falls back to the exercise plan.
+
+Template workouts never update the exercise's own plan. `PlanStore` (`lib/data/repositories/plan_store.dart`, an extension used by the repositories) does the validated reads and writes for both kinds (`StoredPlan`, `PlanSourceKind` in `lib/data/models.dart`); `WorkoutRepository.savePlan(workoutExerciseId, StoredPlan)` writes to the source of that workout exercise.
 
 Implementation in `WorkoutRepository`:
 
-
-- On finish (transactional), for each planned exercise with logged sets: `plan = snapshot ?? currentPlan`, evaluate, store a snapshot (plan base, reps, sets, increment, `resultBaseWeight`), then advance the current base if progressed.
-- The current base is advanced only if it still equals `plan.baseWeight`, so a hand-edited base is never overwritten.
-- `canRewriteBase` is true only if the workout is the latest finished session containing that exercise and the current base equals the `resultBaseWeight` it produced (after rounding).
+- On finish (transactional), for each planned exercise with logged sets: `plan = snapshot ?? current plan of its source`, evaluate, store a snapshot (plan base, reps, sets, increment, `resultBaseWeight`), then advance the base of that source if progressed.
+- The base is advanced only if it still equals `plan.baseWeight`, so a hand-edited base is never overwritten.
+- `canRewriteBase(isLatestSessionForPlan, currentBase, resultBaseWeight)` is true only if the workout is the latest finished session of the same plan (ad-hoc sessions of that exercise, or sessions of that template exercise) and the current base equals the `resultBaseWeight` it produced (after rounding).
 - Editing a finished workout re-evaluates against the snapshot and rewrites the base if `canRewriteBase`; resume (latest finished workout only, none in progress) and delete undo progression under the same condition.
-
-- Legacy sessions without a snapshot use the current plan only if they are the latest session of that exercise; otherwise they are not re-evaluated.
+- Legacy sessions without a snapshot use the current plan of their source only if they are the latest session of that plan; otherwise they are not re-evaluated.
 - Summary on finish lists each progressed or unchanged exercise; a workout with no logged sets is offered for discard.
 
 ## Rest timer
@@ -48,23 +56,25 @@ Implementation in `WorkoutRepository`:
 ## Data model: templates
 
 - `templates`: `id`, `name` (trimmed, 1 to 40 chars, unique ignoring case via the `templates_name_ci` index on lower(name)), `created_at`, `last_used_at` (nullable), plus sync columns (`updated_at`, `dirty`).
-- `template_exercises`: `id`, `template_id` (FK, ON DELETE CASCADE), `exercise_id` (FK), `position`, sync columns; `UNIQUE(template_id, exercise_id)`.
+- `template_exercises`: `id`, `template_id` (FK, ON DELETE CASCADE), `exercise_id` (FK), `position`, sync columns; `UNIQUE(template_id, exercise_id)`; plan columns `base_weight`, `target_reps`, `target_sets`, `increment`, `rest_seconds` (all nullable; null means no plan yet).
+- `workout_exercises.template_exercise_id`: nullable, indexed, no FK; links a workout exercise to the template plan it uses.
 
 ### TemplateRepository
 
 All operations run in a drift transaction, so a failure leaves no partial state.
 
+- Each template exercise is seeded with a copy of the exercise's own plan when added (`create`, `update`, `saveFromWorkout` copies the plan the session used).
 - `create`: validates the name (empty, too long, `DuplicateTemplateName`) and at least one exercise, drops duplicate exercise ids, inserts the template and its rows.
 - `update`: validates, renames and writes the full ordered list as a diff against existing rows: removed rows are deleted and queued in `pending_deletes`, kept rows are re-positioned, new rows inserted.
 - `delete`: queues the template in `pending_deletes` and deletes it (child rows cascade); workouts are untouched.
 - `saveFromWorkout`: creates a template from a workout's exercises in workout order.
-- `startWorkout`: all or nothing; throws `StateError` if a workout is in progress or the template is missing, otherwise creates the workout with its exercises in order and sets `last_used_at`.
+- `startWorkout`: all or nothing, links each workout exercise to its template exercise; throws `StateError` if a workout is in progress or the template is missing, otherwise creates the workout with its exercises in order and sets `last_used_at`.
 - `list` orders by `last_used_at` desc (nulls last), then `created_at` desc.
 
 ## Schema versioning and migration testing
 
-- `schemaVersion` is 2. `onUpgrade` from < 2 creates both template tables and the `templates_name_ci` index; `onCreate` creates the index too.
-- Schema dumps are in `drift_schemas/`; generated migration test helpers and tests are in `test/drift/`, plus `test/data/migration_test.dart` (v1 to v2 keeps existing workouts and sets).
+- `schemaVersion` is 3. Migrations use drift's generated `stepByStep` (`lib/data/db/app_database.steps.dart`): v1 to v2 creates both template tables and the `templates_name_ci` index; v2 to v3 adds the plan columns to `template_exercises` (filled from `exercise_state`) and `workout_exercises.template_exercise_id` with its index. `onCreate` creates the index too.
+- Schema dumps are in `drift_schemas/`; generated migration test helpers and tests are in `test/drift/`, plus `test/data/migration_test.dart` (upgrades keep existing workouts and sets; v3 copies exercise plans into templates).
 - After a schema change, run `dart run drift_dev make-migrations` to produce the new dump and helpers.
 
 ## Error handling

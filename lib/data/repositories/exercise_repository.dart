@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/models.dart';
+import 'package:fitapp/data/repositories/plan_store.dart';
 import 'package:fitapp/data/watch.dart';
 import 'package:fitapp/domain/progression.dart';
 import 'package:uuid/uuid.dart';
@@ -85,31 +86,20 @@ class ExerciseRepository {
     required int targetSets,
     required double increment,
     int? restSeconds,
-  }) async {
-    final plan = Plan(
+  }) => _db.writeExercisePlan(
+    exerciseId,
+    StoredPlan(
       baseWeight: baseWeight,
       targetReps: targetReps,
       targetSets: targetSets,
       increment: increment,
-    );
-    if (restSeconds != null && (restSeconds < 10 || restSeconds > 600)) {
-      throw ArgumentError.value(restSeconds, 'restSeconds', '10..600');
-    }
-    await _db
-        .into(_db.exerciseState)
-        .insertOnConflictUpdate(
-          ExerciseStateCompanion.insert(
-            exerciseId: exerciseId,
-            baseWeight: plan.baseWeight,
-            targetReps: plan.targetReps,
-            targetSets: plan.targetSets,
-            increment: plan.increment,
-            restSeconds: Value(restSeconds),
-            updatedAt: _db.now(),
-            dirty: const Value(true),
-          ),
-        );
-  }
+      restSeconds: restSeconds,
+    ),
+  );
+
+  /// Creates or replaces the plan from a [StoredPlan].
+  Future<void> writePlan(String exerciseId, StoredPlan plan) =>
+      _db.writeExercisePlan(exerciseId, plan);
 
   Stream<List<TrainedExercise>> watchTrainedExercises() =>
       watchQuery(_db, trainedExercises);

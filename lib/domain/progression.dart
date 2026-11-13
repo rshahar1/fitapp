@@ -42,7 +42,8 @@ class Plan {
   /// Number of sets N; set N is the overload set.
   final int targetSets;
 
-  /// Added to [baseWeight] for the overload set.
+  /// Added to [baseWeight] for the overload set and when the plan
+  /// progresses.
   final double increment;
 
   /// Weight prescribed for the overload set.
@@ -154,12 +155,6 @@ enum EvalReason {
   /// A working set missed reps or was lighter than base.
   missedReps('missed_reps'),
 
-  /// The overload set was not logged.
-  noOverloadSet('no_overload_set'),
-
-  /// The overload set was not heavier than base.
-  overloadNotHeavier('overload_not_heavier'),
-
   /// The base weight goes up.
   progressed('progressed');
 
@@ -191,9 +186,11 @@ class Evaluation {
   String toString() => 'Evaluation(${reason.code}, next: $nextBaseWeight)';
 }
 
-/// Evaluates logged [sets] against [plan] (PRD §4.2). Order-independent;
-/// sets beyond N are ignored. If a set number appears more than once the last
-/// one wins.
+/// Evaluates logged [sets] against [plan] (PRD §4.2, owner rule of
+/// 2026-11-13): only the working sets 1..N-1 decide. When each is logged at
+/// >= base with >= target reps the base goes up by the plan's increment; the
+/// overload set N never affects the result. Order-independent; sets beyond
+/// N-1 are ignored. If a set number appears more than once the last one wins.
 Evaluation evaluate(Plan plan, Iterable<LoggedSet> sets) {
   final bySetNo = <int, LoggedSet>{for (final s in sets) s.setNo: s};
   final base = plan.baseWeight;
@@ -207,24 +204,22 @@ Evaluation evaluate(Plan plan, Iterable<LoggedSet> sets) {
   )) {
     return stay(EvalReason.missedReps);
   }
-  final overload = bySetNo[plan.targetSets];
-  if (overload == null) return stay(EvalReason.noOverloadSet);
-  final lifted = roundWeight(overload.weight);
-  if (lifted <= base) return stay(EvalReason.overloadNotHeavier);
   return Evaluation(
     progressed: true,
-    nextBaseWeight: lifted,
+    nextBaseWeight: plan.overloadWeight,
     reason: EvalReason.progressed,
   );
 }
 
 /// Whether editing, resuming or deleting a finished workout may rewrite the
-/// current base weight (PRD §4.4).
+/// current base weight of the plan the session progressed (PRD §4.4). Each
+/// plan (an exercise's own plan or a template exercise's plan) is judged on
+/// its own sessions.
 bool canRewriteBase({
-  required bool isLatestSessionForExercise,
+  required bool isLatestSessionForPlan,
   required double currentBase,
   required double? resultBaseWeight,
 }) =>
-    isLatestSessionForExercise &&
+    isLatestSessionForPlan &&
     resultBaseWeight != null &&
     roundWeight(currentBase) == roundWeight(resultBaseWeight);

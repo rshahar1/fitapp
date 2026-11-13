@@ -8,17 +8,19 @@ app decides whether to raise the base weight for next time. All data lives in a 
 ## The progression rule
 
 For a plan `{base, reps, sets = N, inc}`: sets 1..N-1 use `base`; set N uses `base + inc` (the overload
-set). Weights are rounded to 0.25 kg. On finish, checked in order:
+set). Weights are rounded to 0.25 kg. Only the working sets 1..N-1 decide. On finish, checked in order:
 
 | Condition | Result | Reason |
 |---|---|---|
 | A working set (1..N-1) not logged | base unchanged | `incomplete` |
 | A working set with reps < target or weight < base | base unchanged | `missed_reps` |
-| Overload set (N) not logged | base unchanged | `no_overload_set` |
-| Overload set weight <= base | base unchanged | `overload_not_heavier` |
-| Otherwise | next base = weight lifted on set N | `progressed` |
+| Every working set logged at weight >= base with reps >= target | next base = `roundWeight(base + inc)` | `progressed` |
 
-Reps on the overload set do not matter. Exercises without a plan are logged but never progressed.
+The overload set is still prescribed at `base + inc` and marked with an up arrow, but skipping or failing it never
+changes the result, and lifting more than prescribed does not make the base jump. Exercises without a plan are
+logged but never progressed.
+
+A plan is either the exercise's own plan (ad-hoc workouts) or a template plan (see below).
 
 ## Setup
 
@@ -82,11 +84,13 @@ Templates are reusable exercise lists you start in one tap from the Train tab. O
 - Create from scratch (Train tab, "New") by naming it (1 to 40 characters, unique ignoring case) and adding exercises, or save a running workout as a template from the workout screen menu ("Save as template").
 - Edit, reorder (drag handles) and delete templates in the template editor. Deleting a template never touches past workouts.
 - START on a template card creates the live workout with its exercises in order, all or nothing. If a workout is already in progress you are offered to continue it instead.
-- Plans and progression are unchanged: a template-started workout is evaluated exactly like a manual one.
+- Each template exercise has its own plan (base weight, reps, sets >= 2, increment, optional rest), seeded from the exercise's own plan when it is added (create, edit, save from workout; an app upgrade copies the existing plans). The editor rows show it (for example "3 x 10 @ 20 kg · overload +2.5", or "No plan yet"); tap a row to edit it, saved with the template.
+- A workout started from a template links each exercise to its template exercise. Finishing, editing, resuming or deleting that workout progresses or undoes the template plan only. The exercise's own plan is not touched, so the same exercise in two templates progresses independently. Ad-hoc workouts, and exercises added ad hoc, keep using the exercise's own plan.
+- In the live workout, cards from a template show "· template plan" and "Edit plan" edits the template plan.
 
 ## Database schema and migrations
 
-The schema is at version 2 (v2 adds `templates` and `template_exercises`). Schema dumps live in `drift_schemas/` and the migration tests in `test/drift/` (plus `test/data/migration_test.dart`). After any schema change, regenerate the dumps and test helpers with:
+The schema is at version 3 (v2 adds `templates` and `template_exercises`; v3 adds the plan columns on `template_exercises` and `workout_exercises.template_exercise_id`). Migrations use drift's generated `stepByStep` helper (`lib/data/db/app_database.steps.dart`). Schema dumps live in `drift_schemas/` and the migration tests in `test/drift/` (plus `test/data/migration_test.dart`). After any schema change, regenerate the dumps and test helpers with:
 
 ```sh
 dart run drift_dev make-migrations
@@ -102,7 +106,7 @@ lib/
   domain/              pure Dart: progression.dart, stats.dart
   data/
     db/                app_database.dart, tables.dart, seed_library.dart (+ generated *.g.dart)
-    repositories/      WorkoutRepository, ExerciseRepository, SettingsRepository, TemplateRepository (template_repository.dart)
+    repositories/      WorkoutRepository, ExerciseRepository, SettingsRepository, TemplateRepository (template_repository.dart), plan_store.dart (PlanStore: validated plan reads/writes)
     models.dart        plain data/read models
     providers.dart     Riverpod providers
     watch.dart         watchQuery: stream that re-runs a loader on table updates
@@ -116,7 +120,7 @@ lib/
     templates/         template editor screen (create/edit/reorder/delete)
     settings/          settings screen
   widgets/             shared UI kit (buttons, cards, charts, guard.dart, ...)
-drift_schemas/         drift schema dumps (v1, v2)
+drift_schemas/         drift schema dumps (v1, v2, v3)
 test/                  unit, data, widget, drift/ (migration tests), and e2e/ (end-to-end widget test)
 integration_test/      key end-to-end flows (device/emulator)
 ```

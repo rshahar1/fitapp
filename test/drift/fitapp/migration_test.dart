@@ -1,5 +1,5 @@
 // dart format width=80
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull;
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +8,7 @@ import 'generated/schema.dart';
 
 import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
+import 'generated/schema_v3.dart' as v3;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -108,6 +109,135 @@ void main() {
         expect(settings.single.value, '90');
         expect(await newDb.select(newDb.templates).get(), isEmpty);
         expect(await newDb.select(newDb.templateExercises).get(), isEmpty);
+      },
+    );
+  });
+
+  test('migration from v2 to v3 seeds template plans and keeps data', () async {
+    const ts = '2026-11-13T18:00:00.000Z';
+    const incline = '00000000-0000-4000-8000-000000000002';
+    const fly = '00000000-0000-4000-8000-000000000003';
+    v2.ExercisesData ex(String id, String name) => v2.ExercisesData(
+      updatedAt: ts,
+      dirty: 0,
+      id: id,
+      name: name,
+      muscleGroup: 'Chest',
+      isPerHand: 0,
+      defaultIncrement: 2.5,
+      isCustom: 0,
+    );
+    const plan = v2.ExerciseStateData(
+      updatedAt: ts,
+      dirty: 1,
+      exerciseId: incline,
+      baseWeight: 20,
+      targetReps: 10,
+      targetSets: 3,
+      increment: 2.5,
+      restSeconds: 90,
+    );
+    const template = v2.TemplatesData(
+      updatedAt: ts,
+      dirty: 1,
+      id: 't1',
+      name: 'Chest',
+      createdAt: ts,
+    );
+    v2.TemplateExercisesData te(String id, String exerciseId, int pos) =>
+        v2.TemplateExercisesData(
+          updatedAt: ts,
+          dirty: 0,
+          id: id,
+          templateId: 't1',
+          exerciseId: exerciseId,
+          position: pos,
+        );
+    const workout = v2.WorkoutsData(
+      updatedAt: ts,
+      dirty: 1,
+      id: 'w1',
+      startedAt: ts,
+      endedAt: '2026-11-13T19:00:00.000Z',
+    );
+    const we = v2.WorkoutExercisesData(
+      updatedAt: ts,
+      dirty: 1,
+      id: 'we1',
+      workoutId: 'w1',
+      exerciseId: incline,
+      position: 0,
+      planBaseWeight: 20,
+      planTargetReps: 10,
+      planTargetSets: 3,
+      planIncrement: 2.5,
+      resultBaseWeight: 22.5,
+    );
+    const set = v2.SetsData(
+      updatedAt: ts,
+      dirty: 1,
+      id: 's1',
+      workoutExerciseId: 'we1',
+      setNo: 1,
+      weight: 20,
+      reps: 10,
+      isOverload: 0,
+      completedAt: ts,
+    );
+
+    await verifier.testWithDataIntegrity(
+      oldVersion: 2,
+      newVersion: 3,
+      createOld: v2.DatabaseAtV2.new,
+      createNew: v3.DatabaseAtV3.new,
+      openTestedDatabase: AppDatabase.new,
+      createItems: (batch, oldDb) {
+        batch
+          ..insertAll(oldDb.exercises, [
+            ex(incline, 'Incline Dumbbell Bench Press'),
+            ex(fly, 'Cable Fly'),
+          ])
+          ..insertAll(oldDb.exerciseState, [plan])
+          ..insertAll(oldDb.templates, [template])
+          ..insertAll(oldDb.templateExercises, [
+            te('te1', incline, 0),
+            te('te2', fly, 1),
+          ])
+          ..insertAll(oldDb.workouts, [workout])
+          ..insertAll(oldDb.workoutExercises, [we])
+          ..insertAll(oldDb.sets, [set]);
+      },
+      validateItems: (newDb) async {
+        final tes = {
+          for (final r in await newDb.select(newDb.templateExercises).get())
+            r.id: r,
+        };
+        final seeded = tes['te1']!;
+        expect(
+          (
+            seeded.baseWeight,
+            seeded.targetReps,
+            seeded.targetSets,
+            seeded.increment,
+            seeded.restSeconds,
+          ),
+          (20.0, 10, 3, 2.5, 90),
+        );
+        expect(seeded.dirty, 1);
+        final noPlan = tes['te2']!;
+        expect(noPlan.baseWeight, isNull);
+        expect(noPlan.targetReps, isNull);
+        final wes = await newDb.select(newDb.workoutExercises).get();
+        expect(wes.single.resultBaseWeight, 22.5);
+        expect(wes.single.templateExerciseId, isNull);
+        final sets = await newDb.select(newDb.sets).get();
+        expect((sets.single.weight, sets.single.reps), (20.0, 10));
+        final plans = await newDb.select(newDb.exerciseState).get();
+        expect(plans.single.baseWeight, 20);
+        expect(
+          (await newDb.select(newDb.templates).get()).single.name,
+          'Chest',
+        );
       },
     );
   });

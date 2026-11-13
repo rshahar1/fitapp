@@ -1,4 +1,3 @@
-import 'package:fitapp/data/models.dart';
 import 'package:fitapp/domain/progression.dart';
 import 'package:flutter_test/flutter_test.dart';
 

@@ -337,14 +337,14 @@ class _CompareCard extends StatelessWidget {
   }
 }
 
-class _PlanCard extends StatelessWidget {
+class _PlanCard extends ConsumerWidget {
   const new({required this.exercise, required this.plan});
 
   final ExerciseRow exercise;
   final PlanRow? plan;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final text = Theme.of(context).textTheme;
     final p = plan;
     final rest = p?.restSeconds;
@@ -385,8 +385,14 @@ class _PlanCard extends StatelessWidget {
           AppButton(
             label: p == null ? 'Set up plan' : 'Edit',
             variant: AppButtonVariant.secondary,
-            onPressed: () =>
-                showEditPlanSheet(context, exercise: exercise, plan: p),
+            onPressed: () => showEditPlanSheet(
+              context,
+              exercise: exercise,
+              plan: p == null ? null : StoredPlan.fromRow(p),
+              onSubmit: (plan) => ref
+                  .read(exerciseRepositoryProvider)
+                  .writePlan(exercise.id, plan),
+            ),
           ),
         ],
       ),

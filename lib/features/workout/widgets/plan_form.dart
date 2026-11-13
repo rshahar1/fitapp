@@ -2,6 +2,7 @@ import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/data/db/app_database.dart';
+import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/settings_repository.dart';
 import 'package:fitapp/widgets/guard.dart';
@@ -11,20 +12,26 @@ import 'package:material_ui/material_ui.dart';
 
 const incrementOptions = [1.0, 2.0, 2.5, 5.0];
 
-/// Plan editor used by the inline plan setup card and the Edit plan sheet
-/// (PRD §5.2, §5.7).
+/// Saves a plan wherever it lives (an exercise's own plan, a template plan,
+/// or a template editor draft).
+typedef PlanSubmit = Future<void> Function(StoredPlan plan);
+
+/// Plan editor used by the inline plan setup card, the Edit plan sheet and
+/// the template editor (PRD §5.2, §5.7). Storage-agnostic: [onSubmit] saves.
 class PlanForm extends ConsumerStatefulWidget {
   const new({
     required this.exercise,
     required this.submitLabel,
+    required this.onSubmit,
     this.initial,
     this.onSaved,
     super.key,
   });
 
   final ExerciseRow exercise;
-  final PlanRow? initial;
+  final StoredPlan? initial;
   final String submitLabel;
+  final PlanSubmit onSubmit;
   final VoidCallback? onSaved;
 
   @override
@@ -42,18 +49,18 @@ class _PlanFormState extends ConsumerState<PlanForm> {
 
   Future<void> _save() async {
     setState(() => _saving = true);
-    final ok = await guard(context, () async {
-      await ref
-          .read(exerciseRepositoryProvider)
-          .savePlan(
-            widget.exercise.id,
-            baseWeight: _base,
-            targetReps: _reps,
-            targetSets: _sets,
-            increment: _inc,
-            restSeconds: _rest,
-          );
-    });
+    final ok = await guard(
+      context,
+      () => widget.onSubmit(
+        StoredPlan(
+          baseWeight: _base,
+          targetReps: _reps,
+          targetSets: _sets,
+          increment: _inc,
+          restSeconds: _rest,
+        ),
+      ),
+    );
     if (!mounted) return;
     setState(() => _saving = false);
     if (ok) {
@@ -186,31 +193,40 @@ class RestTimeField extends StatelessWidget {
 
 /// Inline card shown the first time an exercise without a plan appears.
 class PlanSetupCard extends StatelessWidget {
-  const new({required this.exercise, super.key});
+  const new({required this.exercise, required this.onSubmit, super.key});
 
   final ExerciseRow exercise;
+  final PlanSubmit onSubmit;
 
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       Text(
-        'Set up your plan. The last set is always the overload set at base '
-        '+ increment.',
+        'Set up your plan. The weight goes up by the increment when every '
+        'set before the last hits the target reps.',
         style: Theme.of(context).textTheme.bodySmall
             ?.copyWith(color: AppColors.textSecondary),
       ),
       const SizedBox(height: Space.m),
-      PlanForm(exercise: exercise, submitLabel: 'Start with this plan'),
+      PlanForm(
+        exercise: exercise,
+        submitLabel: 'Start with this plan',
+        onSubmit: onSubmit,
+      ),
     ],
   );
 }
 
-/// Opens the Edit plan bottom sheet.
+/// Opens the Edit plan bottom sheet. [title] defaults to
+/// "Edit plan · `exercise`".
 Future<void> showEditPlanSheet(
   BuildContext context, {
   required ExerciseRow exercise,
-  required PlanRow? plan,
+  required StoredPlan? plan,
+  required PlanSubmit onSubmit,
+  String? title,
+  String submitLabel = 'Save plan',
 }) => showModalBottomSheet<void>(
   context: context,
   isScrollControlled: true,
@@ -227,14 +243,15 @@ Future<void> showEditPlanSheet(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Edit plan · ${exercise.name}',
+            title ?? 'Edit plan · ${exercise.name}',
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: Space.m),
           PlanForm(
             exercise: exercise,
             initial: plan,
-            submitLabel: 'Save plan',
+            submitLabel: submitLabel,
+            onSubmit: onSubmit,
             onSaved: () => Navigator.of(context).pop(),
           ),
         ],

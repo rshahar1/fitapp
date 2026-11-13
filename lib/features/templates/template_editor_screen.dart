@@ -3,8 +3,11 @@ import 'dart:async';
 import 'package:fitapp/app/router.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/data/db/app_database.dart';
+import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/template_repository.dart';
+import 'package:fitapp/features/workout/widgets/exercise_card.dart';
+import 'package:fitapp/features/workout/widgets/plan_form.dart';
 import 'package:fitapp/widgets/guard.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,6 +30,8 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
   List<ExerciseRow> _exercises = [];
   String _initialName = '';
   List<String> _initialIds = [];
+  Map<String, StoredPlan?> _plans = {};
+  Map<String, StoredPlan?> _initialPlans = {};
   bool _loading = false;
   bool _missing = false;
   bool _saving = false;
@@ -36,7 +41,20 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
 
   bool get _dirty =>
       _name.text != _initialName ||
-      !_sameIds(_exercises.map((e) => e.id).toList(), _initialIds);
+      !_sameIds(_exercises.map((e) => e.id).toList(), _initialIds) ||
+      _plansChanged;
+
+  bool get _plansChanged {
+    for (final e in _exercises) {
+      if (_plans[e.id] != _initialPlans[e.id]) return true;
+    }
+    return false;
+  }
+
+  Map<String, StoredPlan> get _plansToSave => {
+    for (final e in _exercises)
+      if (_plans[e.id] != null) e.id: _plans[e.id]!,
+  };
 
   static bool _sameIds(List<String> a, List<String> b) {
     if (a.length != b.length) return false;
@@ -76,6 +94,8 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
       _initialName = t.name;
       _initialIds = [for (final e in t.exercises) e.id];
       _exercises = [...t.exercises];
+      _plans = {for (final e in t.exercises) e.id: t.plans[e.id]};
+      _initialPlans = {..._plans};
       _name.text = t.name;
     });
   }
@@ -93,11 +113,30 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
     }
     final row = await ref.read(exerciseRepositoryProvider).exercise(id);
     if (row == null || !mounted) return;
-    setState(() => _exercises = [..._exercises, row]);
+    final own = await ref.read(exerciseRepositoryProvider).plan(id);
+    if (!mounted) return;
+    setState(() {
+      _exercises = [..._exercises, row];
+      _plans[id] = own == null ? null : StoredPlan.fromRow(own);
+    });
   }
 
-  void _remove(ExerciseRow e) =>
-      setState(() => _exercises = [..._exercises]..remove(e));
+  void _remove(ExerciseRow e) => setState(() {
+    _exercises = [..._exercises]..remove(e);
+    _plans.remove(e.id);
+  });
+
+  Future<void> _editPlan(ExerciseRow e) => showEditPlanSheet(
+    context,
+    exercise: e,
+    plan: _plans[e.id],
+    title: 'Template plan · ${e.name}',
+    submitLabel: 'Done',
+    onSubmit: (plan) async {
+      plan.toPlan(); // throws ArgumentError when invalid
+      setState(() => _plans[e.id] = plan);
+    },
+  );
 
   void _reorder(int from, int to) {
     setState(() {
@@ -120,9 +159,14 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
           widget.templateId!,
           name: _name.text,
           exerciseIds: ids,
+          plans: _plansToSave,
         );
       } else {
-        await repo.create(name: _name.text, exerciseIds: ids);
+        await repo.create(
+          name: _name.text,
+          exerciseIds: ids,
+          plans: _plansToSave,
+        );
       }
     } on DuplicateTemplateName {
       error = 'Name already used';
@@ -143,6 +187,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
     }
     _initialName = _name.text;
     _initialIds = ids;
+    _initialPlans = {..._plans};
     _snack('Template saved');
     context.pop();
   }
@@ -162,6 +207,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
     if (done && mounted) {
       _initialName = _name.text;
       _initialIds = [for (final e in _exercises) e.id];
+      _initialPlans = {..._plans};
       context.pop();
     }
   }
@@ -186,6 +232,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
     if (discard == true && mounted) {
       _initialName = _name.text;
       _initialIds = [for (final e in _exercises) e.id];
+      _initialPlans = {..._plans};
       context.pop();
     }
   }
@@ -258,6 +305,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
                 onReorderItem: _reorder,
                 itemBuilder: (context, i) {
                   final e = _exercises[i];
+                  final plan = _plans[e.id];
                   return Semantics(
                     key: ValueKey(e.id),
                     label: 'Move ${e.name}',
@@ -266,11 +314,34 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
                       child: Row(
                         children: [
                           Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: Space.s,
+                            child: Tooltip(
+                              message: 'Edit plan for ${e.name}',
+                              child: InkWell(
+                                onTap: () => _editPlan(e),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: Space.s,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(e.name, style: text.titleMedium),
+                                      Text(
+                                        plan == null
+                                            ? 'No plan yet'
+                                            : planSummary(
+                                                plan.toPlan(),
+                                                perHand: e.isPerHand,
+                                              ),
+                                        style: text.bodySmall?.copyWith(
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                              child: Text(e.name, style: text.titleMedium),
                             ),
                           ),
                           IconButton(

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.1, 12 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.2, 13 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -65,7 +65,7 @@ Hevy patterns to adopt:
 | **+ Add Set** under the table and a full-width **Add Exercise** button at the bottom | **MUST** |
 | Exercise detail page with **Summary / History** tabs; chart with metric chips (**Heaviest Weight · One Rep Max · Best Set Volume**); **PR** badge | **MUST** (M5), but there is no "How to" tab |
 | Bottom navigation with a few clear destinations | **MUST** (section 6) |
-| Routines (saved workout templates) | **LATER** (roadmap) |
+| Routines (saved workout templates) | Templates exist since feature 003 and carry their own progression (feature 005); folders are **LATER** |
 
 ### 2.2 Visual identity (keep these customizations from the prototype)
 The owner explicitly approved this look. Hevy is the *structure* model; this is the *skin*.
@@ -125,9 +125,10 @@ Numbers use tabular figures.
 |---|---|
 | **Exercise** | A movement, e.g. *Incline Dumbbell Bench Press*. Either from the built-in library or user-created (custom). |
 | **Per hand** | A flag on dumbbell exercises. The weight is per hand, so **volume counts both hands (×2)**. |
-| **Plan** (exercise state) | Per user and exercise: `baseWeight`, `targetReps`, `targetSets` (≥ 2), `increment`. |
-| **Working sets** | Sets 1 … N−1, prescribed at `baseWeight`. |
-| **Overload set** | Set N (the last set), prescribed at `baseWeight + increment`, **always**. |
+| **Plan** | `baseWeight`, `targetReps`, `targetSets` (≥ 2), `increment`, optional rest time. Either the **exercise plan** (per user and exercise, table `exercise_state`) or a **template plan** (per template exercise). |
+| **Template plan** | The plan of one exercise inside one template. Seeded from the exercise's own plan when the exercise is added to the template; after that it progresses on its own. |
+| **Working sets** | Sets 1 … N−1, prescribed at `baseWeight`. They alone decide progression. |
+| **Overload set** | Set N (the last set), prescribed at `baseWeight + increment`, **always**. It is a stretch target only: it never affects the result. |
 | **Session** | One exercise inside one finished workout. |
 | **Volume** | Σ weight × reps (× 2 if per hand). |
 | **Est. 1RM** | Epley formula: `w × (1 + reps / 30)`, rounded to 0.1. 1 rep gives `w`, 0 reps gives 0. |
@@ -150,23 +151,21 @@ Given the plan and the logged sets (order-independent, keyed by set number):
 |---|---|---|
 | Any working set (1..N−1) not logged | base unchanged | `incomplete` |
 | Any working set with `reps < targetReps` **or** `weight < baseWeight` | base unchanged | `missed_reps` |
-| Overload set (N) not logged | base unchanged | `no_overload_set` |
-| Overload set logged at `weight ≤ baseWeight` | base unchanged | `overload_not_heavier` |
-| Otherwise | **next base = weight actually lifted on set N** (rounded) | `progressed` |
+| Otherwise (every working set logged at `weight ≥ baseWeight` and `reps ≥ targetReps`) | **next base = `roundWeight(base + increment)`** | `progressed` |
 
 Notes:
-- Reps on the overload set do **not** matter. It always counts as an attempt.
-- If the user lifted more than prescribed on set N (e.g. +5 instead of +2.5), the next base is that heavier weight.
+- Only the working sets decide. The overload set is still prescribed at `base + inc` and marked ↑, but skipping
+  it, failing it or lifting more on it never changes the result. There is no "jump" to a heavier lifted weight.
 - Hitting the reps at a *lighter* weight than base does not count.
 - Exercises without a plan are logged but never progressed.
 
 ### 4.3 Finishing a workout (MUST be transactional)
 For each exercise with a plan and at least one logged set:
-1. `plan = snapshot ?? currentPlan` (a resumed workout keeps the plan it was originally done with).
+1. `plan = snapshot ?? current plan of the session's source` (a resumed workout keeps the plan it was originally done with). The source is the template exercise the workout exercise is linked to (`template_exercise_id`), otherwise the exercise's own plan.
 2. `result = evaluate(plan, sets)`.
 3. Store a **snapshot** on the workout-exercise row: plan base, reps, sets, increment, and `resultBaseWeight`.
-4. If `result.progressed` **and** the current base still equals `plan.baseWeight`, set the current base to
-   `result.nextBaseWeight`. Do not overwrite a base weight the user edited by hand in the meantime.
+4. If `result.progressed` **and** the current base of that source still equals `plan.baseWeight`, set it to
+   `result.nextBaseWeight`. Only that source is written: a template workout never updates the exercise's own plan. Do not overwrite a base weight the user edited by hand in the meantime.
 5. Set `endedAt`.
 
 Show a summary: `⬆ Incline DB Press: 20 kg → 22.5 kg` or `• Lat Pulldown: stays at 50 kg`.
@@ -175,10 +174,13 @@ If no sets were logged at all, offer to **discard** the workout instead.
 ### 4.4 Editing history safely (`canRewriteBase`)
 A finished workout may be **edited**, **resumed** or **deleted**. The current base weight may be rewritten
 **only if both** of these hold:
-- this workout is the **latest finished session** containing that exercise, **and**
+- this workout is the **latest finished session of the same plan** (ad-hoc sessions of that exercise, or sessions
+  of that template exercise), **and**
 - the current base equals the `resultBaseWeight` this workout produced (compare after `roundWeight`).
 
-Otherwise history is corrected but the current plan is left alone.
+Otherwise history is corrected but the current plan is left alone. If a template exercise was deleted, its
+finished sessions are orphans and never change any plan; a live session without a snapshot is unlinked and falls
+back to the exercise plan.
 
 | Action | Behavior |
 |---|---|
@@ -222,18 +224,19 @@ Otherwise history is corrected but the current plan is left alone.
 - The first time an exercise appears in a workout without a plan, show an inline **plan setup** card: base weight
   (stepper, steps by increment), target reps (default 10), sets (default 3, min 2), and increment as segmented
   chips **+1 / +2 / +2.5 / +5** (default: the exercise's default increment). Button: *Start with this plan*.
-- Plans are editable from the exercise detail page.
+- Plans are editable from the exercise detail page. Help text: "The weight goes up by the increment when every set before the last hits the target reps."
+- Template plans are shown in the template editor (`3 × 10 @ 20 kg · overload +2.5`, or *No plan yet*); tap a row to edit it, saved with the template.
 
 ### 5.3 Live workout (Hevy-style)
 - **Start workout** from the home tab, or **Continue** if one is in progress. At most one workout is active.
 - Header: elapsed **Duration**, live **Volume**, **Sets** done, and a **Finish** button.
-- Per exercise, a card with the name, plan summary (`3 × 10 @ 20 kg · overload +2.5 · per hand`), and a `⋮`
-  menu (Remove exercise, Edit plan).
+- Per exercise, a card with the name, plan summary (`3 × 10 @ 20 kg · overload +2.5 · per hand`, plus `· template plan` when the workout came from a template), and a `⋮`
+  menu (Remove exercise, Edit plan). *Edit plan* edits the template plan for template exercises.
 - **Set table:** SET (number, or ↑ for overload) · PREVIOUS (same set number from the
   previous session of this exercise, e.g. `20 kg × 10`, or `—`) · KG · REPS · ✓.
   Rows are pre-filled from the prescription; tap ✓ for one-tap logging, or tap the row for the bottom-sheet
   editor. Logging the same set number again **overwrites** it (no duplicates).
-- **+ Add Set** adds an extra set row. Extra sets beyond N are logged but don't affect progression.
+- **+ Add Set** adds an extra set row. Extra sets beyond N are logged but don't affect progression, and neither does the overload set itself.
 - **Compared to previous** card under each exercise once a set is logged: Sets, Reps, Volume, Top weight, each
   with ▲ / ▼ / – and the % change, colored with the metric colors. Shows "First session" if there is no previous.
 - **Rest timer (MUST):** starts on each logged set and **counts down** from the rest target in a fixed footer pill.
@@ -313,9 +316,13 @@ ISO-8601 UTC. Every syncable table has `updated_at` and `dirty` (1 = changed loc
 exercises          id PK, name, muscle_group?, is_per_hand, default_increment, is_custom, dirty
 exercise_state     exercise_id PK → exercises, base_weight, target_reps, target_sets, increment,
                    rest_seconds? (NULL = use the default rest time), updated_at, dirty
+templates          id PK, name (unique ignoring case), created_at, last_used_at?, updated_at, dirty
+template_exercises id PK, template_id → templates (cascade), exercise_id → exercises, position,
+                   base_weight?, target_reps?, target_sets?, increment?, rest_seconds?,   -- template plan
+                   updated_at, dirty, UNIQUE(template_id, exercise_id)
 workouts           id PK, name?, started_at, ended_at?, notes?, updated_at, dirty
 workout_exercises  id PK, workout_id → workouts (cascade), exercise_id → exercises, position,
-                   notes?,
+                   notes?, template_exercise_id? (indexed, no FK; NULL = uses the exercise plan),
                    plan_base_weight?, plan_target_reps?, plan_target_sets?, plan_increment?,   -- snapshot
                    result_base_weight?,                                                       -- snapshot
                    updated_at, dirty
@@ -325,7 +332,7 @@ sets               id PK, workout_exercise_id → workout_exercises (cascade), s
 pending_deletes    table_name, row_id, PK(table_name, row_id)      -- delete queue for future sync
 settings           key PK, value                                   -- local-only in v1, e.g. default_rest_seconds = 60
 ```
-- Use real schema **migrations** with a version number. Never drop user data on upgrade.
+- Schema version is 3 (v2 templates, v3 template plans and `template_exercise_id`). Use real schema **migrations** with a version number (drift `stepByStep`). Never drop user data on upgrade.
 - Foreign keys **ON**. Writes that touch several rows (finish, resume, recalculate, delete) run in **one
   transaction**.
 
@@ -382,7 +389,7 @@ lib/
     stats.dart         volume, Epley 1RM, PRs, summarizeSession, diffSummary, weekly streak
   data/
     db/                drift database, tables, migrations, seed library
-    repositories/      WorkoutRepository, ExerciseRepository (all business writes, transactions)
+    repositories/      WorkoutRepository, ExerciseRepository, TemplateRepository (all business writes, transactions); plan_store.dart (PlanStore: validated plan reads/writes)
     sync/              (Phase 2) push/pull, delete queue
   features/
     train/             home tab
@@ -463,6 +470,10 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 7. User manually sets base to 30 after finishing, then resumes and re-finishes → the result is judged on the
    snapshot plan (progressed to 22.5), but the current base stays **30**.
 8. Delete the latest finished workout → its increase is undone. Delete an older one → the current base is unchanged.
+9. Overload set skipped or failed: `20×10, 20×10, 25×2`, or `20×10, 20×10` with no set 3 → still **progressed**,
+   next base **22.5** (the overload set never decides; scenario 1 is unchanged).
+10. Template A and B both contain Cable Fly at 20 kg (each has its own plan). Finishing A's workout with all
+    working sets hit → A's plan becomes **22.5**; B's plan and the exercise's own plan stay **20**.
 
 ---
 
@@ -470,9 +481,9 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 **Domain (pure unit tests)**
 - `prescribe`: base, base, base+inc; 4-set and +5 variants; invalid plans throw.
 - `evaluate`: progressed; exceeding target reps; missed reps on set 2; reps hit at a lighter weight than base;
-  heavier-than-prescribed overload; overload missing; overload not heavier; working set missing; order-independence.
+  overload set missing, failed or heavier than prescribed (never changes the result); working set missing; order-independence.
 - `roundWeight`: removes float drift (`0.1 + 0.2 + 22.2 → 22.5`).
-- `canRewriteBase`: latest and matching → true; plan edited since, not latest, or never applied → false.
+- `canRewriteBase(isLatestSessionForPlan, currentBase, resultBaseWeight)`: latest and matching → true; plan edited since, not latest, or never applied → false.
 - Stats: per-hand volume; Epley (100×10 → 133.3, ×1 → 100, ×0 → 0); PRs and `newPRTypes`; session summary and
   diff; ISO week keys (9 Nov 2026 → 2026-W46, 1 Jan 2027 → 2026-W53); workouts per week; streak with an
   in-progress current week, with a gap, and across the year boundary.
@@ -484,6 +495,7 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 - Snapshot written on finish; resume, edit, delete and manual-edit scenarios from section 11; resume blocked
   while another workout is active or when the workout is not the most recent; recalculation after clearing a set;
   legacy workouts without snapshots.
+- Template progression (feature 005): per-template plans seeded on create, edit, save-from-workout and upgrade; finish, edit, resume and delete touch only the linked template plan; two templates with the same exercise progress independently; orphan sessions and unlinked live sessions; v2 to v3 migration.
 - `previousSession` lookup; workout list with volume (per-hand ×2) and exercise names.
 - (Phase 2) Sync ordering: deletes before upserts; dirty cleared only if unchanged; failure keeps rows dirty;
   library exercises are never pushed; deleting a workout queues one server delete.
@@ -516,7 +528,7 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 
 ## 14. Roadmap (after v1, not in scope now)
 - Sign-in with cloud backup and restore (M7)
-- Routines and workout templates (Hevy-style folders), and "repeat last workout"
+- Template folders and "repeat last workout" (templates themselves exist since feature 003)
 - Drop and failure set types (warm-up sets are intentionally not planned)
 - Rest-timer notifications when the app is in the background, if not done in M3
 - kg / lb setting
@@ -537,6 +549,8 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 | App name **FitApp** | Owner's decision (12 Nov 2026); replaces the working title "Gym Tracker" |
 | No warm-up sets, and no set types in v1 | Owner's decision; keeps the set table and progression simple |
 | Rest timer default **60 s**, configurable (global default plus per-exercise override) | Owner's decision; stored in Settings and on the exercise plan |
+| Progression decided by the working sets only (1..N−1); the overload set never decides and there is no jump to a heavier lifted weight | Owner's decision (13 Nov 2026); simpler and predictable: next base is always base + increment |
+| Each template exercise has its own plan; template workouts progress the template plan, never the exercise's own plan | Owner's decision (13 Nov 2026); the same exercise can progress differently in different templates. Ad-hoc workouts keep using the exercise plan |
 | Keep the approved dark green look | Owner's decision; Hevy is the structure model only, not the palette |
 
 ## 16. Open items
@@ -553,3 +567,12 @@ resolved on 12 Nov 2026; see the decisions log.
     plus a per-exercise override stored on the plan). New `settings` table and `/settings` route.
   - Confirmed: keep the dark green look; Hevy is the structure model only.
 - **2.0 (11 Nov 2026):** first Flutter PRD, based on the Expo / React Native prototype and the Hevy reference.
+- **2.2 (13 Nov 2026):** feature 005, template progression (owner decisions of 13 Nov 2026).
+  - Progression rule: only the working sets 1..N−1 decide; progressed means next base = base + increment. The
+    overload set is still prescribed and marked but never affects the result. Reasons `no_overload_set` and
+    `overload_not_heavier` removed.
+  - Per-template plans: `template_exercises` gets `base_weight`, `target_reps`, `target_sets`, `increment`,
+    `rest_seconds`; `workout_exercises` gets `template_exercise_id`. Template workouts progress only the template
+    plan; ad-hoc workouts keep using `exercise_state`.
+  - `canRewriteBase` works per plan; orphaned sessions never change any plan. Schema v3, `stepByStep` migrations.
+  - New scenarios 9 and 10 in section 11.

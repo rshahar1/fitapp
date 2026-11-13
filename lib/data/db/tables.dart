@@ -68,6 +68,12 @@ class WorkoutExercises extends Table with SyncColumns {
   RealColumn get planIncrement => real().nullable()();
   RealColumn get resultBaseWeight => real().nullable()();
 
+  /// The template exercise this session came from (feature 005). NULL for
+  /// ad-hoc sessions (they use the exercise's own plan). Deliberately not a
+  /// foreign key: after the template exercise is deleted the id dangles and
+  /// the session never rewrites any plan.
+  TextColumn get templateExerciseId => text().nullable()();
+
   @override
   Set<Column<Object>> get primaryKey => {id};
 }
@@ -132,6 +138,16 @@ class TemplateExercises extends Table with SyncColumns {
       text().references(Templates, #id, onDelete: KeyAction.cascade)();
   TextColumn get exerciseId => text().references(Exercises, #id)();
   IntColumn get position => integer()();
+
+  // This template's own plan for the exercise (feature 005). All four core
+  // values are set together, or all NULL ("no plan yet").
+  RealColumn get baseWeight => real().nullable()();
+  IntColumn get targetReps => integer().nullable()();
+  IntColumn get targetSets => integer().nullable()();
+  RealColumn get increment => real().nullable()();
+
+  /// NULL means "use the default rest time from settings".
+  IntColumn get restSeconds => integer().nullable()();
 
   @override
   Set<Column<Object>> get primaryKey => {id};

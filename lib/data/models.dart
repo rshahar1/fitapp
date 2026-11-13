@@ -1,6 +1,7 @@
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/domain/progression.dart';
 import 'package:fitapp/domain/stats.dart';
+import 'package:meta/meta.dart';
 
 /// Converts a stored plan row into a domain [Plan].
 Plan planFromRow(PlanRow r) => Plan(
@@ -9,6 +10,96 @@ Plan planFromRow(PlanRow r) => Plan(
   targetSets: r.targetSets,
   increment: r.increment,
 );
+
+/// A stored plan with its rest override: an exercise's own plan
+/// (`exercise_state`) or a template exercise's plan (feature 005).
+@immutable
+class StoredPlan {
+  const new({
+    required this.baseWeight,
+    required this.targetReps,
+    required this.targetSets,
+    required this.increment,
+    this.restSeconds,
+  });
+
+  /// From an exercise's own plan row.
+  factory fromRow(PlanRow r) => StoredPlan(
+    baseWeight: r.baseWeight,
+    targetReps: r.targetReps,
+    targetSets: r.targetSets,
+    increment: r.increment,
+    restSeconds: r.restSeconds,
+  );
+
+  final double baseWeight;
+  final int targetReps;
+  final int targetSets;
+  final double increment;
+
+  /// NULL = use the default rest time from settings.
+  final int? restSeconds;
+
+  /// The plan of a template exercise, or null when it has none yet.
+  static StoredPlan? ofTemplate(TemplateExerciseRow r) {
+    final base = r.baseWeight;
+    final reps = r.targetReps;
+    final sets = r.targetSets;
+    final inc = r.increment;
+    if (base == null || reps == null || sets == null || inc == null) {
+      return null;
+    }
+    return StoredPlan(
+      baseWeight: base,
+      targetReps: reps,
+      targetSets: sets,
+      increment: inc,
+      restSeconds: r.restSeconds,
+    );
+  }
+
+  /// Validated domain plan (throws [ArgumentError] when invalid).
+  Plan toPlan() => Plan(
+    baseWeight: baseWeight,
+    targetReps: targetReps,
+    targetSets: targetSets,
+    increment: increment,
+  );
+
+  StoredPlan withBase(double base) => StoredPlan(
+    baseWeight: base,
+    targetReps: targetReps,
+    targetSets: targetSets,
+    increment: increment,
+    restSeconds: restSeconds,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      other is StoredPlan &&
+      other.baseWeight == baseWeight &&
+      other.targetReps == targetReps &&
+      other.targetSets == targetSets &&
+      other.increment == increment &&
+      other.restSeconds == restSeconds;
+
+  @override
+  int get hashCode =>
+      Object.hash(baseWeight, targetReps, targetSets, increment, restSeconds);
+}
+
+/// Which plan a workout exercise uses and progresses (feature 005).
+enum PlanSourceKind {
+  /// The exercise's own plan (ad-hoc sessions).
+  exercise,
+
+  /// The plan of the template exercise the session came from.
+  template,
+
+  /// The session came from a template exercise that no longer exists; it
+  /// never changes any plan.
+  orphan,
+}
 
 /// The snapshot plan stored on a workout exercise, if any.
 Plan? snapshotOf(WorkoutExerciseRow we) {
@@ -37,13 +128,18 @@ class WorkoutExerciseDetail {
     required this.sets,
     required this.previous,
     required this.restSeconds,
+    this.planSource = PlanSourceKind.exercise,
   });
 
   final WorkoutExerciseRow row;
   final ExerciseRow exercise;
 
-  /// The exercise's current plan (null if never set up).
-  final PlanRow? currentPlan;
+  /// The current plan of the session's plan source (null if not set up yet,
+  /// or for an orphan).
+  final StoredPlan? currentPlan;
+
+  /// Where [currentPlan] lives and what this session progresses.
+  final PlanSourceKind planSource;
 
   /// Logged sets ordered by set number.
   final List<SetRow> sets;
@@ -56,9 +152,7 @@ class WorkoutExerciseDetail {
 
   /// The plan that drives prescription: the snapshot for a session that has
   /// one, otherwise the current plan.
-  Plan? get effectivePlan =>
-      snapshotOf(row) ??
-      (currentPlan == null ? null : planFromRow(currentPlan!));
+  Plan? get effectivePlan => snapshotOf(row) ?? currentPlan?.toPlan();
 
   List<LoggedSet> get logged => sets.map(loggedFromRow).toList();
 
@@ -218,11 +312,16 @@ class TemplateSummary {
     required this.exercises,
     required this.createdAt,
     required this.lastUsedAt,
+    this.plans = const {},
   });
 
   final String id;
   final String name;
   final List<ExerciseRow> exercises;
+
+  /// This template's plan per exercise id (feature 005); a missing or null
+  /// entry means "no plan yet".
+  final Map<String, StoredPlan?> plans;
   final DateTime createdAt;
   final DateTime? lastUsedAt;
 }

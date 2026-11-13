@@ -146,7 +146,10 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
   @override
   Widget build(BuildContext context) {
     final plan = d.effectivePlan;
-    final needsSetup = plan == null && d.sets.isEmpty;
+    final orphan = d.planSource == PlanSourceKind.orphan;
+    final needsSetup = plan == null && d.sets.isEmpty && !orphan;
+    Future<void> savePlan(StoredPlan p) =>
+        ref.read(workoutRepositoryProvider).savePlan(d.row.id, p);
     final lines = buildSetLines(d, extraRows: _extraRows);
     return AppCard(
       padding: const EdgeInsets.fromLTRB(Space.m, Space.s, Space.xs, Space.m),
@@ -168,7 +171,11 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                     ),
                     if (plan != null)
                       Text(
-                        planSummary(plan, perHand: d.exercise.isPerHand),
+                        [
+                          planSummary(plan, perHand: d.exercise.isPerHand),
+                          if (d.planSource == PlanSourceKind.template)
+                            'template plan',
+                        ].join(' · '),
                         style: Theme.of(context).textTheme.bodySmall
                             ?.copyWith(color: AppColors.textSecondary),
                       ),
@@ -185,13 +192,17 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                         context,
                         exercise: d.exercise,
                         plan: d.currentPlan,
+                        onSubmit: savePlan,
+                        title: d.planSource == PlanSourceKind.template
+                            ? 'Edit template plan · ${d.exercise.name}'
+                            : null,
                       );
                     case 'remove':
                       await _remove();
                   }
                 },
                 itemBuilder: (_) => [
-                  if (!needsSetup)
+                  if (!needsSetup && !orphan)
                     const PopupMenuItem(
                       value: 'plan',
                       child: Text('Edit plan'),
@@ -208,7 +219,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
           if (needsSetup)
             Padding(
               padding: const EdgeInsets.only(right: Space.s),
-              child: PlanSetupCard(exercise: d.exercise),
+              child: PlanSetupCard(exercise: d.exercise, onSubmit: savePlan),
             )
           else ...[
             const SetTableHeader(),

@@ -2,11 +2,11 @@ import 'package:drift/drift.dart' show DatabaseConnection, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/core/haptics.dart';
+import 'package:fitapp/core/rest_alerts.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/exercise_repository.dart';
 import 'package:fitapp/data/repositories/workout_repository.dart';
-import 'package:fitapp/features/workout/rest_timer_controller.dart';
 import 'package:fitapp/features/workout/workout_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -94,7 +94,7 @@ class _Env {
         databaseProvider.overrideWithValue(db),
         clockProvider.overrideWithValue(() => now),
         hapticsProvider.overrideWithValue(_NoHaptics()),
-        restSoundProvider.overrideWithValue(() {}),
+        restAlertsProvider.overrideWithValue(const NoopRestAlerts()),
       ],
       child: MaterialApp.router(theme: buildAppTheme(), routerConfig: router),
     );

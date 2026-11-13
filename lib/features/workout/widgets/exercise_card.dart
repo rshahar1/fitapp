@@ -88,7 +88,10 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
     if (widget.isLive) {
       await ref
           .read(restTimerProvider.notifier)
-          .startFor(exerciseRestSeconds: d.restSeconds);
+          .startFor(
+            exerciseRestSeconds: d.restSeconds,
+            exerciseName: d.exercise.name,
+          );
     }
     if (line.setNo > (d.effectivePlan?.targetSets ?? 0) && _extraRows > 0) {
       setState(() => _extraRows--);

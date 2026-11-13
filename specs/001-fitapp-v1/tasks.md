@@ -4,7 +4,7 @@ description: "Task list for FitApp v1 implementation"
 
 # Tasks: FitApp v1 – Offline Workout Logger with Automatic Progressive Overload
 
-**Status (2026-11-12)**: M0-M5 implemented; M6 partially done (icon/splash, docs, release build verified locally). Private repo created and CI green (T010). Pending: T056 (rest-end sound via audioplayers), T057 (rest-timer background notification), T085-T086 (need the real phone). T083 is done except the keystore, which the owner creates.
+**Status (2026-11-12)**: M0-M5 implemented; M6 partially done (icon/splash, docs, release build verified locally). Private repo created and CI green (T010). T056 and T057 (rest-end sound, background notification) done in feature 002-rest-alerts. Pending: T085-T086 (need the real phone). T083 is done except the keystore, which the owner creates.
 
 **Input**: Design documents from `/specs/001-fitapp-v1/`
 
@@ -140,8 +140,8 @@ overtime; change default to 90 s, restart, log → 1:30.
 - [x] T053 [US2] Rest pill widget in the fixed footer (countdown / muted overtime, tap to dismiss, semantics) in lib/features/workout/widgets/rest_pill.dart; start/restart on every logSet in workout_controller.dart
 - [x] T054 [US2] Settings screen (default rest stepper + chips, haptic and sound toggles) at `/settings` with gear icon on Train tab in lib/features/settings/settings_screen.dart
 - [x] T055 [US2] Per-exercise *Rest time* row (Default (60 s) or custom stepper, stored in `exercise_state.rest_seconds`) in plan_setup_card.dart and the Edit plan sheet lib/features/workout/widgets/edit_plan_sheet.dart
-- [ ] T056 [US2] (SHOULD) Rest-end sound via `audioplayers` with bundled asset assets/sounds/rest_end.mp3
-- [ ] T057 [US2] (SHOULD) Background rest notification via `flutter_local_notifications` + `timezone` (schedule on log, cancel on dismiss/restart, POST_NOTIFICATIONS permission) in lib/core/rest_notifications.dart
+- [x] T056 [US2] (SHOULD) Rest-end sound via `audioplayers` with bundled asset assets/sounds/rest_end.mp3 (done in feature 002-rest-alerts)
+- [x] T057 [US2] (SHOULD) Background rest notification via `flutter_local_notifications` + `timezone` (schedule on log, cancel on dismiss/restart, POST_NOTIFICATIONS permission) in lib/core/rest_notifications.dart (done in feature 002-rest-alerts)
 
 **Checkpoint**: Rest timer and settings work on a phone, including after backgrounding.
 

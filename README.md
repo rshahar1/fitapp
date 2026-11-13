@@ -81,7 +81,7 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 lib/
   main.dart
   app/                 app.dart, backdrop.dart, router.dart, theme/ (app_theme.dart, tokens.dart)
-  core/                format.dart, haptics.dart
+  core/                format.dart, haptics.dart, rest_alerts.dart, platform_rest_alerts.dart
   domain/              pure Dart: progression.dart, stats.dart
   data/
     db/                app_database.dart, tables.dart, seed_library.dart (+ generated *.g.dart)
@@ -118,10 +118,16 @@ dart run build_runner build
 
 CI re-runs the generator and fails if `git diff` is not empty.
 
+## Rest timer alerts
+
+- In-app chime at 0: respects the phone's silent mode and ducks music.
+- Background notification: when the app is in the background or the screen is off, the OS shows the alert. Timing is exact if "Alarms & reminders" (precise timing) is allowed; otherwise it may be late while the phone is idle.
+- Notification permission is requested on the first rest timer. Settings → Rest timer alert shows the status and opens the system settings.
+- Android permissions used: `POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`, `VIBRATE`. There is no boot receiver, so alerts do not fire after a reboot.
+- `compileSdk 37` is set in `android/app/build.gradle.kts` (required by flutter_local_notifications 23).
+
 ## Known limitations / not yet done
 
-- Rest-timer notification in the background (SHOULD, PRD section 5.3) is not implemented.
-- No audible rest-end sound on Android: the current sound uses `SystemSound`, which is effectively silent there.
 - Phase 2 sync (M7) has not been started.
 
 ## Roadmap
@@ -129,7 +135,6 @@ CI re-runs the generator and fails if `git diff` is not empty.
 - Sign-in with cloud backup and restore
 - Routines and workout templates, "repeat last workout"
 - Drop and failure set types
-- Rest-timer notifications in the background
 - kg / lb setting
 - Plate calculator
 - Deload suggestion after repeated `missed_reps`

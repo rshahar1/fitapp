@@ -4,6 +4,7 @@ import 'package:fitapp/features/progress/exercise_detail_screen.dart';
 import 'package:fitapp/features/progress/progress_screen.dart';
 import 'package:fitapp/features/settings/settings_screen.dart';
 import 'package:fitapp/features/shell/shell_scaffold.dart';
+import 'package:fitapp/features/templates/template_editor_screen.dart';
 import 'package:fitapp/features/train/train_screen.dart';
 import 'package:fitapp/features/workout/workout_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +20,11 @@ abstract final class Routes {
   static const settings = '/settings';
   static String finishedWorkout(String id) => '/workout/$id';
   static String exercise(String id) => '/exercise/$id';
+  static const newTemplate = '/template/new';
+  static String template(String id) => '/template/$id';
+
+  /// Exercise picker in selection mode; pops with the chosen exercise id.
+  static const pickExercise = '/pick-exercise';
   static String addExercise(String workoutId) =>
       '/add-exercise?workout=$workoutId';
 }
@@ -79,9 +85,28 @@ GoRouter buildRouter() => GoRouter(
       pageBuilder: (_, state) => MaterialPage(
         fullscreenDialog: true,
         child: ExercisePickerScreen(
-          workoutId: state.uri.queryParameters['workout']!,
+          workoutId: state.uri.queryParameters['workout'],
         ),
       ),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootKey,
+      path: Routes.pickExercise,
+      pageBuilder: (_, _) => const MaterialPage(
+        fullscreenDialog: true,
+        child: ExercisePickerScreen(),
+      ),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootKey,
+      path: Routes.newTemplate,
+      builder: (_, _) => const TemplateEditorScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootKey,
+      path: '/template/:id',
+      builder: (_, state) =>
+          TemplateEditorScreen(templateId: state.pathParameters['id']),
     ),
     GoRoute(
       parentNavigatorKey: _rootKey,

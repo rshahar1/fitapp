@@ -37,7 +37,9 @@ void main() {
     await db.close();
   });
 
-  Future<void> pump(WidgetTester tester) async {
+  String? popped;
+
+  Future<void> pump(WidgetTester tester, {bool select = false}) async {
     tester.view.physicalSize = const Size(800, 6000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -51,6 +53,7 @@ void main() {
       workoutId =
           (await container.read(workoutRepositoryProvider).startWorkout()).id;
     });
+    popped = null;
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
@@ -59,12 +62,16 @@ void main() {
           home: Builder(
             builder: (context) => Scaffold(
               body: TextButton(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    fullscreenDialog: true,
-                    builder: (_) => ExercisePickerScreen(workoutId: workoutId),
-                  ),
-                ),
+                onPressed: () async {
+                  popped = await Navigator.of(context).push<String>(
+                    MaterialPageRoute<String>(
+                      fullscreenDialog: true,
+                      builder: (_) => ExercisePickerScreen(
+                        workoutId: select ? null : workoutId,
+                      ),
+                    ),
+                  );
+                },
                 child: const Text('open'),
               ),
             ),
@@ -103,6 +110,19 @@ void main() {
     expect(haptics.ticks, 1);
     expect(find.text('Add exercise'), findsNothing);
     expect(await workoutNames(tester), ['Dumbbell Row']);
+  });
+
+  testWidgets('select mode pops with the exercise id', (tester) async {
+    await pump(tester, select: true);
+    expect(find.text('Choose exercise'), findsOneWidget);
+    await tester.tap(find.text('Dumbbell Row'));
+    await settle(tester);
+    expect(find.text('Choose exercise'), findsNothing);
+    final row = await tester.runAsync(
+      () => container.read(exerciseRepositoryProvider).exercise(popped!),
+    );
+    expect(row!.name, 'Dumbbell Row');
+    expect(await workoutNames(tester), isEmpty);
   });
 
   testWidgets('create custom exercise adds it to workout', (tester) async {

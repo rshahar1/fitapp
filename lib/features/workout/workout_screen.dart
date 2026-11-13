@@ -5,6 +5,7 @@ import 'package:fitapp/core/format.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/providers.dart';
+import 'package:fitapp/data/repositories/template_repository.dart';
 import 'package:fitapp/features/workout/rest_timer_controller.dart';
 import 'package:fitapp/features/workout/widgets/exercise_card.dart';
 import 'package:fitapp/features/workout/widgets/finish_summary_sheet.dart';
@@ -14,6 +15,7 @@ import 'package:fitapp/widgets/guard.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Whether a finished workout may be resumed right now.
@@ -174,6 +176,33 @@ class _WorkoutView extends ConsumerWidget {
     }
   }
 
+  Future<void> _saveAsTemplate(BuildContext context, WidgetRef ref) async {
+    final repo = ref.read(templateRepositoryProvider);
+    final messenger = ScaffoldMessenger.of(context);
+    final name = await showDialog<String>(
+      context: context,
+      builder: (_) => _SaveTemplateDialog(
+        initial:
+            'Workout ${DateFormat('d MMM').format(detail.workout.startedAt.toLocal())}',
+      ),
+    );
+    if (name == null || !context.mounted) return;
+    var duplicate = false;
+    final ok = await guard(context, () async {
+      try {
+        await repo.saveFromWorkout(detail.workout.id, name: name);
+      } on DuplicateTemplateName {
+        duplicate = true;
+      }
+    });
+    if (!ok) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(duplicate ? 'Name already used' : 'Template saved'),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final w = detail.workout;
@@ -183,6 +212,19 @@ class _WorkoutView extends ConsumerWidget {
         title: Text(
           isLive ? 'Workout' : formatDateShort(w.startedAt.toLocal()),
         ),
+        actions: [
+          if (detail.exercises.isNotEmpty)
+            PopupMenuButton<String>(
+              tooltip: 'Workout options',
+              onSelected: (_) => _saveAsTemplate(context, ref),
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'template',
+                  child: Text('Save as template'),
+                ),
+              ],
+            ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(64),
           child: Padding(
@@ -316,4 +358,44 @@ class _WorkoutView extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _SaveTemplateDialog extends StatefulWidget {
+  const new({required this.initial});
+
+  final String initial;
+
+  @override
+  State<_SaveTemplateDialog> createState() => _SaveTemplateDialogState();
+}
+
+class _SaveTemplateDialogState extends State<_SaveTemplateDialog> {
+  late final _controller = TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Save as template'),
+    content: TextField(
+      controller: _controller,
+      autofocus: true,
+      maxLength: 40,
+      decoration: const InputDecoration(labelText: 'Template name'),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: const Text('Cancel'),
+      ),
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(_controller.text),
+        child: const Text('Save'),
+      ),
+    ],
+  );
 }

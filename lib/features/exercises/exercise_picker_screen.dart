@@ -12,11 +12,12 @@ import 'package:material_ui/material_ui.dart';
 
 const _customGroup = 'Custom';
 
-/// Fullscreen picker that adds an exercise to a workout (PRD §5.1).
+/// Fullscreen picker that adds an exercise to a workout (PRD §5.1). Without a
+/// [workoutId] it is in select mode and pops with the chosen exercise id.
 class ExercisePickerScreen extends ConsumerStatefulWidget {
-  const new({required this.workoutId, super.key});
+  const new({this.workoutId, super.key});
 
-  final String workoutId;
+  final String? workoutId;
 
   @override
   ConsumerState<ExercisePickerScreen> createState() =>
@@ -34,11 +35,17 @@ class _ExercisePickerScreenState extends ConsumerState<ExercisePickerScreen> {
   }
 
   Future<void> _add(ExerciseRow exercise) async {
+    final workoutId = widget.workoutId;
+    if (workoutId == null) {
+      ref.read(hapticsProvider).tick();
+      Navigator.of(context).pop(exercise.id);
+      return;
+    }
     final ok = await guard(
       context,
       () => ref
           .read(workoutRepositoryProvider)
-          .addExercise(widget.workoutId, exercise.id),
+          .addExercise(workoutId, exercise.id),
     );
     if (!ok || !mounted) return;
     ref.read(hapticsProvider).tick();
@@ -65,7 +72,9 @@ class _ExercisePickerScreenState extends ConsumerState<ExercisePickerScreen> {
     return Scaffold(
       backgroundColor: const Color(0x00000000),
       appBar: AppBar(
-        title: const Text('Add exercise'),
+        title: Text(
+          widget.workoutId == null ? 'Choose exercise' : 'Add exercise',
+        ),
         leading: IconButton(
           icon: const Icon(Icons.close),
           tooltip: 'Close',

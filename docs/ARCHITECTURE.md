@@ -32,9 +32,18 @@ Implementation in `WorkoutRepository`:
 
 ## Rest timer
 
-- `RestTimerController` (`lib/features/workout/rest_timer_controller.dart`) stores the start timestamp and target duration in the settings table, so the timer survives app restarts.
+- `RestTimerController` (`lib/features/workout/rest_timer_controller.dart`) stores the start timestamp, target duration and exercise name in the settings table, so the timer survives app restarts.
 - The displayed remaining time is derived from the clock (now minus start), never from a ticking counter, so it stays correct after backgrounding.
-- A separate alarm `Timer` fires the haptic and sound at the end while the app is alive. Background notification and an audible Android sound are not implemented yet.
+- In the foreground a single alarm `Timer` fires at 0: haptic if Vibrate is on, chime if Sound is on, once per timer (`_alerted`). A restored timer that already ended never alerts late.
+- `onBackground()` schedules one OS notification at the timer end with the current Sound/Vibrate prefs and exercise name; `onForeground()` cancels it. `dismiss()` cancels it, a new `start()` while backgrounded reschedules, and changing prefs while backgrounded reschedules. Nothing is scheduled once the time has run out. In the background the OS notification is the alert, not the in-app chime.
+- The first `start()` requests notification permission once (flag stored in settings); a denial never affects the in-app chime.
+
+### RestAlerts boundary
+
+- `lib/core/rest_alerts.dart` defines the `RestAlerts` interface (`init`, `status`, `requestNotificationPermission`, `openNotificationSettings`, `openExactAlarmSettings`, `playChime`, `schedule`, `cancel`), `AlertStatus`/`AlertPermission`, `NoopRestAlerts` (default for tests and unsupported platforms) and `restAlertsProvider`. Implementations must swallow and log platform errors; the in-app timer never depends on them.
+- `lib/core/platform_rest_alerts.dart` is the production `PlatformRestAlerts`, overridden in `main()`. It uses `flutter_local_notifications` (four channels by sound/vibrate, one notification id, UTC `zonedSchedule`, exact mode when `canScheduleExactNotifications()` else inexact-while-idle, tap opens the workout screen) and `audioplayers` for the chime (notification-event usage, transient focus with ducking, `ambient` on iOS), plus `app_settings` for the system settings screens.
+- `AppLifecycleListener` in `lib/app/app.dart` calls `onBackground()` on hide/pause and `onForeground()` on show/resume.
+- Tests override `restAlertsProvider` with a no-op or fake.
 
 ## Error handling
 

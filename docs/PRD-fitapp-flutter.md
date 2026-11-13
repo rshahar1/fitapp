@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.3, 13 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.4, 13 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -223,7 +223,11 @@ back to the exercise plan.
   UUID scheme: `00000000-0000-4000-8000-` followed by the number as 12-digit zero-padded hex (`…000000000001` to `…000000000010`).
   Library seeding is idempotent and updates names, groups and increments on every app start.
 - **MUST** support exercise search, grouping by muscle group, and creating a **custom exercise** by typing a name
-  that doesn't exist (name, per-hand flag, increment). Names are unique per user, case-insensitive.
+  that doesn't exist (name, per-hand flag, increment, category: Chest, Back, Legs, Shoulders, Arms or Custom).
+  Names are unique per user, case-insensitive.
+- **MUST** provide an **Exercises** library screen (`/exercises`), reachable from the Train header icon and the
+  Progress "All exercises" link, to browse, create and edit custom exercises (also via Edit on the exercise
+  detail; built-in exercises are not editable).
 
 ### 5.2 Plan setup
 - The first time an exercise appears in a workout without a plan, show an inline **plan setup** card: base weight
@@ -250,6 +254,9 @@ back to the exercise plan.
   **overtime** counting up (e.g. `+0:12`) in a muted style. Logging the next set restarts it; tapping the pill
   dismisses it. It is computed from a stored start timestamp (not a ticking counter), so it stays correct when the
   app is backgrounded. A system notification when the app is in the background is **SHOULD**.
+- **Discard workout** in the live menu deletes the live workout after confirmation (stronger warning when it was
+  resumed). A **Date** row (live and finished workouts) moves the session to another day to log past gym
+  sessions; time of day and duration are kept.
 - **Add Exercise** opens the exercise picker (modal) and appends the exercise to *this* workout.
 - **Exercise notes** (**SHOULD**): free text per exercise in this workout.
 
@@ -260,6 +267,11 @@ back to the exercise plan.
   and note.
 - Tapping a workout row opens it in **edit mode** (same screen as live logging): "changes save automatically",
   and footer buttons **Done**, **Resume** (only if allowed) and **Delete**.
+- **Resume** works for any finished workout while none is live, also from the finish summary; a resumed workout
+  keeps its earlier duration (device-local live-session record). Finishing rewrites a plan's base only when the
+  workout is the newest session for that plan; backdated or older resumed sessions never do.
+- A **List / Calendar** switch: Month or Week calendar with prev/next, a month and year picker and Today; each day
+  shows the icon of its first session and "+N" for more, and tapping a day lists its entries.
 - Tapping an activity row opens the activity sheet to edit it or delete it (delete asks for confirmation).
 
 ### 5.5 Home / Train tab
@@ -574,6 +586,8 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 | Activities can be edited and deleted from History | Owner's decision (13 Nov 2026); same expectation as workouts, delete is confirmed |
 | Activities count toward This week, Week streak and the weekly bars; Total workouts stays gym only; never volume or progression | Owner's decision (13 Nov 2026); consistency covers all training, "workouts" stays gym |
 | Distinct icons per row in History, including a dumbbell for gym workouts | Owner's decision (13 Nov 2026); tell sports and gym apart at a glance |
+| Resume any finished workout, discard live workouts, backdate gym sessions | Owner's decision (13 Nov 2026); a backdated or older session never rewrites a plan's base |
+| Exercises library with custom categories; History calendar | Owner's decision (13 Nov 2026); browse and edit exercises, review training by day |
 | Keep the approved dark green look | Owner's decision; Hevy is the structure model only, not the palette |
 
 ## 16. Open items
@@ -604,3 +618,7 @@ resolved on 12 Nov 2026; see the decisions log.
   - Code-level registry `lib/domain/activity_types.dart`, `ActivityRepository`, new `activities` table (schema v4,
     `from3To4`), merged History list with icons, edit and delete.
   - Activities count toward This week, Week streak and the weekly bars; Total workouts stays gym only.
+- **2.4 (13 Nov 2026):** feature 007, workout flow and exercise library (owner decisions of 13 Nov 2026).
+  - Resume any finished workout (also from the finish summary), keeping earlier duration; Discard workout; Date row to backdate sessions.
+  - Exercises library screen with create/edit custom exercises and a category selector; History List/Calendar switch.
+  - Finishing rewrites a plan's base only for the newest session of that plan. No schema change (v4), no new packages.

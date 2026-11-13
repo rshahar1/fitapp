@@ -1,5 +1,12 @@
 <!--
 Sync Impact Report
+- Version change: 1.2.0 → 1.2.1 (feature 007, workout flow and exercise library)
+- Modified principles: II (finishing a workout rewrites a plan's base only when it is the newest
+  session for that plan; backdated or resumed older sessions never do) — PATCH clarification
+- Added sections: none | Removed sections: none
+- Deferred TODOs: none
+
+Previous report (1.2.0)
 - Version change: 1.1.0 → 1.2.0 (feature 006, sport activities)
 - Modified principles: IV (`ActivityRepository` added to the repositories that own business writes);
   VII (lightweight sport activity logging is in scope, owner request; sport-specific metrics and
@@ -54,6 +61,8 @@ Rationale: gyms often have no signal, and a lost workout destroys trust in the p
 - Editing, resuming or deleting history MUST respect `canRewriteBase`: the current base of a plan
   (the exercise's own plan or a template exercise's plan) is rewritten only when the workout is the
   latest session for that plan AND the current base equals the stored `resultBaseWeight`.
+  Finishing a workout likewise rewrites a plan's base only when it is the newest session for that
+  plan; backdated or resumed older sessions never do.
 
 Rationale: automatic progressive overload is the product; a wrong base weight is the worst bug.
 
@@ -152,4 +161,4 @@ Rationale: the owner explicitly dropped these; speculative code is maintenance d
   version (MAJOR: principle removed/redefined; MINOR: principle/section added; PATCH: wording).
 - Reviews verify compliance with principles II, III and VI on every milestone.
 
-**Version**: 1.2.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-13
+**Version**: 1.2.1 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-13

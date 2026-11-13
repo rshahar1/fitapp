@@ -99,6 +99,22 @@ the Progress weekly bars; **Total workouts** counts gym workouts only, and activ
 exercise stats or progression. The sports are a code-level registry in `lib/domain/activity_types.dart`;
 adding one means one registry entry plus one icon in `lib/features/activities/activity_icons.dart`.
 
+## Workout flow and exercise library
+
+- **Resume** any finished workout (while none is live), from History or the finish summary; a resumed workout
+  keeps its earlier duration. The live session is a device-local record (settings key `live_workout`,
+  `lib/data/repositories/live_session_store.dart`).
+- **Discard workout** is in the live workout menu, with a confirmation (stronger warning for resumed workouts).
+- The **Date** row on the workout screen (live and finished) logs past gym sessions; time of day and duration
+  are kept. Finishing only progresses a plan when the workout is the newest session for that plan.
+  Pure helpers live in `lib/domain/workout_dates.dart`.
+- **Exercises** library (`/exercises`, header icon on Train and "All exercises" on Progress): create and edit
+  custom exercises, with a category (Chest, Back, Legs, Shoulders, Arms, Custom).
+- **History** has a List/Calendar switch: Month or Week calendar with prev/next, month and year picker, Today,
+  a first-session icon per day and "+N" for more (pure helpers in `lib/domain/calendar.dart`).
+
+No schema change (still v4) and no new packages.
+
 ## Database schema and migrations
 
 The schema is at version 4 (v2 adds `templates` and `template_exercises`; v3 adds the plan columns on `template_exercises` and `workout_exercises.template_exercise_id`; v4 adds `activities`). Migrations use drift's generated `stepByStep` helper (`lib/data/db/app_database.steps.dart`). Schema dumps live in `drift_schemas/` and the migration tests in `test/drift/` (plus `test/data/migration_test.dart`). After any schema change, regenerate the dumps and test helpers with:
@@ -114,10 +130,10 @@ lib/
   main.dart
   app/                 app.dart, backdrop.dart, router.dart, theme/ (app_theme.dart, tokens.dart)
   core/                format.dart, haptics.dart, rest_alerts.dart, platform_rest_alerts.dart
-  domain/              pure Dart: progression.dart, stats.dart, activity_types.dart (sport registry)
+  domain/              pure Dart: progression.dart, stats.dart, activity_types.dart (sport registry), workout_dates.dart, calendar.dart
   data/
     db/                app_database.dart, tables.dart, seed_library.dart (+ generated *.g.dart)
-    repositories/      WorkoutRepository, ExerciseRepository, SettingsRepository, TemplateRepository (template_repository.dart), ActivityRepository (activity_repository.dart), plan_store.dart (PlanStore: validated plan reads/writes)
+    repositories/      WorkoutRepository, ExerciseRepository, SettingsRepository, TemplateRepository (template_repository.dart), ActivityRepository (activity_repository.dart), plan_store.dart (PlanStore: validated plan reads/writes), live_session_store.dart (device-local live workout record)
     models.dart        plain data/read models
     providers.dart     Riverpod providers
     watch.dart         watchQuery: stream that re-runs a loader on table updates
@@ -125,10 +141,10 @@ lib/
     shell/             bottom-navigation shell
     train/             start/resume workout
     workout/           workout screen, rest timer, widgets/ (exercise card, set table/sheet, ...)
-    history/           workouts and activities by month, edit/resume/delete
+    history/           workouts and activities by month or calendar (history_calendar.dart, history_rows.dart), edit/resume/delete
     activities/        log/edit activity sheet, activity_icons.dart
     progress/          overview and per-exercise detail
-    exercises/         exercise picker and custom exercise sheet
+    exercises/         exercise library screen, exercise picker and custom exercise sheet
     templates/         template editor screen (create/edit/reorder/delete)
     settings/          settings screen
   widgets/             shared UI kit (buttons, cards, charts, guard.dart, ...)

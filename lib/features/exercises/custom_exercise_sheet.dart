@@ -1,8 +1,10 @@
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/data/db/app_database.dart';
+import 'package:fitapp/data/db/seed_library.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/exercise_repository.dart';
+import 'package:fitapp/features/exercises/exercise_groups.dart';
 import 'package:fitapp/widgets/guard.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,22 +12,25 @@ import 'package:material_ui/material_ui.dart';
 
 const _increments = [1.0, 2.0, 2.5, 5.0];
 
-/// Bottom sheet to create a custom exercise. Returns the created row, or null
-/// when dismissed.
+/// Bottom sheet to create a custom exercise, or edit [existing]. Returns the
+/// saved row, or null when dismissed.
 Future<ExerciseRow?> showCustomExerciseSheet(
   BuildContext context, {
   String initialName = '',
+  ExerciseRow? existing,
 }) => showModalBottomSheet<ExerciseRow>(
   context: context,
   useSafeArea: true,
   isScrollControlled: true,
-  builder: (_) => _CustomExerciseSheet(initialName: initialName),
+  builder: (_) =>
+      _CustomExerciseSheet(initialName: initialName, existing: existing),
 );
 
 class _CustomExerciseSheet extends ConsumerStatefulWidget {
-  const new({required this.initialName});
+  const new({required this.initialName, this.existing});
 
   final String initialName;
+  final ExerciseRow? existing;
 
   @override
   ConsumerState<_CustomExerciseSheet> createState() =>
@@ -33,9 +38,12 @@ class _CustomExerciseSheet extends ConsumerStatefulWidget {
 }
 
 class _CustomExerciseSheetState extends ConsumerState<_CustomExerciseSheet> {
-  late final _name = TextEditingController(text: widget.initialName);
-  bool _perHand = false;
-  double _increment = 2.5;
+  late final _name = TextEditingController(
+    text: widget.existing?.name ?? widget.initialName,
+  );
+  late bool _perHand = widget.existing?.isPerHand ?? false;
+  late double _increment = widget.existing?.defaultIncrement ?? 2.5;
+  late String? _category = widget.existing?.muscleGroup;
   String? _error;
   bool _busy = false;
 
@@ -57,13 +65,22 @@ class _CustomExerciseSheetState extends ConsumerState<_CustomExerciseSheet> {
     });
     ExerciseRow? created;
     try {
-      created = await ref
-          .read(exerciseRepositoryProvider)
-          .createCustom(
-            name: _name.text,
-            perHand: _perHand,
-            increment: _increment,
-          );
+      final repo = ref.read(exerciseRepositoryProvider);
+      final existing = widget.existing;
+      created = existing == null
+          ? await repo.createCustom(
+              name: _name.text,
+              perHand: _perHand,
+              increment: _increment,
+              muscleGroup: _category,
+            )
+          : await repo.updateCustom(
+              existing.id,
+              name: _name.text,
+              muscleGroup: _category,
+              perHand: _perHand,
+              increment: _increment,
+            );
     } on DuplicateExerciseName catch (e) {
       if (!mounted) return;
       setState(() {
@@ -82,6 +99,8 @@ class _CustomExerciseSheetState extends ConsumerState<_CustomExerciseSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final editing = widget.existing != null;
+    final increments = {..._increments, _increment}.toList()..sort();
     return Padding(
       padding: EdgeInsets.fromLTRB(
         Space.m,
@@ -94,7 +113,10 @@ class _CustomExerciseSheetState extends ConsumerState<_CustomExerciseSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('New exercise', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              editing ? 'Edit exercise' : 'New exercise',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: Space.m),
             TextField(
               controller: _name,
@@ -103,6 +125,15 @@ class _CustomExerciseSheetState extends ConsumerState<_CustomExerciseSheet> {
               onChanged: (_) {
                 if (_error != null) setState(() => _error = null);
               },
+            ),
+            const SizedBox(height: Space.m),
+            Text('Category', style: Theme.of(context).textTheme.labelSmall),
+            const SizedBox(height: Space.s),
+            ChipSelector<String?>(
+              options: const [...muscleGroups, null],
+              selected: _category,
+              labelOf: (v) => v ?? customGroup,
+              onSelected: (v) => setState(() => _category = v),
             ),
             const SizedBox(height: Space.s),
             SwitchListTile(
@@ -118,14 +149,14 @@ class _CustomExerciseSheetState extends ConsumerState<_CustomExerciseSheet> {
             ),
             const SizedBox(height: Space.s),
             ChipSelector<double>(
-              options: _increments,
+              options: increments,
               selected: _increment,
               labelOf: (v) => '+${formatWeight(v)}',
               onSelected: (v) => setState(() => _increment = v),
             ),
             const SizedBox(height: Space.l),
             AppButton(
-              label: 'Create exercise',
+              label: editing ? 'Save' : 'Create exercise',
               expand: true,
               onPressed: _busy ? null : _submit,
             ),

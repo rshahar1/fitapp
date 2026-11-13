@@ -38,10 +38,10 @@ void main() {
       expect(() => h.workouts.resumeWorkout(w), throwsStateError);
     });
 
-    test('blocked when not the most recent finished workout', () async {
+    test('allowed for an older finished workout (feature 007)', () async {
       final (w1, _) = await h.session(_progressed);
       await h.session([(22.5, 10)], exerciseId: latId);
-      expect(await h.workouts.canResume(w1), isFalse);
+      expect(await h.workouts.canResume(w1), isTrue);
     });
   });
 

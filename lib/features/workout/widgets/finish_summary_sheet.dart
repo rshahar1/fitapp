@@ -9,51 +9,64 @@ String outcomeText(FinishOutcome o) => o.toBase > o.fromBase
     ? '${o.exerciseName}: ${formatKg(o.fromBase)} → ${formatKg(o.toBase)}'
     : '${o.exerciseName}: stays at ${formatKg(o.toBase)}';
 
-Future<void> showFinishSummary(BuildContext context, FinishResult result) =>
-    showModalBottomSheet<void>(
-      context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.fromLTRB(Space.m, 0, Space.m, Space.l),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Workout complete',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: Space.m),
-            if (result.outcomes.isEmpty)
-              const Text('No planned exercises to progress.'),
-            for (final o in result.outcomes)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: Space.xs),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      o.toBase > o.fromBase ? '⬆' : '•',
-                      style: TextStyle(
-                        color: o.toBase > o.fromBase
-                            ? AppColors.accent
-                            : AppColors.textSecondary,
-                        fontWeight: FontWeight.w800,
-                      ),
+/// Shows the summary; resolves true when the user chose "Resume workout".
+Future<bool> showFinishSummary(
+  BuildContext context,
+  FinishResult result,
+) async {
+  final resume = await showModalBottomSheet<bool>(
+    context: context,
+    useSafeArea: true,
+    isScrollControlled: true,
+    builder: (context) => Padding(
+      padding: const EdgeInsets.fromLTRB(Space.m, 0, Space.m, Space.l),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Workout complete',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: Space.m),
+          if (result.outcomes.isEmpty)
+            const Text('No planned exercises to progress.'),
+          for (final o in result.outcomes)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: Space.xs),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    o.toBase > o.fromBase ? '⬆' : '•',
+                    style: TextStyle(
+                      color: o.toBase > o.fromBase
+                          ? AppColors.accent
+                          : AppColors.textSecondary,
+                      fontWeight: FontWeight.w800,
                     ),
-                    const SizedBox(width: Space.s),
-                    Expanded(child: Text(outcomeText(o))),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: Space.s),
+                  Expanded(child: Text(outcomeText(o))),
+                ],
               ),
-            const SizedBox(height: Space.l),
-            AppButton(
-              label: 'Done',
-              expand: true,
-              onPressed: () => Navigator.of(context).pop(),
             ),
-          ],
-        ),
+          const SizedBox(height: Space.l),
+          AppButton(
+            label: 'Done',
+            expand: true,
+            onPressed: () => Navigator.of(context).pop(false),
+          ),
+          const SizedBox(height: Space.s),
+          AppButton(
+            label: 'Resume workout',
+            expand: true,
+            variant: AppButtonVariant.secondary,
+            onPressed: () => Navigator.of(context).pop(true),
+          ),
+        ],
       ),
-    );
+    ),
+  );
+  return resume ?? false;
+}

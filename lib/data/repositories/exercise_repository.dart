@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:fitapp/data/db/app_database.dart';
+import 'package:fitapp/data/db/seed_library.dart';
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/repositories/plan_store.dart';
 import 'package:fitapp/data/watch.dart';
@@ -42,14 +43,17 @@ class ExerciseRepository {
   )..where((e) => e.id.equals(id))).watchSingleOrNull();
 
   /// Creates a custom exercise. Names are unique, case-insensitive.
+  /// [muscleGroup] must be one of [muscleGroups]; null means "Custom".
   Future<ExerciseRow> createCustom({
     required String name,
     required bool perHand,
     required double increment,
+    String? muscleGroup,
   }) => _db.transaction(() async {
     final trimmed = name.trim();
     if (trimmed.isEmpty) throw ArgumentError('Name must not be empty');
     if (!(increment > 0)) throw ArgumentError('Increment must be > 0');
+    _checkMuscleGroup(muscleGroup);
     final existing =
         await (_db.select(_db.exercises)
               ..where((e) => e.name.lower().equals(trimmed.toLowerCase())))
@@ -61,12 +65,59 @@ class ExerciseRepository {
           ExercisesCompanion.insert(
             id: _uuid.v4(),
             name: trimmed,
+            muscleGroup: Value(muscleGroup),
             isPerHand: perHand,
             defaultIncrement: roundWeight(increment),
             isCustom: true,
             updatedAt: _db.now(),
           ),
         );
+  });
+
+  static void _checkMuscleGroup(String? muscleGroup) {
+    if (muscleGroup != null && !muscleGroups.contains(muscleGroup)) {
+      throw ArgumentError.value(muscleGroup, 'muscleGroup', 'Unknown category');
+    }
+  }
+
+  /// Edits a custom exercise (built-in exercises are read-only). Names stay
+  /// unique, case-insensitive; renaming to another casing of its own name is
+  /// allowed. Throws [StateError] if [id] is unknown or not custom.
+  Future<ExerciseRow> updateCustom(
+    String id, {
+    required String name,
+    required String? muscleGroup,
+    required bool perHand,
+    required double increment,
+  }) => _db.transaction(() async {
+    final current = await exercise(id);
+    if (current == null) throw StateError('Exercise not found: $id');
+    if (!current.isCustom) {
+      throw StateError('Built-in exercises cannot be edited');
+    }
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) throw ArgumentError('Name must not be empty');
+    if (!(increment > 0)) throw ArgumentError('Increment must be > 0');
+    _checkMuscleGroup(muscleGroup);
+    final clash =
+        await (_db.select(_db.exercises)..where(
+              (e) =>
+                  e.name.lower().equals(trimmed.toLowerCase()) &
+                  e.id.equals(id).not(),
+            ))
+            .getSingleOrNull();
+    if (clash != null) throw DuplicateExerciseName(clash.name);
+    await (_db.update(_db.exercises)..where((e) => e.id.equals(id))).write(
+      ExercisesCompanion(
+        name: Value(trimmed),
+        muscleGroup: Value(muscleGroup),
+        isPerHand: Value(perHand),
+        defaultIncrement: Value(roundWeight(increment)),
+        updatedAt: Value(_db.now()),
+        dirty: const Value(true),
+      ),
+    );
+    return (await exercise(id))!;
   });
 
   Future<PlanRow?> plan(String exerciseId) => (_db.select(

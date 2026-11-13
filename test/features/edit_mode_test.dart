@@ -174,7 +174,7 @@ void main() {
     await _dispose(tester, env);
   });
 
-  testWidgets('Resume shows only for the most recent finished workout', (
+  testWidgets('Resume shows for any finished workout while none is live', (
     tester,
   ) async {
     final env = await seeded(tester);
@@ -185,7 +185,7 @@ void main() {
       () => env.finished([(22.5, 10), (22.5, 10), (25, 5)]),
     );
     await _open(tester, env, first);
-    expect(find.text('RESUME'), findsNothing);
+    expect(find.text('RESUME'), findsOneWidget);
     expect(find.text('DELETE'), findsOneWidget);
     await _dispose(tester, env);
   });

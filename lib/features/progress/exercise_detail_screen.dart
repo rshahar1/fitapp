@@ -6,6 +6,7 @@ import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/domain/stats.dart';
+import 'package:fitapp/features/exercises/custom_exercise_sheet.dart';
 import 'package:fitapp/features/workout/widgets/exercise_card.dart';
 import 'package:fitapp/features/workout/widgets/plan_form.dart';
 import 'package:fitapp/widgets/widgets.dart';
@@ -30,6 +31,15 @@ class ExerciseDetailScreen extends ConsumerWidget {
       child: Scaffold(
         appBar: AppBar(
           title: Text(exercise?.name ?? ''),
+          actions: [
+            if (exercise != null && exercise.isCustom)
+              IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                tooltip: 'Edit exercise',
+                onPressed: () =>
+                    showCustomExerciseSheet(context, existing: exercise),
+              ),
+          ],
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Summary'),

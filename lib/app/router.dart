@@ -1,3 +1,4 @@
+import 'package:fitapp/features/exercises/exercise_library_screen.dart';
 import 'package:fitapp/features/exercises/exercise_picker_screen.dart';
 import 'package:fitapp/features/history/history_screen.dart';
 import 'package:fitapp/features/progress/exercise_detail_screen.dart';
@@ -18,6 +19,9 @@ abstract final class Routes {
   static const progress = '/progress';
   static const workout = '/workout';
   static const settings = '/settings';
+
+  /// Exercise library (feature 007), reachable without a workout.
+  static const exercises = '/exercises';
   static String finishedWorkout(String id) => '/workout/$id';
   static String exercise(String id) => '/exercise/$id';
   static const newTemplate = '/template/new';
@@ -96,6 +100,11 @@ GoRouter buildRouter() => GoRouter(
         fullscreenDialog: true,
         child: ExercisePickerScreen(),
       ),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootKey,
+      path: Routes.exercises,
+      builder: (_, _) => const ExerciseLibraryScreen(),
     ),
     GoRoute(
       parentNavigatorKey: _rootKey,

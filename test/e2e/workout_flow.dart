@@ -74,7 +74,9 @@ Future<void> runWorkoutFlow(
     find.textContaining('Incline Dumbbell Bench Press: 20 kg → 22.5 kg'),
     findsOneWidget,
   );
-  await tap(find.text('DONE'));
+  await tap(
+    find.descendant(of: find.byType(BottomSheet), matching: find.text('DONE')),
+  );
 
   await tap(find.text('Progress'));
   await tap(find.text('Incline Dumbbell Bench Press'));

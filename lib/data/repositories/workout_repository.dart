@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:drift/drift.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/models.dart';
+import 'package:fitapp/data/repositories/live_session_store.dart';
 import 'package:fitapp/data/repositories/plan_store.dart';
 import 'package:fitapp/data/watch.dart';
 import 'package:fitapp/domain/progression.dart';
 import 'package:fitapp/domain/stats.dart';
+import 'package:fitapp/domain/workout_dates.dart';
 import 'package:uuid/uuid.dart';
 
 /// All workout writes and queries (PRD §4.3, §4.4). Multi-row writes run in
@@ -43,8 +45,75 @@ class WorkoutRepository {
       startedAt: now,
       updatedAt: now,
     );
-    return await _db.into(_db.workouts).insertReturning(row);
+    final created = await _db.into(_db.workouts).insertReturning(row);
+    await _db.writeLiveSession(
+      LiveSession(workoutId: created.id, liveSince: now),
+    );
+    return created;
   });
+
+  /// The live-session record (feature 007): elapsed time of a resumed
+  /// workout and the day chosen for the live workout.
+  Stream<LiveSession?> watchLiveSession() => _db.watchLiveSession();
+
+  /// Sets the day the live workout is stored on when it is finished; the
+  /// local day of its start (normally today) clears the choice. Throws
+  /// [ArgumentError] for a future day, [StateError] for a finished workout.
+  Future<void> setLiveWorkoutDay(String workoutId, DateTime day) =>
+      _db.transaction(() async {
+        final workout = await _workout(workoutId);
+        if (workout.endedAt != null) {
+          throw StateError('Use setWorkoutDay for a finished workout');
+        }
+        checkWorkoutDay(day, _db.now());
+        final current = await _db.readLiveSession();
+        final session = current != null && current.workoutId == workoutId
+            ? current
+            // Workout started before feature 007: live since its start.
+            : LiveSession(workoutId: workoutId, liveSince: workout.startedAt);
+        final today = shiftToDay(workout.startedAt, day) == workout.startedAt;
+        await _db.writeLiveSession(session.withDay(today ? null : day));
+      });
+
+  /// Moves a finished workout to the local day [day], keeping its time of
+  /// day and duration (never ending in the future). Base weights are not
+  /// rewritten. Throws [ArgumentError] for a future day, [StateError] for a
+  /// live workout.
+  Future<void> setWorkoutDay(String workoutId, DateTime day) =>
+      _db.transaction(() async {
+        final workout = await _workout(workoutId);
+        final ended = workout.endedAt;
+        if (ended == null) {
+          throw StateError('Use setLiveWorkoutDay for a live workout');
+        }
+        final now = _db.now();
+        checkWorkoutDay(day, now);
+        final (start, end) = _clampToNow(
+          shiftToDay(workout.startedAt, day),
+          ended.difference(workout.startedAt),
+          now,
+        );
+        await (_db.update(
+          _db.workouts,
+        )..where((w) => w.id.equals(workoutId))).write(
+          WorkoutsCompanion(
+            startedAt: Value(start),
+            endedAt: Value(end),
+            updatedAt: Value(now),
+            dirty: const Value(true),
+          ),
+        );
+      });
+
+  /// (start, start + duration), moved earlier so the end is not after [now].
+  static (DateTime, DateTime) _clampToNow(
+    DateTime start,
+    Duration duration,
+    DateTime now,
+  ) {
+    final end = start.add(duration);
+    return end.isAfter(now) ? (now.subtract(duration), now) : (start, end);
+  }
 
   Future<WorkoutExerciseRow> addExercise(String workoutId, String exerciseId) =>
       _db.transaction(() async {
@@ -195,8 +264,36 @@ class WorkoutRepository {
         final setsByWe = {for (final we in wes) we.id: await _setsOf(we.id)};
         if (setsByWe.values.every((s) => s.isEmpty)) {
           await _deleteWorkoutRows(workoutId);
+          await _db.clearLiveSession(workoutId);
           return const FinishResult(outcomes: [], discarded: true);
         }
+        // Mark it finished (on the chosen day, with its live duration) first:
+        // the newest-session check below needs its final start time.
+        final now = _db.now();
+        final live = await _db.readLiveSession();
+        var startedAt = workout.startedAt;
+        var endedAt = now;
+        if (live != null && live.workoutId == workoutId) {
+          final day = live.day;
+          final (s, e) = _clampToNow(
+            day == null ? startedAt : shiftToDay(startedAt, day),
+            live.elapsed(now),
+            now,
+          );
+          startedAt = s;
+          endedAt = e;
+        }
+        await (_db.update(
+          _db.workouts,
+        )..where((w) => w.id.equals(workoutId))).write(
+          WorkoutsCompanion(
+            startedAt: Value(startedAt),
+            endedAt: Value(endedAt),
+            updatedAt: Value(now),
+            dirty: const Value(true),
+          ),
+        );
+        await _db.clearLiveSession(workoutId);
         final outcomes = <FinishOutcome>[];
         for (final we in wes) {
           final sets = setsByWe[we.id]!;
@@ -208,9 +305,12 @@ class WorkoutRepository {
           final result = evaluate(plan, sets.map(loggedFromRow));
           await _writeSnapshot(we.id, plan, result.nextBaseWeight);
           var toBase = current?.baseWeight ?? plan.baseWeight;
+          // Only the newest session of a plan moves its base (a backdated or
+          // resumed older session never does).
           if (current != null &&
               result.progressed &&
-              roundWeight(current.baseWeight) == plan.baseWeight) {
+              roundWeight(current.baseWeight) == plan.baseWeight &&
+              await _isLatestSession(source, workoutId)) {
             await _setBase(source, result.nextBaseWeight);
             toBase = result.nextBaseWeight;
           }
@@ -223,16 +323,6 @@ class WorkoutRepository {
             ),
           );
         }
-        final now = _db.now();
-        await (_db.update(
-          _db.workouts,
-        )..where((w) => w.id.equals(workoutId))).write(
-          WorkoutsCompanion(
-            endedAt: Value(now),
-            updatedAt: Value(now),
-            dirty: const Value(true),
-          ),
-        );
         return FinishResult(outcomes: outcomes, discarded: false);
       });
 
@@ -243,14 +333,17 @@ class WorkoutRepository {
       throw StateError('Only an active workout can be discarded');
     }
     await _deleteWorkoutRows(workoutId);
+    await _db.clearLiveSession(workoutId);
   });
 
-  /// Resume is allowed only for the most recent finished workout overall and
-  /// only when no other workout is in progress.
+  /// Any finished workout can be resumed while no workout is in progress
+  /// (feature 007; before, only the most recent one).
   Future<bool> canResume(String workoutId) async {
     if (await activeWorkout() != null) return false;
-    final latest = await _latestFinishedWorkout();
-    return latest?.id == workoutId;
+    final workout = await (_db.select(
+      _db.workouts,
+    )..where((w) => w.id.equals(workoutId))).getSingleOrNull();
+    return workout?.endedAt != null;
   }
 
   Future<void> resumeWorkout(String workoutId) => _db.transaction(() async {
@@ -269,13 +362,24 @@ class WorkoutRepository {
         ),
       );
     }
+    final workout = await _workout(workoutId);
+    final now = _db.now();
     await (_db.update(
       _db.workouts,
     )..where((w) => w.id.equals(workoutId))).write(
       WorkoutsCompanion(
         endedAt: const Value(null),
-        updatedAt: Value(_db.now()),
+        updatedAt: Value(now),
         dirty: const Value(true),
+      ),
+    );
+    // Keep the earlier duration; the time between finish and resume does
+    // not count.
+    await _db.writeLiveSession(
+      LiveSession(
+        workoutId: workoutId,
+        liveSince: now,
+        priorSeconds: workout.endedAt!.difference(workout.startedAt).inSeconds,
       ),
     );
   });
@@ -289,6 +393,7 @@ class WorkoutRepository {
       }
     }
     await _deleteWorkoutRows(workoutId);
+    await _db.clearLiveSession(workoutId);
   });
 
   /// Creates or replaces the plan this session uses: the exercise's own plan
@@ -553,16 +658,6 @@ class WorkoutRepository {
     final row = await q.getSingleOrNull();
     return row?.readTable(w).id == workoutId;
   }
-
-  Future<WorkoutRow?> _latestFinishedWorkout() =>
-      (_db.select(_db.workouts)
-            ..where((w) => w.endedAt.isNotNull())
-            ..orderBy([
-              (w) => OrderingTerm.desc(w.startedAt),
-              (w) => OrderingTerm.desc(w.id),
-            ])
-            ..limit(1))
-          .getSingleOrNull();
 
   Future<void> _writeSnapshot(String weId, Plan plan, double result) =>
       (_db.update(_db.workoutExercises)..where((t) => t.id.equals(weId))).write(

@@ -5,7 +5,9 @@ import 'package:fitapp/core/format.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/providers.dart';
+import 'package:fitapp/data/repositories/live_session_store.dart';
 import 'package:fitapp/data/repositories/template_repository.dart';
+import 'package:fitapp/domain/calendar.dart' show dateOnly;
 import 'package:fitapp/features/workout/rest_timer_controller.dart';
 import 'package:fitapp/features/workout/widgets/exercise_card.dart';
 import 'package:fitapp/features/workout/widgets/finish_summary_sheet.dart';
@@ -142,8 +144,82 @@ class _WorkoutView extends ConsumerWidget {
     if (!ok) return;
     await rest.dismiss();
     if (result!.outcomes.any((o) => o.toBase > o.fromBase)) haptics.success();
-    if (rootContext.mounted) await showFinishSummary(rootContext, result!);
+    var resume = false;
+    if (rootContext.mounted) {
+      resume = await showFinishSummary(rootContext, result!);
+    }
+    if (resume) {
+      try {
+        await repo.resumeWorkout(detail.workout.id);
+        router.go(Routes.workout);
+        return;
+      } on Object {
+        // Fall through to Train if resuming is no longer possible.
+      }
+    }
     router.go(Routes.train);
+  }
+
+  Future<void> _discard(
+    BuildContext context,
+    WidgetRef ref,
+    LiveSession? session,
+  ) async {
+    final repo = ref.read(workoutRepositoryProvider);
+    final rest = ref.read(restTimerProvider.notifier);
+    final haptics = ref.read(hapticsProvider);
+    final router = GoRouter.of(context);
+    final resumed = session?.isResumed ?? false;
+    final confirmed = await confirmDestructive(
+      context,
+      title: 'Discard workout?',
+      message: resumed
+          ? 'This workout was resumed from History. Discarding deletes the '
+                'whole workout, including the sets logged before. This cannot '
+                'be undone.'
+          : 'This workout and its logged sets will be deleted. This cannot '
+                'be undone.',
+      confirmLabel: 'Discard',
+    );
+    if (!confirmed || !context.mounted) return;
+    final ok = await guard(
+      context,
+      () => repo.discardWorkout(detail.workout.id),
+    );
+    if (!ok) return;
+    await rest.dismiss();
+    haptics.warning();
+    router.go(Routes.train);
+  }
+
+  String _dayLabel(DateTime day, DateTime now) {
+    final today = dateOnly(now.toLocal());
+    if (day == today) return 'Today';
+    if (day == today.subtract(const Duration(days: 1))) return 'Yesterday';
+    return formatDateShort(day);
+  }
+
+  Future<void> _pickDay(
+    BuildContext context,
+    WidgetRef ref,
+    DateTime current,
+  ) async {
+    final repo = ref.read(workoutRepositoryProvider);
+    final today = dateOnly(ref.read(clockProvider)().toLocal());
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: current.isAfter(today) ? today : current,
+      firstDate: DateTime(today.year - 5, today.month, today.day),
+      lastDate: today,
+    );
+    if (picked == null || !context.mounted) return;
+    final day = dateOnly(picked);
+    await guard(
+      context,
+      () => isLive
+          ? repo.setLiveWorkoutDay(detail.workout.id, day)
+          : repo.setWorkoutDay(detail.workout.id, day),
+    );
   }
 
   Future<void> _resume(BuildContext context, WidgetRef ref) async {
@@ -207,21 +283,33 @@ class _WorkoutView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final w = detail.workout;
     final m = context.metrics;
+    final liveSession = isLive ? ref.watch(liveSessionProvider).value : null;
+    final session = liveSession?.workoutId == w.id ? liveSession : null;
+    final now = ref.watch(clockProvider)();
+    final shownDay = session?.day ?? dateOnly(w.startedAt.toLocal());
     return Scaffold(
       appBar: AppBar(
         title: Text(
           isLive ? 'Workout' : formatDateShort(w.startedAt.toLocal()),
         ),
         actions: [
-          if (detail.exercises.isNotEmpty)
+          if (isLive || detail.exercises.isNotEmpty)
             PopupMenuButton<String>(
               tooltip: 'Workout options',
-              onSelected: (_) => _saveAsTemplate(context, ref),
-              itemBuilder: (_) => const [
-                PopupMenuItem(
-                  value: 'template',
-                  child: Text('Save as template'),
-                ),
+              onSelected: (v) => v == 'discard'
+                  ? _discard(context, ref, session)
+                  : _saveAsTemplate(context, ref),
+              itemBuilder: (_) => [
+                if (detail.exercises.isNotEmpty)
+                  const PopupMenuItem(
+                    value: 'template',
+                    child: Text('Save as template'),
+                  ),
+                if (isLive)
+                  const PopupMenuItem(
+                    value: 'discard',
+                    child: Text('Discard workout'),
+                  ),
               ],
             ),
         ],
@@ -236,12 +324,11 @@ class _WorkoutView extends ConsumerWidget {
                       ? Tick(
                           builder: (_) => StatTile(
                             label: 'Duration',
-                            value: formatClock(
-                              ref
-                                  .read(clockProvider)()
-                                  .toUtc()
-                                  .difference(w.startedAt),
-                            ),
+                            value: formatClock(() {
+                              final t = ref.read(clockProvider)().toUtc();
+                              return session?.elapsed(t) ??
+                                  t.difference(w.startedAt);
+                            }()),
                           ),
                         )
                       : StatTile(
@@ -273,6 +360,23 @@ class _WorkoutView extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(Space.m, Space.s, Space.m, Space.xl),
         children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: Space.m),
+            child: Group(
+              children: [
+                GroupRow(
+                  title: 'Date',
+                  trailing: Text(
+                    _dayLabel(shownDay, now),
+                    style: Theme.of(context).textTheme.bodyLarge
+                        ?.copyWith(color: AppColors.accent),
+                  ),
+                  showChevron: true,
+                  onTap: () => _pickDay(context, ref, shownDay),
+                ),
+              ],
+            ),
+          ),
           if (!isLive)
             Padding(
               padding: const EdgeInsets.only(bottom: Space.s),

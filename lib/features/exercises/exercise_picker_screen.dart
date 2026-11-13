@@ -1,16 +1,13 @@
 import 'package:fitapp/app/theme/tokens.dart';
-import 'package:fitapp/core/format.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/data/db/app_database.dart';
-import 'package:fitapp/data/db/seed_library.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/features/exercises/custom_exercise_sheet.dart';
+import 'package:fitapp/features/exercises/exercise_groups.dart';
 import 'package:fitapp/widgets/guard.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
-
-const _customGroup = 'Custom';
 
 /// Fullscreen picker that adds an exercise to a workout (PRD §5.1). Without a
 /// [workoutId] it is in select mode and pops with the chosen exercise id.
@@ -60,11 +57,6 @@ class _ExercisePickerScreenState extends ConsumerState<ExercisePickerScreen> {
     if (created != null && mounted) await _add(created);
   }
 
-  String _subtitle(ExerciseRow e) {
-    final inc = '+${formatKg(e.defaultIncrement)}';
-    return e.isPerHand ? 'per hand · $inc' : inc;
-  }
-
   @override
   Widget build(BuildContext context) {
     final exercises = ref.watch(exercisesProvider(_query.trim()));
@@ -108,14 +100,7 @@ class _ExercisePickerScreenState extends ConsumerState<ExercisePickerScreen> {
                     list.any(
                       (e) => e.name.toLowerCase() == trimmed.toLowerCase(),
                     );
-                final grouped = <String, List<ExerciseRow>>{};
-                for (final e in list) {
-                  (grouped[e.muscleGroup ?? _customGroup] ??= []).add(e);
-                }
-                final order = [
-                  ...muscleGroups.where(grouped.containsKey),
-                  ...grouped.keys.where((g) => !muscleGroups.contains(g)),
-                ];
+                final groups = groupExercises(list);
                 return ListView(
                   padding: const EdgeInsets.only(
                     left: Space.m,
@@ -139,14 +124,14 @@ class _ExercisePickerScreenState extends ConsumerState<ExercisePickerScreen> {
                           ],
                         ),
                       ),
-                    for (final g in order) ...[
+                    for (final (g, items) in groups) ...[
                       SectionHeader(g),
                       Group(
                         children: [
-                          for (final e in grouped[g]!)
+                          for (final e in items)
                             GroupRow(
                               title: e.name,
-                              subtitle: _subtitle(e),
+                              subtitle: exerciseSubtitle(e),
                               onTap: () => _add(e),
                             ),
                         ],

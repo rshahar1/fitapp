@@ -4,10 +4,12 @@ import 'package:fitapp/app/router.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/data/db/app_database.dart';
+import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/template_repository.dart';
 import 'package:fitapp/features/exercises/exercise_picker_screen.dart';
 import 'package:fitapp/features/templates/template_editor_screen.dart';
+import 'package:fitapp/features/workout/widgets/exercise_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -229,6 +231,82 @@ void main() {
     await settle(tester);
     expect(await run(tester, () => container0(db).template(id)), isNull);
     expect(find.text('Edit template'), findsNothing);
+    await finish(tester);
+  });
+
+  const planA = StoredPlan(
+    baseWeight: 30,
+    targetReps: 8,
+    targetSets: 3,
+    increment: 2.5,
+  );
+
+  Future<String> seedPlanTemplate(WidgetTester tester) async {
+    final id = await run(tester, () async {
+      final exs = await db.select(db.exercises).get();
+      return await container0(db).create(
+        name: 'Planned',
+        exerciseIds: [exs[0].id, exs[1].id],
+        plans: {exs[0].id: planA},
+      );
+    });
+    return id!;
+  }
+
+  Future<TemplateSummary> loadTemplate(WidgetTester tester, String id) async =>
+      (await run(tester, () => container0(db).template(id)))!;
+
+  testWidgets('editor shows plan summaries and No plan yet', (tester) async {
+    final id = await seedPlanTemplate(tester);
+    await pump(tester, Routes.template(id));
+    final t = await loadTemplate(tester, id);
+    final withPlan = t.exercises.firstWhere((e) => t.plans[e.id] != null);
+    expect(
+      find.text(planSummary(planA.toPlan(), perHand: withPlan.isPerHand)),
+      findsOneWidget,
+    );
+    expect(find.text('No plan yet'), findsOneWidget);
+    await finish(tester);
+  });
+
+  testWidgets('editing a plan and saving stores it', (tester) async {
+    final id = await seedPlanTemplate(tester);
+    await pump(tester, Routes.template(id));
+    final t = await loadTemplate(tester, id);
+    final e = t.exercises.firstWhere((e) => t.plans[e.id] != null);
+    await tester.tap(find.byTooltip('Edit plan for ${e.name}'));
+    await settle(tester);
+    expect(find.text('Template plan · ${e.name}'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Increase Target reps'));
+    await tester.pump();
+    await tester.tap(find.text('DONE'));
+    await settle(tester);
+    expect(find.text('Template plan · ${e.name}'), findsNothing);
+    await tester.tap(find.text('Save'));
+    await settle(tester);
+    final saved = await loadTemplate(tester, id);
+    expect(saved.plans[e.id]!.targetReps, 9);
+    await finish(tester);
+  });
+
+  testWidgets('discarding after a plan edit does not store it', (tester) async {
+    final id = await seedPlanTemplate(tester);
+    await pump(tester, Routes.template(id));
+    final t = await loadTemplate(tester, id);
+    final e = t.exercises.firstWhere((e) => t.plans[e.id] != null);
+    await tester.tap(find.byTooltip('Edit plan for ${e.name}'));
+    await settle(tester);
+    await tester.tap(find.bySemanticsLabel('Increase Target reps'));
+    await tester.pump();
+    await tester.tap(find.text('DONE'));
+    await settle(tester);
+    await tester.binding.handlePopRoute();
+    await settle(tester);
+    expect(find.text('Discard changes?'), findsOneWidget);
+    await tester.tap(find.text('Discard'));
+    await settle(tester);
+    final saved = await loadTemplate(tester, id);
+    expect(saved.plans[e.id], planA);
     await finish(tester);
   });
 }

@@ -162,7 +162,7 @@ void main() {
     );
     final painted = find.descendant(
       of: find.byType(AppBackdrop),
-      matching: find.byType(CustomPaint),
+      matching: find.byType(Image),
     );
     expect(painted, findsWidgets);
     expect(

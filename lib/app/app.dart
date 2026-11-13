@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fitapp/app/backdrop.dart';
 import 'package:fitapp/app/router.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
@@ -24,6 +26,18 @@ class _FitAppState extends ConsumerState<FitApp> {
       onShow: _foreground,
       onResume: _foreground,
     );
+  }
+
+  bool _precached = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_precached) return;
+    _precached = true;
+    for (final path in [backdropFillAsset, backdropBandAsset]) {
+      unawaited(precacheImage(AssetImage(path), context, onError: (_, _) {}));
+    }
   }
 
   void _background() => ref.read(restTimerProvider.notifier).onBackground();

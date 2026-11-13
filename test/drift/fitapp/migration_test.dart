@@ -9,6 +9,7 @@ import 'generated/schema.dart';
 import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
+import 'generated/schema_v4.dart' as v4;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -238,6 +239,84 @@ void main() {
           (await newDb.select(newDb.templates).get()).single.name,
           'Chest',
         );
+      },
+    );
+  });
+
+  test('migration from v3 to v4 adds activities and keeps data', () async {
+    const ts = '2026-11-13T18:00:00.000Z';
+    const fly = '00000000-0000-4000-8000-000000000003';
+    await verifier.testWithDataIntegrity(
+      oldVersion: 3,
+      newVersion: 4,
+      createOld: v3.DatabaseAtV3.new,
+      createNew: v4.DatabaseAtV4.new,
+      openTestedDatabase: AppDatabase.new,
+      createItems: (batch, oldDb) {
+        batch
+          ..insertAll(oldDb.exercises, [
+            const v3.ExercisesData(
+              updatedAt: ts,
+              dirty: 0,
+              id: fly,
+              name: 'Cable Fly',
+              muscleGroup: 'Chest',
+              isPerHand: 0,
+              defaultIncrement: 2.5,
+              isCustom: 0,
+            ),
+          ])
+          ..insertAll(oldDb.templates, [
+            const v3.TemplatesData(
+              updatedAt: ts,
+              dirty: 1,
+              id: 't1',
+              name: 'Chest',
+              createdAt: ts,
+            ),
+          ])
+          ..insertAll(oldDb.templateExercises, [
+            const v3.TemplateExercisesData(
+              updatedAt: ts,
+              dirty: 1,
+              id: 'te1',
+              templateId: 't1',
+              exerciseId: fly,
+              position: 0,
+              baseWeight: 22.5,
+              targetReps: 10,
+              targetSets: 3,
+              increment: 2.5,
+            ),
+          ])
+          ..insertAll(oldDb.workouts, [
+            const v3.WorkoutsData(
+              updatedAt: ts,
+              dirty: 1,
+              id: 'w1',
+              startedAt: ts,
+              endedAt: ts,
+            ),
+          ])
+          ..insertAll(oldDb.workoutExercises, [
+            const v3.WorkoutExercisesData(
+              updatedAt: ts,
+              dirty: 1,
+              id: 'we1',
+              workoutId: 'w1',
+              exerciseId: fly,
+              position: 0,
+              templateExerciseId: 'te1',
+            ),
+          ]);
+      },
+      validateItems: (newDb) async {
+        final te = await newDb.select(newDb.templateExercises).getSingle();
+        expect(te.baseWeight, 22.5);
+        final we = await newDb.select(newDb.workoutExercises).getSingle();
+        expect(we.templateExerciseId, 'te1');
+        expect(await newDb.select(newDb.workouts).get(), hasLength(1));
+        expect(await newDb.select(newDb.activities).get(), isEmpty);
       },
     );
   });

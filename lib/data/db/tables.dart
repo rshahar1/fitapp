@@ -157,3 +157,17 @@ class TemplateExercises extends Table with SyncColumns {
     {templateId, exerciseId},
   ];
 }
+
+/// A logged sport activity other than a gym workout (feature 006). The type
+/// is an id from the code registry in `lib/domain/activity_types.dart`.
+@DataClassName('ActivityRow')
+class Activities extends Table with SyncColumns {
+  TextColumn get id => text()();
+  TextColumn get typeId => text()();
+  DateTimeColumn get startedAt => dateTime()();
+  IntColumn get durationMinutes => integer().nullable()();
+  TextColumn get notes => text().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}

@@ -404,16 +404,36 @@ class WorkoutRepository {
     return items;
   }
 
+  Stream<List<HistoryEntry>> watchHistoryEntries() =>
+      watchQuery(_db, historyEntries);
+
+  /// Finished workouts and logged activities together, newest first
+  /// (feature 006).
+  Future<List<HistoryEntry>> historyEntries() async {
+    final entries = <HistoryEntry>[
+      for (final w in await history()) WorkoutHistoryEntry(w),
+      for (final a in await _db.select(_db.activities).get())
+        ActivityHistoryEntry(a),
+    ];
+    return entries..sort((a, b) {
+      final byTime = b.startedAt.compareTo(a.startedAt);
+      return byTime != 0 ? byTime : b.id.compareTo(a.id);
+    });
+  }
+
   Stream<HomeStats> watchHomeStats(DateTime Function() now) =>
       watchQuery(_db, () => homeStats(now()));
 
   Future<HomeStats> homeStats(DateTime now) async {
-    final dates = await _finishedStartDates();
+    final workouts = await _finishedStartDates();
+    // Activities count toward the week and the streak, not toward Total
+    // workouts (owner decision, feature 006).
+    final dates = [...workouts, ...await _activityDates()];
     final thisWeek = isoWeekKey(now);
     return HomeStats(
       thisWeek: dates.where((d) => isoWeekKey(d) == thisWeek).length,
       streak: weeklyStreak(dates, now: now),
-      total: dates.length,
+      total: workouts.length,
       recent: await history(limit: 3),
     );
   }
@@ -421,7 +441,10 @@ class WorkoutRepository {
   Stream<Map<String, int>> watchWorkoutsPerWeek(DateTime Function() now) =>
       watchQuery(
         _db,
-        () async => workoutsPerWeek(await _finishedStartDates(), now: now()),
+        () async => workoutsPerWeek([
+          ...await _finishedStartDates(),
+          ...await _activityDates(),
+        ], now: now()),
       );
 
   Future<List<DateTime>> _finishedStartDates() async {
@@ -430,6 +453,11 @@ class WorkoutRepository {
     )..where((w) => w.endedAt.isNotNull())).get();
     return [for (final r in rows) r.startedAt.toLocal()];
   }
+
+  Future<List<DateTime>> _activityDates() async => [
+    for (final a in await _db.select(_db.activities).get())
+      a.startedAt.toLocal(),
+  ];
 
   // ---------------------------------------------------------------------------
   // Internals

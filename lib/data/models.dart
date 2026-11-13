@@ -325,3 +325,36 @@ class TemplateSummary {
   final DateTime createdAt;
   final DateTime? lastUsedAt;
 }
+
+/// One row of the History tab: a finished workout or a logged activity
+/// (feature 006).
+sealed class HistoryEntry {
+  const new();
+
+  String get id;
+  DateTime get startedAt;
+}
+
+class WorkoutHistoryEntry extends HistoryEntry {
+  const new(this.workout);
+
+  final WorkoutListItem workout;
+
+  @override
+  String get id => workout.id;
+
+  @override
+  DateTime get startedAt => workout.startedAt;
+}
+
+class ActivityHistoryEntry extends HistoryEntry {
+  const new(this.activity);
+
+  final ActivityRow activity;
+
+  @override
+  String get id => activity.id;
+
+  @override
+  DateTime get startedAt => activity.startedAt;
+}

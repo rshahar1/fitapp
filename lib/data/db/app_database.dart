@@ -17,6 +17,7 @@ part 'app_database.g.dart';
     Settings,
     Templates,
     TemplateExercises,
+    Activities,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -31,7 +32,7 @@ class AppDatabase extends _$AppDatabase {
   DateTime now() => _clock().toUtc();
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -63,6 +64,10 @@ class AppDatabase extends _$AppDatabase {
             schema.workoutExercises.templateExerciseId,
           );
           await _seedTemplatePlans();
+        },
+        from3To4: (m, schema) async {
+          // Feature 006: sport activities.
+          await m.createTable(schema.activities);
         },
       )(m, from, to);
       await _createIndexes(version: to);
@@ -112,6 +117,11 @@ class AppDatabase extends _$AppDatabase {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS workout_exercises_template_exercise '
       'ON workout_exercises (template_exercise_id)',
+    );
+    if ((version ?? schemaVersion) < 4) return;
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS activities_started_at '
+      'ON activities (started_at)',
     );
   }
 

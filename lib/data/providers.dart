@@ -1,5 +1,6 @@
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/models.dart';
+import 'package:fitapp/data/repositories/activity_repository.dart';
 import 'package:fitapp/data/repositories/exercise_repository.dart';
 import 'package:fitapp/data/repositories/settings_repository.dart';
 import 'package:fitapp/data/repositories/template_repository.dart';
@@ -89,4 +90,13 @@ final templateRepositoryProvider = Provider<TemplateRepository>(
 
 final templatesProvider = StreamProvider<List<TemplateSummary>>(
   (ref) => ref.watch(templateRepositoryProvider).watchTemplates(),
+);
+
+final activityRepositoryProvider = Provider<ActivityRepository>(
+  (ref) => ActivityRepository(ref.watch(databaseProvider)),
+);
+
+/// Workouts and activities together, newest first (feature 006).
+final historyEntriesProvider = StreamProvider<List<HistoryEntry>>(
+  (ref) => ref.watch(workoutRepositoryProvider).watchHistoryEntries(),
 );

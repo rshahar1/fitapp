@@ -1,5 +1,13 @@
 <!--
 Sync Impact Report
+- Version change: 1.0.0 → 1.1.0 (feature 005, template progression)
+- Modified principles: II (history safety is per plan; flag name `canRewriteBase`);
+  IV (business writes also go through `TemplateRepository`); VII (routines/templates removed from
+  the LATER list, they exist since feature 003)
+- Added sections: none | Removed sections: none
+- Deferred TODOs: none
+
+Previous report (1.0.0)
 - Version change: template → 1.0.0 (initial ratification)
 - Principles defined: I. Offline-First, Local Source of Truth; II. Pure, Fully Tested Domain;
   III. Test-First Quality Gates; IV. Layered Feature-First Architecture; V. One-Tap Gym UX;
@@ -35,9 +43,9 @@ Rationale: gyms often have no signal, and a lost workout destroys trust in the p
   MUST exist as an executable test.
 - All weights MUST pass through `roundWeight` (nearest 0.25 kg); comparisons of weights happen
   after rounding.
-- Editing, resuming or deleting history MUST respect `canRewriteBase`: the current base is rewritten
-  only when the workout is the latest session for that exercise AND the current base equals the
-  stored `resultBaseWeight`.
+- Editing, resuming or deleting history MUST respect `canRewriteBase`: the current base of a plan
+  (the exercise's own plan or a template exercise's plan) is rewritten only when the workout is the
+  latest session for that plan AND the current base equals the stored `resultBaseWeight`.
 
 Rationale: automatic progressive overload is the product; a wrong base weight is the worst bug.
 
@@ -59,7 +67,7 @@ Rationale: correctness of history edits is subtle; only tests make refactoring s
   sync), `features/<feature>/`, `widgets/` (shared UI kit); `test/` mirrors `lib/`.
 - Widgets MUST NOT touch the database; they reach repositories through Riverpod providers.
   No business logic in widgets.
-- All business writes go through repositories (`WorkoutRepository`, `ExerciseRepository`).
+- All business writes go through repositories (`WorkoutRepository`, `ExerciseRepository`, `TemplateRepository`).
 - Colors, spacing, radii and type MUST come from the theme (tokens + `ThemeExtension`); no
   hard-coded colors or sizes in widgets.
 - Prefer Flutter/Material 3 built-ins over third-party UI kits; every added package MUST be
@@ -95,7 +103,7 @@ Rationale: a personal health log is private data; leaked keys are irreversible.
 
 ### VII. Scope Discipline (YAGNI)
 
-- Build only what the PRD marks MUST/SHOULD for v1. LATER items (Supabase sync, routines, kg/lb,
+- Build only what the PRD marks MUST/SHOULD for v1. LATER items (Supabase sync, kg/lb,
   drop/failure sets, plate calculator, deload) MUST NOT be implemented early.
 - Explicit non-goals MUST NOT appear in code or schema: no social/friends/feed/leaderboards, no
   `visibility` or friendship columns, no warm-up sets, no set-type column or W/D/F badges, no light
@@ -133,4 +141,4 @@ Rationale: the owner explicitly dropped these; speculative code is maintenance d
   version (MAJOR: principle removed/redefined; MINOR: principle/section added; PATCH: wording).
 - Reviews verify compliance with principles II, III and VI on every milestone.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-12
+**Version**: 1.1.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-13

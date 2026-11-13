@@ -2,7 +2,7 @@
 
 ```bash
 flutter analyze
-flutter test test/data/template_repository_test.dart test/data/migration_test.dart test/features/templates_test.dart
+flutter test test/data/template_repository_test.dart test/drift/fitapp/migration_test.dart test/features/templates_test.dart
 ```
 
 | # | Steps | Expected |

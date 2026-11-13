@@ -209,3 +209,20 @@ class ExerciseSession {
 extension PlanRowX on PlanRow {
   Plan toPlan() => planFromRow(this);
 }
+
+/// A workout template with its exercises in order (feature 003).
+class TemplateSummary {
+  const new({
+    required this.id,
+    required this.name,
+    required this.exercises,
+    required this.createdAt,
+    required this.lastUsedAt,
+  });
+
+  final String id;
+  final String name;
+  final List<ExerciseRow> exercises;
+  final DateTime createdAt;
+  final DateTime? lastUsedAt;
+}

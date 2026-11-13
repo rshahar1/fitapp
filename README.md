@@ -75,6 +75,23 @@ Enable install from unknown sources on the phone, copy the APK to it and open it
 adb install -r build/app/outputs/flutter-apk/app-release.apk
 ```
 
+## Workout templates
+
+Templates are reusable exercise lists you start in one tap from the Train tab. Only user-created templates exist; there are no built-in ones.
+
+- Create from scratch (Train tab, "New") by naming it (1 to 40 characters, unique ignoring case) and adding exercises, or save a running workout as a template from the workout screen menu ("Save as template").
+- Edit, reorder (drag handles) and delete templates in the template editor. Deleting a template never touches past workouts.
+- START on a template card creates the live workout with its exercises in order, all or nothing. If a workout is already in progress you are offered to continue it instead.
+- Plans and progression are unchanged: a template-started workout is evaluated exactly like a manual one.
+
+## Database schema and migrations
+
+The schema is at version 2 (v2 adds `templates` and `template_exercises`). Schema dumps live in `drift_schemas/` and the migration tests in `test/drift/` (plus `test/data/migration_test.dart`). After any schema change, regenerate the dumps and test helpers with:
+
+```sh
+dart run drift_dev make-migrations
+```
+
 ## Project layout
 
 ```
@@ -85,7 +102,7 @@ lib/
   domain/              pure Dart: progression.dart, stats.dart
   data/
     db/                app_database.dart, tables.dart, seed_library.dart (+ generated *.g.dart)
-    repositories/      WorkoutRepository, ExerciseRepository, SettingsRepository
+    repositories/      WorkoutRepository, ExerciseRepository, SettingsRepository, TemplateRepository (template_repository.dart)
     models.dart        plain data/read models
     providers.dart     Riverpod providers
     watch.dart         watchQuery: stream that re-runs a loader on table updates
@@ -96,9 +113,11 @@ lib/
     history/           finished workouts, edit/resume/delete
     progress/          overview and per-exercise detail
     exercises/         exercise picker and custom exercise sheet
+    templates/         template editor screen (create/edit/reorder/delete)
     settings/          settings screen
   widgets/             shared UI kit (buttons, cards, charts, guard.dart, ...)
-test/                  unit, data, widget, and e2e/ (end-to-end widget test)
+drift_schemas/         drift schema dumps (v1, v2)
+test/                  unit, data, widget, drift/ (migration tests), and e2e/ (end-to-end widget test)
 integration_test/      key end-to-end flows (device/emulator)
 ```
 
@@ -133,7 +152,7 @@ CI re-runs the generator and fails if `git diff` is not empty.
 ## Roadmap
 
 - Sign-in with cloud backup and restore
-- Routines and workout templates, "repeat last workout"
+- "Repeat last workout"
 - Drop and failure set types
 - kg / lb setting
 - Plate calculator

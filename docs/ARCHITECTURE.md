@@ -4,7 +4,7 @@
 
 - Widgets (in `lib/features/` and `lib/widgets/`) never touch the database directly.
 - Widgets read and mutate state through Riverpod providers.
-- Providers call repositories (`WorkoutRepository`, `ExerciseRepository`), which own all business writes and transactions.
+- Providers call repositories (`WorkoutRepository`, `ExerciseRepository`, `TemplateRepository`), which own all business writes and transactions.
 - Repositories use the drift database (local SQLite, source of truth); the progression logic in `lib/domain/` is pure Dart.
 - Providers live in `lib/data/providers.dart` (Riverpod 3, no codegen).
 - Read models are streams built with `watchQuery` in `lib/data/watch.dart`: it runs a loader and re-runs it whenever any table it reads is updated, so screens refresh automatically after writes.
@@ -45,6 +45,28 @@ Implementation in `WorkoutRepository`:
 - `AppLifecycleListener` in `lib/app/app.dart` calls `onBackground()` on hide/pause and `onForeground()` on show/resume.
 - Tests override `restAlertsProvider` with a no-op or fake.
 
+## Data model: templates
+
+- `templates`: `id`, `name` (trimmed, 1 to 40 chars, unique ignoring case via the `templates_name_ci` index on lower(name)), `created_at`, `last_used_at` (nullable), plus sync columns (`updated_at`, `dirty`).
+- `template_exercises`: `id`, `template_id` (FK, ON DELETE CASCADE), `exercise_id` (FK), `position`, sync columns; `UNIQUE(template_id, exercise_id)`.
+
+### TemplateRepository
+
+All operations run in a drift transaction, so a failure leaves no partial state.
+
+- `create`: validates the name (empty, too long, `DuplicateTemplateName`) and at least one exercise, drops duplicate exercise ids, inserts the template and its rows.
+- `update`: validates, renames and writes the full ordered list as a diff against existing rows: removed rows are deleted and queued in `pending_deletes`, kept rows are re-positioned, new rows inserted.
+- `delete`: queues the template in `pending_deletes` and deletes it (child rows cascade); workouts are untouched.
+- `saveFromWorkout`: creates a template from a workout's exercises in workout order.
+- `startWorkout`: all or nothing; throws `StateError` if a workout is in progress or the template is missing, otherwise creates the workout with its exercises in order and sets `last_used_at`.
+- `list` orders by `last_used_at` desc (nulls last), then `created_at` desc.
+
+## Schema versioning and migration testing
+
+- `schemaVersion` is 2. `onUpgrade` from < 2 creates both template tables and the `templates_name_ci` index; `onCreate` creates the index too.
+- Schema dumps are in `drift_schemas/`; generated migration test helpers and tests are in `test/drift/`, plus `test/data/migration_test.dart` (v1 to v2 keeps existing workouts and sets).
+- After a schema change, run `dart run drift_dev make-migrations` to produce the new dump and helpers.
+
 ## Error handling
 
 - Async UI actions are wrapped in `guard()` (`lib/widgets/guard.dart`): exceptions are caught and shown to the user as a SnackBar instead of crashing or failing silently.
@@ -60,7 +82,7 @@ Implementation in `WorkoutRepository`:
 ## Sync design (Phase 2)
 
 - Supabase (Postgres, Auth, RLS owner-only on every table); the server schema mirrors the local one plus `user_id`.
-- Push: replay `pending_deletes` first (sets, then workout_exercises, then workouts), then upsert dirty rows in FK order, clearing `dirty` only if `updated_at` is unchanged since read.
+- Push: replay `pending_deletes` first (sets, then workout_exercises, then workouts), then upsert dirty rows in FK order (custom exercises, exercise_state, templates, template_exercises, ...; deletes always first), clearing `dirty` only if `updated_at` is unchanged since read.
 - Failures leave rows dirty for retry; sync is silent on failure.
 - Server-side library (`owner_id IS NULL`) is readable by all; there are no friendship tables.
 - Pull/restore downloads the user's rows into the local DB on a new device; triggers are app start, foreground, and after finishing a workout.

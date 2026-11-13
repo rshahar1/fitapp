@@ -2,6 +2,7 @@ import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/repositories/exercise_repository.dart';
 import 'package:fitapp/data/repositories/settings_repository.dart';
+import 'package:fitapp/data/repositories/template_repository.dart';
 import 'package:fitapp/data/repositories/workout_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -80,4 +81,12 @@ final defaultRestProvider = StreamProvider<int>(
 
 final alertPrefsProvider = StreamProvider<RestAlertPrefs>(
   (ref) => ref.watch(settingsRepositoryProvider).watchAlertPrefs(),
+);
+
+final templateRepositoryProvider = Provider<TemplateRepository>(
+  (ref) => TemplateRepository(ref.watch(databaseProvider)),
+);
+
+final templatesProvider = StreamProvider<List<TemplateSummary>>(
+  (ref) => ref.watch(templateRepositoryProvider).watchTemplates(),
 );

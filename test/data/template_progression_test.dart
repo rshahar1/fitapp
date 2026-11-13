@@ -1,5 +1,4 @@
 // Feature 005: templates carry their own progression (spec US2, US3, US4).
-import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/repositories/template_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -50,7 +49,7 @@ void main() {
 
   Future<String> chest() async {
     await h.plan(exerciseId: _fly);
-    return templates.create(name: 'Chest', exerciseIds: [_fly]);
+    return await templates.create(name: 'Chest', exerciseIds: [_fly]);
   }
 
   group('seeding (US3)', () {

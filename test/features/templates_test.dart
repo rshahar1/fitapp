@@ -115,24 +115,20 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('START while active shows the in-progress dialog', (
+  testWidgets('START while active shows the in-progress snackbar', (
     tester,
   ) async {
-    await tester.runAsync(() async {
+    final activeId = await tester.runAsync(() async {
       await templates.create(name: 'Push', exerciseIds: [_incline]);
-      await workouts.startWorkout();
+      return (await workouts.startWorkout()).id;
     });
     await pumpApp(tester, const TrainScreen());
     await tester.tap(find.bySemanticsLabel('Start Push template'));
     await settle(tester);
-    expect(
-      find.text('Finish or continue your current workout first.'),
-      findsOneWidget,
-    );
-    expect(find.text('Continue workout'), findsOneWidget);
-    await tester.tap(find.text('Cancel'));
-    await settle(tester);
-    expect(find.text('Continue workout'), findsNothing);
+    expect(find.text('Workout in progress. Finish it first.'), findsOneWidget);
+    expect(find.text('Open'), findsOneWidget);
+    final active = await tester.runAsync(() => workouts.activeWorkout());
+    expect(active?.id, activeId);
     await unmount(tester);
   });
 

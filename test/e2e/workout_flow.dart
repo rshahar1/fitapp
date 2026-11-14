@@ -46,7 +46,7 @@ Future<void> runWorkoutFlow(
     await settle();
   }
 
-  await tap(find.text('START WORKOUT'));
+  await tap(find.text('START GYM WORKOUT'));
   await tap(find.text('ADD EXERCISE'));
   await tap(find.text('Incline Dumbbell Bench Press'));
 

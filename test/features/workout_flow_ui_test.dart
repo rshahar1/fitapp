@@ -174,10 +174,15 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('Train has an Exercises button', (tester) async {
+  testWidgets('You tab has the Exercise library', (tester) async {
     tester0 = tester;
     await pumpApp(tester);
-    expect(find.byTooltip('Exercises'), findsOneWidget);
+    await tester.tap(find.text('You'));
+    await tester.pumpAndSettle();
+    expect(find.text('Exercise library'), findsOneWidget);
+    await tester.tap(find.text('Exercise library'));
+    await tester.pumpAndSettle();
+    expect(find.text('Exercises'), findsWidgets);
     await unmount(tester);
   });
 }

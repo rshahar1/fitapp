@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.6, 14 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.7, 14 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -280,9 +280,13 @@ back to the exercise plan.
 - Tapping an activity row opens the activity sheet to edit it or delete it (delete asks for confirmation).
 
 ### 5.5 Home / Train tab
-- Date kicker, title, a hero card with **Start workout** or **Continue workout**, and stat tiles: *This week*,
-  *Week streak*, *Total workouts*. Below them, the 3 most recent workouts (gym workouts only).
-- **Log activity** button opens a sheet: activity type, date (default today, never in the future), optional
+- Date kicker, title, a hero card and stat tiles: *This week*, *Week streak*, *Total workouts*. Below them, the 3
+  most recent workouts (gym workouts only). The hero is **Ready to train?** with **Start gym workout** (1 tap);
+  **Continue workout** when a gym workout is active; when a GPS session is active it shows "<Sport> in progress", the
+  ticking `mm:ss · km` and **Continue <sport>** (no separate tracking banner). Templates keep their **START**.
+  The Train header has no icons and there is no *Log activity* button (feature 011, section 5.9).
+- The **activity sheet** (opened from the hub's *Log a past session* and *More sports*; titled "Log a past session" for
+  new entries, "Edit activity" when editing; no *Start live*): activity type, date (default today, never in the future), optional
   duration in minutes (1 to 1440), for running and cycling an optional **distance** (None/Set, typed in km with
   `.` or `,`, rounded to 10 m, 0.01 to 1000 km; stored as whole metres) and optional note (max 200 chars). Types come from the registry
   (`lib/domain/activity_types.dart`); adding a sport is one registry entry plus one icon.
@@ -309,7 +313,7 @@ back to the exercise plan.
   beats (strictly greater than all history).
 
 ### 5.7 Settings and units
-- A **Settings** screen, opened from a gear icon in the Train tab header (route `/settings`).
+- A **Settings** screen, opened from the **You** tab (route `/settings`).
 - **Default rest time** (MUST): stepper in 5 s steps, range 10 s to 10 min, default **60 s**, plus preset chips
   30 / 60 / 90 / 120 / 180 s. Stored in the local `settings` table and applied to the next logged set.
 - **Per-exercise rest time** (MUST): in plan setup and *Edit plan*, a *Rest time* row with **Default (60 s)** or a
@@ -320,8 +324,7 @@ back to the exercise plan.
 ---
 
 ### 5.8 Live GPS tracking (running and cycling; feature 010)
-- **Flow:** Train → **Log activity** → pick Running or Cycling → **Start live** (primary; the manual form stays
-  below it) → setup screen ("Searching for GPS", Start at accuracy ≤ 20 m or *Start anyway*) → live screen →
+- **Flow:** **[+]** hub → **Running** or **Cycling** (`/track/new?type=<id>`) → setup screen ("Searching for GPS", Start at accuracy ≤ 20 m or *Start anyway*) → live screen →
   **Finish** (1 s hold) → finish sheet (route map, metrics, **Save** / **Discard** with confirmation) →
   **History** row with a route thumbnail (drawn locally, no tiles) → **Activity detail** (interactive map, start and
   finish markers, km markers, metrics, per-km splits; edit type, date, note only; delete confirmed).
@@ -343,21 +346,37 @@ back to the exercise plan.
   drawn on a plain dark background.
 - **LATER:** snowboarding tracking, Health Connect/HealthKit import, GPX export, miles, offline tile download.
 
+### 5.9 Start/Log hub and You tab (feature 011)
+- **[+] action** in the middle of the bottom bar (accent circle, label "Start or log a session"); opens the hub sheet from any
+  tab and is never a selected tab. **You** tab (`/you`) lists **Exercise library** (`/exercises`) and **Settings** (`/settings`).
+- **Hub sheet:** *START NOW*: **Continue <session>** (only when a session is in progress), **Gym workout**,
+  **Running** / **Cycling** (→ `/track/new?type=<id>`), **More sports** (non-live sports open the past-session form
+  prefilled with the sport and today), gym templates. *EARLIER*: **Log a past session**.
+- **One start guard** for gym and GPS starts on every entry point (hub, Train hero, template START). A blocked start shows
+  "<Workout|Running|Cycling> in progress. Finish it first." with **Open**. Logging a past session is never blocked.
+- Train stats and Recent are unchanged (a later slice reworks them). Details: `specs/011-start-hub/` and `docs/ux/unified-start-proposal.md`.
+
 ## 6. Navigation and screens
 
 ```
-Bottom navigation (3 tabs)
-├── Train      (home: start or continue, Log activity sheet, stats, recent; gear icon opens Settings)
+Bottom navigation (5 slots)
+├── Train      (home: hero Start/Continue, templates, stats, recent; no header icons)
 ├── History    (workouts and activities by month → workout editor or activity sheet)
-└── Progress   (weekly chart, exercises → exercise detail)
+├── [+]        action, not a tab: opens the Start/Log hub sheet from any tab (section 5.9)
+├── Progress   (weekly chart, exercises → exercise detail)
+└── You        (/you: Exercise library, Settings)
 
 Full-screen routes
 ├── /track/new?type=       live tracking setup (GPS fix, Start)
 ├── /track/live            live tracking screen (map, metrics, Pause/Lock/Finish)
 ├── /workout               live workout (active)
 ├── /workout/:id           finished workout in edit mode
+├── /activity/:id          activity detail (map, metrics, splits)
 ├── /exercise/:id          exercise detail (Summary / History)
+├── /exercises             exercise library (from You)
 ├── /add-exercise?workout= exercise picker (modal)
+├── /template/new          create a template
+├── /template/:id          edit a template
 └── /settings              settings (default rest time, section 5.7)
 ```
 The Android back gesture must behave correctly everywhere. Bottom sheets close on back.
@@ -564,7 +583,7 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
   while another workout is active or when the workout is not the most recent; recalculation after clearing a set;
   legacy workouts without snapshots.
 - Template progression (feature 005): per-template plans seeded on create, edit, save-from-workout and upgrade; finish, edit, resume and delete touch only the linked template plan; two templates with the same exercise progress independently; orphan sessions and unlinked live sessions; v2 to v3 migration.
-- Sport activities (feature 006): registry (known ids, `activityLabel` fallback "Activity", `validateActivity`: unknown type, future day, duration outside 1 to 1440, note over 200 chars trimmed); `ActivityRepository` create, update, delete (queues `pending_deletes`), list, watch; merged `historyEntries` newest first; stats where activities count toward This week, Week streak and weekly bars but not Total workouts, volume or progression; v3 to v4 migration keeps existing data; widget tests for the Log activity sheet, History icons and edit/delete with confirmation.
+- Sport activities (feature 006): registry (known ids, `activityLabel` fallback "Activity", `validateActivity`: unknown type, future day, duration outside 1 to 1440, note over 200 chars trimmed); `ActivityRepository` create, update, delete (queues `pending_deletes`), list, watch; merged `historyEntries` newest first; stats where activities count toward This week, Week streak and weekly bars but not Total workouts, volume or progression; v3 to v4 migration keeps existing data; widget tests for the activity sheet, History icons and edit/delete with confirmation.
 - `previousSession` lookup; workout list with volume (per-hand ×2) and exercise names.
 - (Phase 2) Sync ordering: deletes before upserts; dirty cleared only if unchanged; failure keeps rows dirty;
   library exercises are never pushed; deleting a workout queues one server delete.
@@ -621,7 +640,7 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 | Rest timer default **60 s**, configurable (global default plus per-exercise override) | Owner's decision; stored in Settings and on the exercise plan |
 | Progression decided by the working sets only (1..N−1); the overload set never decides and there is no jump to a heavier lifted weight | Owner's decision (13 Nov 2026); simpler and predictable: next base is always base + increment |
 | Each template exercise has its own plan; template workouts progress the template plan, never the exercise's own plan | Owner's decision (13 Nov 2026); the same exercise can progress differently in different templates. Ad-hoc workouts keep using the exercise plan |
-| Log other sports from the Train tab ("Log activity") and show them in History | Owner's decision (13 Nov 2026); one place to log, one list to review |
+| Log other sports from the Train tab ("Log activity"; since 2.7 via the [+] hub, "Log a past session") and show them in History | Owner's decision (13 Nov 2026); one place to log, one list to review |
 | Activities can be edited and deleted from History | Owner's decision (13 Nov 2026); same expectation as workouts, delete is confirmed |
 | Activities count toward This week, Week streak and the weekly bars; Total workouts stays gym only; never volume or progression | Owner's decision (13 Nov 2026); consistency covers all training, "workouts" stays gym |
 | Distinct icons per row in History, including a dumbbell for gym workouts | Owner's decision (13 Nov 2026); tell sports and gym apart at a glance |
@@ -670,3 +689,7 @@ resolved on 12 Nov 2026; see the decisions log.
   - Start live from Log activity, setup, live screen, finish sheet, History route thumbnail, Activity detail (section 5.8).
   - Schema v6: `tracking_sessions`, `track_points`, tracked columns on `activities`. New packages `geolocator`, `flutter_map`, `latlong2`; `MAP_TILES_KEY` map key.
   - Snowboarding tracking, Health Connect, GPX export, miles, offline tiles stay LATER. Constitution 1.4.0.
+- **2.7 (14 Nov 2026):** feature 011, start/log hub (owner decision of 14 Nov 2026).
+  - Bottom bar becomes Train, History, [+], Progress, You; [+] opens the Start/Log hub sheet from any tab; new You tab (`/you`) holds Exercise library and Settings (Train header icons removed).
+  - One start guard for gym and GPS starts on every entry point; Train hero shows Start/Continue for gym and GPS (tracking banner removed); *Log activity* button removed.
+  - Activity sheet: no *Start live*; new entries titled "Log a past session". No schema change, no new packages.

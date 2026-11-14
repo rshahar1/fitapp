@@ -35,7 +35,7 @@ List<TrackSample> generatedRun5k(DateTime start) => [
     ),
 ];
 
-/// Shared GPS flow: Train → Log activity → Running → Start live → Start →
+/// Shared GPS flow: the `+` button → Running (setup) → Start →
 /// replay a 5 km run → hold Finish → Save → History shows the GPS activity
 /// with a route thumbnail → its detail screen. Used by the widget e2e test
 /// and the on-device integration test.
@@ -71,9 +71,8 @@ Future<void> runGpsFlow(
     await settle();
   }
 
-  await tap(find.text('LOG ACTIVITY'));
+  await tap(find.byTooltip('Start or log a session'));
   await tap(find.text('Running'));
-  await tap(find.text('START LIVE'));
   expect(find.text('Searching for GPS'), findsOneWidget);
 
   source.emit(track.first);

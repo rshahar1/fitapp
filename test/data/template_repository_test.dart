@@ -1,4 +1,5 @@
 import 'package:fitapp/data/repositories/template_repository.dart';
+import 'package:fitapp/data/repositories/tracking_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers.dart';
@@ -141,6 +142,14 @@ void main() {
       final id = await templates.create(name: 'Push', exerciseIds: [_bench]);
       await h.workouts.startWorkout();
       expect(() => templates.startWorkout(id), throwsStateError);
+    });
+
+    test('refused while a tracking session is in progress', () async {
+      final id = await templates.create(name: 'Push', exerciseIds: [_bench]);
+      await TrackingRepository(h.db)
+          .start(typeId: 'running', startedAt: DateTime.utc(2026, 11, 14, 7));
+      await expectLater(templates.startWorkout(id), throwsStateError);
+      expect(await h.workouts.activeWorkout(), isNull);
     });
 
     test('progresses the template plan, not the exercise plan', () async {

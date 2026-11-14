@@ -11,6 +11,7 @@ import 'package:fitapp/features/tracking/live_track_screen.dart';
 import 'package:fitapp/features/tracking/track_setup_screen.dart';
 import 'package:fitapp/features/train/train_screen.dart';
 import 'package:fitapp/features/workout/workout_screen.dart';
+import 'package:fitapp/features/you/you_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -20,6 +21,9 @@ abstract final class Routes {
   static const train = '/train';
   static const history = '/history';
   static const progress = '/progress';
+
+  /// You tab (feature 011): exercise library and settings.
+  static const you = '/you';
   static const workout = '/workout';
   static const settings = '/settings';
 
@@ -70,6 +74,11 @@ GoRouter buildRouter() => GoRouter(
               path: Routes.progress,
               builder: (_, _) => const ProgressScreen(),
             ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(path: Routes.you, builder: (_, _) => const YouScreen()),
           ],
         ),
       ],

@@ -134,6 +134,12 @@ class TemplateRepository {
     if (active.isNotEmpty) {
       throw StateError('A workout is already in progress');
     }
+    final tracking = await (_db.select(
+      _db.trackingSessions,
+    )..limit(1)).getSingleOrNull();
+    if (tracking != null) {
+      throw StateError('A tracking session is in progress');
+    }
     if (await template(templateId) == null) {
       throw StateError('Template not found');
     }

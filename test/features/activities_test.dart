@@ -7,8 +7,8 @@ import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/activity_repository.dart';
 import 'package:fitapp/data/repositories/workout_repository.dart';
 import 'package:fitapp/features/activities/activity_icons.dart';
+import 'package:fitapp/features/activities/activity_sheet.dart';
 import 'package:fitapp/features/history/history_screen.dart';
-import 'package:fitapp/features/train/train_screen.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,6 +23,20 @@ class _FakeHaptics implements Haptics {
   void success() {}
   @override
   void warning() {}
+}
+
+class _Host extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: Center(
+      child: AppButton(
+        label: 'Open sheet',
+        onPressed: () => showActivitySheet(context),
+      ),
+    ),
+  );
 }
 
 void main() {
@@ -71,7 +85,7 @@ void main() {
       .then((v) => v ?? const []);
 
   Future<void> openSheet(WidgetTester tester) async {
-    await tester.tap(find.text('LOG ACTIVITY'));
+    await tester.tap(find.text('OPEN SHEET'));
     await tester.pumpAndSettle();
   }
 
@@ -91,10 +105,10 @@ void main() {
           .onPressed !=
       null;
 
-  testWidgets('Train: log a running activity dated today', (tester) async {
-    await pump(tester, const TrainScreen());
+  testWidgets('Sheet: log a running activity dated today', (tester) async {
+    await pump(tester, const _Host());
     await openSheet(tester);
-    expect(find.text('Log activity'), findsOneWidget);
+    expect(find.text('Log a past session'), findsOneWidget);
     expect(find.text('Today'), findsOneWidget);
     await tester.tap(find.text('Running'));
     await tester.pump();
@@ -107,12 +121,12 @@ void main() {
     final n = DateTime.now();
     expect(DateTime(d.year, d.month, d.day), DateTime(n.year, n.month, n.day));
     expect(list.single.durationMinutes, isNull);
-    expect(find.text('Log activity'), findsNothing);
+    expect(find.text('Log a past session'), findsNothing);
     await unmount(tester);
   });
 
   testWidgets('Save is disabled until a type is chosen', (tester) async {
-    await pump(tester, const TrainScreen());
+    await pump(tester, const _Host());
     await openSheet(tester);
     expect(saveEnabled(tester), isFalse);
     await tester.tap(find.text('Cycling'));
@@ -122,7 +136,7 @@ void main() {
   });
 
   testWidgets('duration set via the stepper is stored', (tester) async {
-    await pump(tester, const TrainScreen());
+    await pump(tester, const _Host());
     await openSheet(tester);
     await tester.tap(find.text('Cycling'));
     await tester.tap(find.text('Set'));
@@ -146,7 +160,7 @@ void main() {
   });
 
   testWidgets('Pilates chip is offered and has no distance', (tester) async {
-    await pump(tester, const TrainScreen());
+    await pump(tester, const _Host());
     await openSheet(tester);
     expect(find.text('Pilates'), findsOneWidget);
     await tester.tap(find.text('Pilates'));
@@ -158,7 +172,7 @@ void main() {
   });
 
   testWidgets('Distance section only for running and cycling', (tester) async {
-    await pump(tester, const TrainScreen());
+    await pump(tester, const _Host());
     await openSheet(tester);
     expect(find.text('DISTANCE'), findsNothing);
     await tester.tap(find.text('Snowboarding'));
@@ -171,7 +185,7 @@ void main() {
   });
 
   testWidgets('distance typed in km is stored in metres', (tester) async {
-    await pump(tester, const TrainScreen());
+    await pump(tester, const _Host());
     await openSheet(tester);
     await tester.tap(find.text('Running'));
     await tester.pump();
@@ -186,7 +200,7 @@ void main() {
   });
 
   testWidgets('invalid distance disables Save', (tester) async {
-    await pump(tester, const TrainScreen());
+    await pump(tester, const _Host());
     await openSheet(tester);
     await tester.tap(find.text('Cycling'));
     await tester.pump();

@@ -257,6 +257,11 @@ back to the exercise plan.
 - **Discard workout** in the live menu deletes the live workout after confirmation (stronger warning when it was
   resumed). A **Date** row (live and finished workouts) moves the session to another day to log past gym
   sessions; time of day and duration are kept.
+- **Set milestone reward:** when sets 1 and 2 of an exercise both meet or beat the target reps during a live
+  workout, a short (about 3 s) non-blocking burst plays over the card: a neon line-art bodybuilder pumps three times
+  and explodes into a firework, with a success haptic. A **Target hit · sets 1–2** pill then sits on the right of the
+  Add Set row whenever the condition holds (also in edit mode, without the burst). Reduced motion shows the pill
+  only. Feature 008.
 - **Add Exercise** opens the exercise picker (modal) and appends the exercise to *this* workout.
 - **Exercise notes** (**SHOULD**): free text per exercise in this workout.
 

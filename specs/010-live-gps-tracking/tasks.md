@@ -11,21 +11,21 @@ description: "Task list for live GPS tracking (running, cycling)"
 ## Phase 1: Setup
 
 - [ ] T001 (owner) Create a free MapTiler account and API key; put it in git-ignored `env/dev.json` as `MAP_TILES_KEY`
-- [ ] T002 Add `"MAP_TILES_KEY": ""` to env/example.json; README run instructions
-- [ ] T003 Add `geolocator`, `flutter_map`, `latlong2` (latest stable); Android manifest permissions + foreground service type `location`; iOS Info.plist keys and background mode
-- [ ] T004 Collect 3 GPX fixtures (5 km run, 30 km ride, run with a stop and a GPS spike) under test/fixtures/tracks/
+- [x] T002 Add `"MAP_TILES_KEY": ""` to env/example.json; README run instructions
+- [x] T003 Add `geolocator`, `flutter_map`, `latlong2` (latest stable); Android manifest permissions + foreground service type `location`; iOS Info.plist keys and background mode
+- [x] T004 Collect 3 GPX fixtures (5 km run, 30 km ride, run with a stop and a GPS spike) under test/fixtures/tracks/
 
 ## Phase 2: Foundational — domain (tests first)
 
-- [ ] T005 Tests: haversine, polyline encode/decode round trip, Douglas-Peucker — test/domain/tracking/geo_test.dart
-- [ ] T006 Implement lib/domain/tracking/geo.dart
-- [ ] T007 Tests: reducer accuracy filter, speed-spike rejection, manual pause/resume, auto-pause per profile, distance within 1% on fixtures, per-km splits, 30 s current pace, elevation gain with 3 m hysteresis, replay equals incremental — test/domain/tracking/track_reducer_test.dart
-- [ ] T008 Implement track_sample, track_profile, track_state, track_reducer, track_summary in lib/domain/tracking/
-- [ ] T009 `ActivityType.hasLiveTracking` (running, cycling) + tests in lib/domain/activity_types.dart
+- [x] T005 Tests: haversine, polyline encode/decode round trip, Douglas-Peucker — test/domain/tracking/geo_test.dart
+- [x] T006 Implement lib/domain/tracking/geo.dart
+- [x] T007 Tests: reducer accuracy filter, speed-spike rejection, manual pause/resume, auto-pause per profile, distance within 1% on fixtures, per-km splits, 30 s current pace, elevation gain with 3 m hysteresis, replay equals incremental — test/domain/tracking/track_reducer_test.dart
+- [x] T008 Implement track_sample, track_profile, track_state, track_reducer, track_summary in lib/domain/tracking/
+- [x] T009 `ActivityType.hasLiveTracking` (running, cycling) + tests in lib/domain/activity_types.dart
 
 ## Phase 3: Foundational — data
 
-- [ ] T010 Schema v6: `tracking_sessions`, `track_points`, activity columns (source, moving_seconds, elevation_gain_m, route, splits); `from5To6`; regenerate; make-migrations → drift_schema_v6.json; migration test v5→v6 (existing activities become `manual`)
+- [x] T010 Schema v6: `tracking_sessions`, `track_points`, activity columns (source, moving_seconds, elevation_gain_m, route, splits); `from5To6`; regenerate; make-migrations → drift_schema_v6.json; migration test v5→v6 (existing activities become `manual`)
 - [ ] T011 Repository tests: start (one session max, refuses while a gym workout is active), appendPoints batch, pause/resume, finish (activity row + points/session deleted in one transaction), discard, recover — test/data/tracking_repository_test.dart
 - [ ] T012 Implement lib/data/repositories/tracking_repository.dart + providers
 - [ ] T013 `LocationSource` interface, `FakeLocationSource` (test helper replaying fixtures), `GeolocatorLocationSource` with foreground notification config

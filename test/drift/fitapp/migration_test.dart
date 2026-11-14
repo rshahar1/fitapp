@@ -11,6 +11,7 @@ import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
 import 'generated/schema_v4.dart' as v4;
 import 'generated/schema_v5.dart' as v5;
+import 'generated/schema_v6.dart' as v6;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -352,4 +353,46 @@ void main() {
       },
     );
   });
+
+  test(
+    'migration from v5 to v6 marks activities manual, adds tracking tables',
+    () async {
+      const ts = '2026-11-14T18:00:00.000Z';
+      await verifier.testWithDataIntegrity(
+        oldVersion: 5,
+        newVersion: 6,
+        createOld: v5.DatabaseAtV5.new,
+        createNew: v6.DatabaseAtV6.new,
+        openTestedDatabase: AppDatabase.new,
+        createItems: (batch, oldDb) {
+          batch.insertAll(oldDb.activities, [
+            const v5.ActivitiesData(
+              updatedAt: ts,
+              dirty: 1,
+              id: 'a1',
+              typeId: 'running',
+              startedAt: ts,
+              durationMinutes: 30,
+              distanceMeters: 5000,
+              notes: 'easy',
+            ),
+          ]);
+        },
+        validateItems: (newDb) async {
+          final a = await newDb.select(newDb.activities).getSingle();
+          expect(a.typeId, 'running');
+          expect(a.durationMinutes, 30);
+          expect(a.distanceMeters, 5000);
+          expect(a.notes, 'easy');
+          expect(a.source, 'manual');
+          expect(a.movingSeconds, isNull);
+          expect(a.elevationGainMeters, isNull);
+          expect(a.route, isNull);
+          expect(a.splits, isNull);
+          expect(await newDb.select(newDb.trackingSessions).get(), isEmpty);
+          expect(await newDb.select(newDb.trackPoints).get(), isEmpty);
+        },
+      );
+    },
+  );
 }

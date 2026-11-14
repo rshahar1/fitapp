@@ -11,7 +11,12 @@ import 'package:meta/meta.dart';
 /// One kind of activity. [id] is stored in the database and never changes.
 @immutable
 class ActivityType {
-  const new(this.id, this.label, {this.hasDistance = false});
+  const new(
+    this.id,
+    this.label, {
+    this.hasDistance = false,
+    this.hasLiveTracking = false,
+  });
 
   /// Stable id stored with each activity.
   final String id;
@@ -21,14 +26,17 @@ class ActivityType {
 
   /// Whether a distance can be logged for this type (feature 009).
   final bool hasDistance;
+
+  /// Whether this type can be recorded live with GPS (feature 010).
+  final bool hasLiveTracking;
 }
 
 /// All activity types, in display order.
 const activityTypes = [
   ActivityType('functional', 'Functional training'),
-  ActivityType('cycling', 'Cycling', hasDistance: true),
+  ActivityType('cycling', 'Cycling', hasDistance: true, hasLiveTracking: true),
   ActivityType('snowboarding', 'Snowboarding'),
-  ActivityType('running', 'Running', hasDistance: true),
+  ActivityType('running', 'Running', hasDistance: true, hasLiveTracking: true),
   ActivityType('pilates', 'Pilates'),
 ];
 

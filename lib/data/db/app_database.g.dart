@@ -4530,6 +4530,55 @@ class $ActivitiesTable extends Activities
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('manual'),
+  );
+  static const VerificationMeta _movingSecondsMeta = const VerificationMeta(
+    'movingSeconds',
+  );
+  @override
+  late final GeneratedColumn<int> movingSeconds = GeneratedColumn<int>(
+    'moving_seconds',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _elevationGainMetersMeta =
+      const VerificationMeta('elevationGainMeters');
+  @override
+  late final GeneratedColumn<int> elevationGainMeters = GeneratedColumn<int>(
+    'elevation_gain_meters',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _routeMeta = const VerificationMeta('route');
+  @override
+  late final GeneratedColumn<String> route = GeneratedColumn<String>(
+    'route',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _splitsMeta = const VerificationMeta('splits');
+  @override
+  late final GeneratedColumn<String> splits = GeneratedColumn<String>(
+    'splits',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     updatedAt,
@@ -4540,6 +4589,11 @@ class $ActivitiesTable extends Activities
     durationMinutes,
     distanceMeters,
     notes,
+    source,
+    movingSeconds,
+    elevationGainMeters,
+    route,
+    splits,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4612,6 +4666,42 @@ class $ActivitiesTable extends Activities
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    }
+    if (data.containsKey('moving_seconds')) {
+      context.handle(
+        _movingSecondsMeta,
+        movingSeconds.isAcceptableOrUnknown(
+          data['moving_seconds']!,
+          _movingSecondsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('elevation_gain_meters')) {
+      context.handle(
+        _elevationGainMetersMeta,
+        elevationGainMeters.isAcceptableOrUnknown(
+          data['elevation_gain_meters']!,
+          _elevationGainMetersMeta,
+        ),
+      );
+    }
+    if (data.containsKey('route')) {
+      context.handle(
+        _routeMeta,
+        route.isAcceptableOrUnknown(data['route']!, _routeMeta),
+      );
+    }
+    if (data.containsKey('splits')) {
+      context.handle(
+        _splitsMeta,
+        splits.isAcceptableOrUnknown(data['splits']!, _splitsMeta),
+      );
+    }
     return context;
   }
 
@@ -4653,6 +4743,26 @@ class $ActivitiesTable extends Activities
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      movingSeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}moving_seconds'],
+      ),
+      elevationGainMeters: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}elevation_gain_meters'],
+      ),
+      route: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}route'],
+      ),
+      splits: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}splits'],
+      ),
     );
   }
 
@@ -4671,6 +4781,17 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
   final int? durationMinutes;
   final int? distanceMeters;
   final String? notes;
+
+  /// 'manual' (typed in) or 'tracked' (recorded by live GPS tracking).
+  final String source;
+  final int? movingSeconds;
+  final int? elevationGainMeters;
+
+  /// Encoded route (JSON) for tracked activities.
+  final String? route;
+
+  /// Encoded per-km splits (JSON) for tracked activities.
+  final String? splits;
   const ActivityRow({
     required this.updatedAt,
     required this.dirty,
@@ -4680,6 +4801,11 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
     this.durationMinutes,
     this.distanceMeters,
     this.notes,
+    required this.source,
+    this.movingSeconds,
+    this.elevationGainMeters,
+    this.route,
+    this.splits,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4697,6 +4823,19 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
+    }
+    map['source'] = Variable<String>(source);
+    if (!nullToAbsent || movingSeconds != null) {
+      map['moving_seconds'] = Variable<int>(movingSeconds);
+    }
+    if (!nullToAbsent || elevationGainMeters != null) {
+      map['elevation_gain_meters'] = Variable<int>(elevationGainMeters);
+    }
+    if (!nullToAbsent || route != null) {
+      map['route'] = Variable<String>(route);
+    }
+    if (!nullToAbsent || splits != null) {
+      map['splits'] = Variable<String>(splits);
     }
     return map;
   }
@@ -4717,6 +4856,19 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      source: Value(source),
+      movingSeconds: movingSeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(movingSeconds),
+      elevationGainMeters: elevationGainMeters == null && nullToAbsent
+          ? const Value.absent()
+          : Value(elevationGainMeters),
+      route: route == null && nullToAbsent
+          ? const Value.absent()
+          : Value(route),
+      splits: splits == null && nullToAbsent
+          ? const Value.absent()
+          : Value(splits),
     );
   }
 
@@ -4734,6 +4886,13 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
       durationMinutes: serializer.fromJson<int?>(json['durationMinutes']),
       distanceMeters: serializer.fromJson<int?>(json['distanceMeters']),
       notes: serializer.fromJson<String?>(json['notes']),
+      source: serializer.fromJson<String>(json['source']),
+      movingSeconds: serializer.fromJson<int?>(json['movingSeconds']),
+      elevationGainMeters: serializer.fromJson<int?>(
+        json['elevationGainMeters'],
+      ),
+      route: serializer.fromJson<String?>(json['route']),
+      splits: serializer.fromJson<String?>(json['splits']),
     );
   }
   @override
@@ -4748,6 +4907,11 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
       'durationMinutes': serializer.toJson<int?>(durationMinutes),
       'distanceMeters': serializer.toJson<int?>(distanceMeters),
       'notes': serializer.toJson<String?>(notes),
+      'source': serializer.toJson<String>(source),
+      'movingSeconds': serializer.toJson<int?>(movingSeconds),
+      'elevationGainMeters': serializer.toJson<int?>(elevationGainMeters),
+      'route': serializer.toJson<String?>(route),
+      'splits': serializer.toJson<String?>(splits),
     };
   }
 
@@ -4760,6 +4924,11 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
     Value<int?> durationMinutes = const Value.absent(),
     Value<int?> distanceMeters = const Value.absent(),
     Value<String?> notes = const Value.absent(),
+    String? source,
+    Value<int?> movingSeconds = const Value.absent(),
+    Value<int?> elevationGainMeters = const Value.absent(),
+    Value<String?> route = const Value.absent(),
+    Value<String?> splits = const Value.absent(),
   }) => ActivityRow(
     updatedAt: updatedAt ?? this.updatedAt,
     dirty: dirty ?? this.dirty,
@@ -4773,6 +4942,15 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
         ? distanceMeters.value
         : this.distanceMeters,
     notes: notes.present ? notes.value : this.notes,
+    source: source ?? this.source,
+    movingSeconds: movingSeconds.present
+        ? movingSeconds.value
+        : this.movingSeconds,
+    elevationGainMeters: elevationGainMeters.present
+        ? elevationGainMeters.value
+        : this.elevationGainMeters,
+    route: route.present ? route.value : this.route,
+    splits: splits.present ? splits.value : this.splits,
   );
   ActivityRow copyWithCompanion(ActivitiesCompanion data) {
     return ActivityRow(
@@ -4788,6 +4966,15 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
           ? data.distanceMeters.value
           : this.distanceMeters,
       notes: data.notes.present ? data.notes.value : this.notes,
+      source: data.source.present ? data.source.value : this.source,
+      movingSeconds: data.movingSeconds.present
+          ? data.movingSeconds.value
+          : this.movingSeconds,
+      elevationGainMeters: data.elevationGainMeters.present
+          ? data.elevationGainMeters.value
+          : this.elevationGainMeters,
+      route: data.route.present ? data.route.value : this.route,
+      splits: data.splits.present ? data.splits.value : this.splits,
     );
   }
 
@@ -4801,7 +4988,12 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
           ..write('startedAt: $startedAt, ')
           ..write('durationMinutes: $durationMinutes, ')
           ..write('distanceMeters: $distanceMeters, ')
-          ..write('notes: $notes')
+          ..write('notes: $notes, ')
+          ..write('source: $source, ')
+          ..write('movingSeconds: $movingSeconds, ')
+          ..write('elevationGainMeters: $elevationGainMeters, ')
+          ..write('route: $route, ')
+          ..write('splits: $splits')
           ..write(')'))
         .toString();
   }
@@ -4816,6 +5008,11 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
     durationMinutes,
     distanceMeters,
     notes,
+    source,
+    movingSeconds,
+    elevationGainMeters,
+    route,
+    splits,
   );
   @override
   bool operator ==(Object other) =>
@@ -4828,7 +5025,12 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
           other.startedAt == this.startedAt &&
           other.durationMinutes == this.durationMinutes &&
           other.distanceMeters == this.distanceMeters &&
-          other.notes == this.notes);
+          other.notes == this.notes &&
+          other.source == this.source &&
+          other.movingSeconds == this.movingSeconds &&
+          other.elevationGainMeters == this.elevationGainMeters &&
+          other.route == this.route &&
+          other.splits == this.splits);
 }
 
 class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
@@ -4840,6 +5042,11 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
   final Value<int?> durationMinutes;
   final Value<int?> distanceMeters;
   final Value<String?> notes;
+  final Value<String> source;
+  final Value<int?> movingSeconds;
+  final Value<int?> elevationGainMeters;
+  final Value<String?> route;
+  final Value<String?> splits;
   final Value<int> rowid;
   const ActivitiesCompanion({
     this.updatedAt = const Value.absent(),
@@ -4850,6 +5057,11 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
     this.durationMinutes = const Value.absent(),
     this.distanceMeters = const Value.absent(),
     this.notes = const Value.absent(),
+    this.source = const Value.absent(),
+    this.movingSeconds = const Value.absent(),
+    this.elevationGainMeters = const Value.absent(),
+    this.route = const Value.absent(),
+    this.splits = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ActivitiesCompanion.insert({
@@ -4861,6 +5073,11 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
     this.durationMinutes = const Value.absent(),
     this.distanceMeters = const Value.absent(),
     this.notes = const Value.absent(),
+    this.source = const Value.absent(),
+    this.movingSeconds = const Value.absent(),
+    this.elevationGainMeters = const Value.absent(),
+    this.route = const Value.absent(),
+    this.splits = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : updatedAt = Value(updatedAt),
        id = Value(id),
@@ -4875,6 +5092,11 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
     Expression<int>? durationMinutes,
     Expression<int>? distanceMeters,
     Expression<String>? notes,
+    Expression<String>? source,
+    Expression<int>? movingSeconds,
+    Expression<int>? elevationGainMeters,
+    Expression<String>? route,
+    Expression<String>? splits,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4886,6 +5108,12 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
       if (durationMinutes != null) 'duration_minutes': durationMinutes,
       if (distanceMeters != null) 'distance_meters': distanceMeters,
       if (notes != null) 'notes': notes,
+      if (source != null) 'source': source,
+      if (movingSeconds != null) 'moving_seconds': movingSeconds,
+      if (elevationGainMeters != null)
+        'elevation_gain_meters': elevationGainMeters,
+      if (route != null) 'route': route,
+      if (splits != null) 'splits': splits,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4899,6 +5127,11 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
     Value<int?>? durationMinutes,
     Value<int?>? distanceMeters,
     Value<String?>? notes,
+    Value<String>? source,
+    Value<int?>? movingSeconds,
+    Value<int?>? elevationGainMeters,
+    Value<String?>? route,
+    Value<String?>? splits,
     Value<int>? rowid,
   }) {
     return ActivitiesCompanion(
@@ -4910,6 +5143,11 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
       durationMinutes: durationMinutes ?? this.durationMinutes,
       distanceMeters: distanceMeters ?? this.distanceMeters,
       notes: notes ?? this.notes,
+      source: source ?? this.source,
+      movingSeconds: movingSeconds ?? this.movingSeconds,
+      elevationGainMeters: elevationGainMeters ?? this.elevationGainMeters,
+      route: route ?? this.route,
+      splits: splits ?? this.splits,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4941,6 +5179,21 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (movingSeconds.present) {
+      map['moving_seconds'] = Variable<int>(movingSeconds.value);
+    }
+    if (elevationGainMeters.present) {
+      map['elevation_gain_meters'] = Variable<int>(elevationGainMeters.value);
+    }
+    if (route.present) {
+      map['route'] = Variable<String>(route.value);
+    }
+    if (splits.present) {
+      map['splits'] = Variable<String>(splits.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4958,6 +5211,1063 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
           ..write('durationMinutes: $durationMinutes, ')
           ..write('distanceMeters: $distanceMeters, ')
           ..write('notes: $notes, ')
+          ..write('source: $source, ')
+          ..write('movingSeconds: $movingSeconds, ')
+          ..write('elevationGainMeters: $elevationGainMeters, ')
+          ..write('route: $route, ')
+          ..write('splits: $splits, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TrackingSessionsTable extends TrackingSessions
+    with TableInfo<$TrackingSessionsTable, TrackingSessionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TrackingSessionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dirtyMeta = const VerificationMeta('dirty');
+  @override
+  late final GeneratedColumn<bool> dirty = GeneratedColumn<bool>(
+    'dirty',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("dirty" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _typeIdMeta = const VerificationMeta('typeId');
+  @override
+  late final GeneratedColumn<String> typeId = GeneratedColumn<String>(
+    'type_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _stateMeta = const VerificationMeta('state');
+  @override
+  late final GeneratedColumn<String> state = GeneratedColumn<String>(
+    'state',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+    'started_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pausedMsMeta = const VerificationMeta(
+    'pausedMs',
+  );
+  @override
+  late final GeneratedColumn<int> pausedMs = GeneratedColumn<int>(
+    'paused_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _pausedAtMeta = const VerificationMeta(
+    'pausedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> pausedAt = GeneratedColumn<DateTime>(
+    'paused_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    updatedAt,
+    dirty,
+    id,
+    typeId,
+    state,
+    startedAt,
+    pausedMs,
+    pausedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'tracking_sessions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TrackingSessionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('dirty')) {
+      context.handle(
+        _dirtyMeta,
+        dirty.isAcceptableOrUnknown(data['dirty']!, _dirtyMeta),
+      );
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('type_id')) {
+      context.handle(
+        _typeIdMeta,
+        typeId.isAcceptableOrUnknown(data['type_id']!, _typeIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeIdMeta);
+    }
+    if (data.containsKey('state')) {
+      context.handle(
+        _stateMeta,
+        state.isAcceptableOrUnknown(data['state']!, _stateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_stateMeta);
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMeta);
+    }
+    if (data.containsKey('paused_ms')) {
+      context.handle(
+        _pausedMsMeta,
+        pausedMs.isAcceptableOrUnknown(data['paused_ms']!, _pausedMsMeta),
+      );
+    }
+    if (data.containsKey('paused_at')) {
+      context.handle(
+        _pausedAtMeta,
+        pausedAt.isAcceptableOrUnknown(data['paused_at']!, _pausedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TrackingSessionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TrackingSessionRow(
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      dirty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}dirty'],
+      )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      typeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type_id'],
+      )!,
+      state: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}state'],
+      )!,
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      )!,
+      pausedMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}paused_ms'],
+      )!,
+      pausedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}paused_at'],
+      ),
+    );
+  }
+
+  @override
+  $TrackingSessionsTable createAlias(String alias) {
+    return $TrackingSessionsTable(attachedDatabase, alias);
+  }
+}
+
+class TrackingSessionRow extends DataClass
+    implements Insertable<TrackingSessionRow> {
+  final DateTime updatedAt;
+  final bool dirty;
+  final String id;
+  final String typeId;
+
+  /// 'active' or 'paused'.
+  final String state;
+  final DateTime startedAt;
+  final int pausedMs;
+  final DateTime? pausedAt;
+  const TrackingSessionRow({
+    required this.updatedAt,
+    required this.dirty,
+    required this.id,
+    required this.typeId,
+    required this.state,
+    required this.startedAt,
+    required this.pausedMs,
+    this.pausedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['dirty'] = Variable<bool>(dirty);
+    map['id'] = Variable<String>(id);
+    map['type_id'] = Variable<String>(typeId);
+    map['state'] = Variable<String>(state);
+    map['started_at'] = Variable<DateTime>(startedAt);
+    map['paused_ms'] = Variable<int>(pausedMs);
+    if (!nullToAbsent || pausedAt != null) {
+      map['paused_at'] = Variable<DateTime>(pausedAt);
+    }
+    return map;
+  }
+
+  TrackingSessionsCompanion toCompanion(bool nullToAbsent) {
+    return TrackingSessionsCompanion(
+      updatedAt: Value(updatedAt),
+      dirty: Value(dirty),
+      id: Value(id),
+      typeId: Value(typeId),
+      state: Value(state),
+      startedAt: Value(startedAt),
+      pausedMs: Value(pausedMs),
+      pausedAt: pausedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pausedAt),
+    );
+  }
+
+  factory TrackingSessionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TrackingSessionRow(
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      dirty: serializer.fromJson<bool>(json['dirty']),
+      id: serializer.fromJson<String>(json['id']),
+      typeId: serializer.fromJson<String>(json['typeId']),
+      state: serializer.fromJson<String>(json['state']),
+      startedAt: serializer.fromJson<DateTime>(json['startedAt']),
+      pausedMs: serializer.fromJson<int>(json['pausedMs']),
+      pausedAt: serializer.fromJson<DateTime?>(json['pausedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'dirty': serializer.toJson<bool>(dirty),
+      'id': serializer.toJson<String>(id),
+      'typeId': serializer.toJson<String>(typeId),
+      'state': serializer.toJson<String>(state),
+      'startedAt': serializer.toJson<DateTime>(startedAt),
+      'pausedMs': serializer.toJson<int>(pausedMs),
+      'pausedAt': serializer.toJson<DateTime?>(pausedAt),
+    };
+  }
+
+  TrackingSessionRow copyWith({
+    DateTime? updatedAt,
+    bool? dirty,
+    String? id,
+    String? typeId,
+    String? state,
+    DateTime? startedAt,
+    int? pausedMs,
+    Value<DateTime?> pausedAt = const Value.absent(),
+  }) => TrackingSessionRow(
+    updatedAt: updatedAt ?? this.updatedAt,
+    dirty: dirty ?? this.dirty,
+    id: id ?? this.id,
+    typeId: typeId ?? this.typeId,
+    state: state ?? this.state,
+    startedAt: startedAt ?? this.startedAt,
+    pausedMs: pausedMs ?? this.pausedMs,
+    pausedAt: pausedAt.present ? pausedAt.value : this.pausedAt,
+  );
+  TrackingSessionRow copyWithCompanion(TrackingSessionsCompanion data) {
+    return TrackingSessionRow(
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      dirty: data.dirty.present ? data.dirty.value : this.dirty,
+      id: data.id.present ? data.id.value : this.id,
+      typeId: data.typeId.present ? data.typeId.value : this.typeId,
+      state: data.state.present ? data.state.value : this.state,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      pausedMs: data.pausedMs.present ? data.pausedMs.value : this.pausedMs,
+      pausedAt: data.pausedAt.present ? data.pausedAt.value : this.pausedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrackingSessionRow(')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('dirty: $dirty, ')
+          ..write('id: $id, ')
+          ..write('typeId: $typeId, ')
+          ..write('state: $state, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('pausedMs: $pausedMs, ')
+          ..write('pausedAt: $pausedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    updatedAt,
+    dirty,
+    id,
+    typeId,
+    state,
+    startedAt,
+    pausedMs,
+    pausedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TrackingSessionRow &&
+          other.updatedAt == this.updatedAt &&
+          other.dirty == this.dirty &&
+          other.id == this.id &&
+          other.typeId == this.typeId &&
+          other.state == this.state &&
+          other.startedAt == this.startedAt &&
+          other.pausedMs == this.pausedMs &&
+          other.pausedAt == this.pausedAt);
+}
+
+class TrackingSessionsCompanion extends UpdateCompanion<TrackingSessionRow> {
+  final Value<DateTime> updatedAt;
+  final Value<bool> dirty;
+  final Value<String> id;
+  final Value<String> typeId;
+  final Value<String> state;
+  final Value<DateTime> startedAt;
+  final Value<int> pausedMs;
+  final Value<DateTime?> pausedAt;
+  final Value<int> rowid;
+  const TrackingSessionsCompanion({
+    this.updatedAt = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.id = const Value.absent(),
+    this.typeId = const Value.absent(),
+    this.state = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.pausedMs = const Value.absent(),
+    this.pausedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TrackingSessionsCompanion.insert({
+    required DateTime updatedAt,
+    this.dirty = const Value.absent(),
+    required String id,
+    required String typeId,
+    required String state,
+    required DateTime startedAt,
+    this.pausedMs = const Value.absent(),
+    this.pausedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : updatedAt = Value(updatedAt),
+       id = Value(id),
+       typeId = Value(typeId),
+       state = Value(state),
+       startedAt = Value(startedAt);
+  static Insertable<TrackingSessionRow> custom({
+    Expression<DateTime>? updatedAt,
+    Expression<bool>? dirty,
+    Expression<String>? id,
+    Expression<String>? typeId,
+    Expression<String>? state,
+    Expression<DateTime>? startedAt,
+    Expression<int>? pausedMs,
+    Expression<DateTime>? pausedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (dirty != null) 'dirty': dirty,
+      if (id != null) 'id': id,
+      if (typeId != null) 'type_id': typeId,
+      if (state != null) 'state': state,
+      if (startedAt != null) 'started_at': startedAt,
+      if (pausedMs != null) 'paused_ms': pausedMs,
+      if (pausedAt != null) 'paused_at': pausedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TrackingSessionsCompanion copyWith({
+    Value<DateTime>? updatedAt,
+    Value<bool>? dirty,
+    Value<String>? id,
+    Value<String>? typeId,
+    Value<String>? state,
+    Value<DateTime>? startedAt,
+    Value<int>? pausedMs,
+    Value<DateTime?>? pausedAt,
+    Value<int>? rowid,
+  }) {
+    return TrackingSessionsCompanion(
+      updatedAt: updatedAt ?? this.updatedAt,
+      dirty: dirty ?? this.dirty,
+      id: id ?? this.id,
+      typeId: typeId ?? this.typeId,
+      state: state ?? this.state,
+      startedAt: startedAt ?? this.startedAt,
+      pausedMs: pausedMs ?? this.pausedMs,
+      pausedAt: pausedAt ?? this.pausedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (dirty.present) {
+      map['dirty'] = Variable<bool>(dirty.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (typeId.present) {
+      map['type_id'] = Variable<String>(typeId.value);
+    }
+    if (state.present) {
+      map['state'] = Variable<String>(state.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (pausedMs.present) {
+      map['paused_ms'] = Variable<int>(pausedMs.value);
+    }
+    if (pausedAt.present) {
+      map['paused_at'] = Variable<DateTime>(pausedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrackingSessionsCompanion(')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('dirty: $dirty, ')
+          ..write('id: $id, ')
+          ..write('typeId: $typeId, ')
+          ..write('state: $state, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('pausedMs: $pausedMs, ')
+          ..write('pausedAt: $pausedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TrackPointsTable extends TrackPoints
+    with TableInfo<$TrackPointsTable, TrackPointRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TrackPointsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES tracking_sessions (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _seqMeta = const VerificationMeta('seq');
+  @override
+  late final GeneratedColumn<int> seq = GeneratedColumn<int>(
+    'seq',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tMeta = const VerificationMeta('t');
+  @override
+  late final GeneratedColumn<DateTime> t = GeneratedColumn<DateTime>(
+    't',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _latMeta = const VerificationMeta('lat');
+  @override
+  late final GeneratedColumn<double> lat = GeneratedColumn<double>(
+    'lat',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lonMeta = const VerificationMeta('lon');
+  @override
+  late final GeneratedColumn<double> lon = GeneratedColumn<double>(
+    'lon',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _altMeta = const VerificationMeta('alt');
+  @override
+  late final GeneratedColumn<double> alt = GeneratedColumn<double>(
+    'alt',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _accuracyMeta = const VerificationMeta(
+    'accuracy',
+  );
+  @override
+  late final GeneratedColumn<double> accuracy = GeneratedColumn<double>(
+    'accuracy',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _speedMeta = const VerificationMeta('speed');
+  @override
+  late final GeneratedColumn<double> speed = GeneratedColumn<double>(
+    'speed',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _pausedMeta = const VerificationMeta('paused');
+  @override
+  late final GeneratedColumn<bool> paused = GeneratedColumn<bool>(
+    'paused',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("paused" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    sessionId,
+    seq,
+    t,
+    lat,
+    lon,
+    alt,
+    accuracy,
+    speed,
+    paused,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'track_points';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TrackPointRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
+    if (data.containsKey('seq')) {
+      context.handle(
+        _seqMeta,
+        seq.isAcceptableOrUnknown(data['seq']!, _seqMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_seqMeta);
+    }
+    if (data.containsKey('t')) {
+      context.handle(_tMeta, t.isAcceptableOrUnknown(data['t']!, _tMeta));
+    } else if (isInserting) {
+      context.missing(_tMeta);
+    }
+    if (data.containsKey('lat')) {
+      context.handle(
+        _latMeta,
+        lat.isAcceptableOrUnknown(data['lat']!, _latMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_latMeta);
+    }
+    if (data.containsKey('lon')) {
+      context.handle(
+        _lonMeta,
+        lon.isAcceptableOrUnknown(data['lon']!, _lonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lonMeta);
+    }
+    if (data.containsKey('alt')) {
+      context.handle(
+        _altMeta,
+        alt.isAcceptableOrUnknown(data['alt']!, _altMeta),
+      );
+    }
+    if (data.containsKey('accuracy')) {
+      context.handle(
+        _accuracyMeta,
+        accuracy.isAcceptableOrUnknown(data['accuracy']!, _accuracyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_accuracyMeta);
+    }
+    if (data.containsKey('speed')) {
+      context.handle(
+        _speedMeta,
+        speed.isAcceptableOrUnknown(data['speed']!, _speedMeta),
+      );
+    }
+    if (data.containsKey('paused')) {
+      context.handle(
+        _pausedMeta,
+        paused.isAcceptableOrUnknown(data['paused']!, _pausedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {sessionId, seq};
+  @override
+  TrackPointRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TrackPointRow(
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
+      seq: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}seq'],
+      )!,
+      t: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}t'],
+      )!,
+      lat: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lat'],
+      )!,
+      lon: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lon'],
+      )!,
+      alt: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}alt'],
+      ),
+      accuracy: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}accuracy'],
+      )!,
+      speed: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}speed'],
+      ),
+      paused: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}paused'],
+      )!,
+    );
+  }
+
+  @override
+  $TrackPointsTable createAlias(String alias) {
+    return $TrackPointsTable(attachedDatabase, alias);
+  }
+}
+
+class TrackPointRow extends DataClass implements Insertable<TrackPointRow> {
+  final String sessionId;
+  final int seq;
+  final DateTime t;
+  final double lat;
+  final double lon;
+  final double? alt;
+  final double accuracy;
+  final double? speed;
+  final bool paused;
+  const TrackPointRow({
+    required this.sessionId,
+    required this.seq,
+    required this.t,
+    required this.lat,
+    required this.lon,
+    this.alt,
+    required this.accuracy,
+    this.speed,
+    required this.paused,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['session_id'] = Variable<String>(sessionId);
+    map['seq'] = Variable<int>(seq);
+    map['t'] = Variable<DateTime>(t);
+    map['lat'] = Variable<double>(lat);
+    map['lon'] = Variable<double>(lon);
+    if (!nullToAbsent || alt != null) {
+      map['alt'] = Variable<double>(alt);
+    }
+    map['accuracy'] = Variable<double>(accuracy);
+    if (!nullToAbsent || speed != null) {
+      map['speed'] = Variable<double>(speed);
+    }
+    map['paused'] = Variable<bool>(paused);
+    return map;
+  }
+
+  TrackPointsCompanion toCompanion(bool nullToAbsent) {
+    return TrackPointsCompanion(
+      sessionId: Value(sessionId),
+      seq: Value(seq),
+      t: Value(t),
+      lat: Value(lat),
+      lon: Value(lon),
+      alt: alt == null && nullToAbsent ? const Value.absent() : Value(alt),
+      accuracy: Value(accuracy),
+      speed: speed == null && nullToAbsent
+          ? const Value.absent()
+          : Value(speed),
+      paused: Value(paused),
+    );
+  }
+
+  factory TrackPointRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TrackPointRow(
+      sessionId: serializer.fromJson<String>(json['sessionId']),
+      seq: serializer.fromJson<int>(json['seq']),
+      t: serializer.fromJson<DateTime>(json['t']),
+      lat: serializer.fromJson<double>(json['lat']),
+      lon: serializer.fromJson<double>(json['lon']),
+      alt: serializer.fromJson<double?>(json['alt']),
+      accuracy: serializer.fromJson<double>(json['accuracy']),
+      speed: serializer.fromJson<double?>(json['speed']),
+      paused: serializer.fromJson<bool>(json['paused']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'sessionId': serializer.toJson<String>(sessionId),
+      'seq': serializer.toJson<int>(seq),
+      't': serializer.toJson<DateTime>(t),
+      'lat': serializer.toJson<double>(lat),
+      'lon': serializer.toJson<double>(lon),
+      'alt': serializer.toJson<double?>(alt),
+      'accuracy': serializer.toJson<double>(accuracy),
+      'speed': serializer.toJson<double?>(speed),
+      'paused': serializer.toJson<bool>(paused),
+    };
+  }
+
+  TrackPointRow copyWith({
+    String? sessionId,
+    int? seq,
+    DateTime? t,
+    double? lat,
+    double? lon,
+    Value<double?> alt = const Value.absent(),
+    double? accuracy,
+    Value<double?> speed = const Value.absent(),
+    bool? paused,
+  }) => TrackPointRow(
+    sessionId: sessionId ?? this.sessionId,
+    seq: seq ?? this.seq,
+    t: t ?? this.t,
+    lat: lat ?? this.lat,
+    lon: lon ?? this.lon,
+    alt: alt.present ? alt.value : this.alt,
+    accuracy: accuracy ?? this.accuracy,
+    speed: speed.present ? speed.value : this.speed,
+    paused: paused ?? this.paused,
+  );
+  TrackPointRow copyWithCompanion(TrackPointsCompanion data) {
+    return TrackPointRow(
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      seq: data.seq.present ? data.seq.value : this.seq,
+      t: data.t.present ? data.t.value : this.t,
+      lat: data.lat.present ? data.lat.value : this.lat,
+      lon: data.lon.present ? data.lon.value : this.lon,
+      alt: data.alt.present ? data.alt.value : this.alt,
+      accuracy: data.accuracy.present ? data.accuracy.value : this.accuracy,
+      speed: data.speed.present ? data.speed.value : this.speed,
+      paused: data.paused.present ? data.paused.value : this.paused,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrackPointRow(')
+          ..write('sessionId: $sessionId, ')
+          ..write('seq: $seq, ')
+          ..write('t: $t, ')
+          ..write('lat: $lat, ')
+          ..write('lon: $lon, ')
+          ..write('alt: $alt, ')
+          ..write('accuracy: $accuracy, ')
+          ..write('speed: $speed, ')
+          ..write('paused: $paused')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(sessionId, seq, t, lat, lon, alt, accuracy, speed, paused);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TrackPointRow &&
+          other.sessionId == this.sessionId &&
+          other.seq == this.seq &&
+          other.t == this.t &&
+          other.lat == this.lat &&
+          other.lon == this.lon &&
+          other.alt == this.alt &&
+          other.accuracy == this.accuracy &&
+          other.speed == this.speed &&
+          other.paused == this.paused);
+}
+
+class TrackPointsCompanion extends UpdateCompanion<TrackPointRow> {
+  final Value<String> sessionId;
+  final Value<int> seq;
+  final Value<DateTime> t;
+  final Value<double> lat;
+  final Value<double> lon;
+  final Value<double?> alt;
+  final Value<double> accuracy;
+  final Value<double?> speed;
+  final Value<bool> paused;
+  final Value<int> rowid;
+  const TrackPointsCompanion({
+    this.sessionId = const Value.absent(),
+    this.seq = const Value.absent(),
+    this.t = const Value.absent(),
+    this.lat = const Value.absent(),
+    this.lon = const Value.absent(),
+    this.alt = const Value.absent(),
+    this.accuracy = const Value.absent(),
+    this.speed = const Value.absent(),
+    this.paused = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TrackPointsCompanion.insert({
+    required String sessionId,
+    required int seq,
+    required DateTime t,
+    required double lat,
+    required double lon,
+    this.alt = const Value.absent(),
+    required double accuracy,
+    this.speed = const Value.absent(),
+    this.paused = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : sessionId = Value(sessionId),
+       seq = Value(seq),
+       t = Value(t),
+       lat = Value(lat),
+       lon = Value(lon),
+       accuracy = Value(accuracy);
+  static Insertable<TrackPointRow> custom({
+    Expression<String>? sessionId,
+    Expression<int>? seq,
+    Expression<DateTime>? t,
+    Expression<double>? lat,
+    Expression<double>? lon,
+    Expression<double>? alt,
+    Expression<double>? accuracy,
+    Expression<double>? speed,
+    Expression<bool>? paused,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (sessionId != null) 'session_id': sessionId,
+      if (seq != null) 'seq': seq,
+      if (t != null) 't': t,
+      if (lat != null) 'lat': lat,
+      if (lon != null) 'lon': lon,
+      if (alt != null) 'alt': alt,
+      if (accuracy != null) 'accuracy': accuracy,
+      if (speed != null) 'speed': speed,
+      if (paused != null) 'paused': paused,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TrackPointsCompanion copyWith({
+    Value<String>? sessionId,
+    Value<int>? seq,
+    Value<DateTime>? t,
+    Value<double>? lat,
+    Value<double>? lon,
+    Value<double?>? alt,
+    Value<double>? accuracy,
+    Value<double?>? speed,
+    Value<bool>? paused,
+    Value<int>? rowid,
+  }) {
+    return TrackPointsCompanion(
+      sessionId: sessionId ?? this.sessionId,
+      seq: seq ?? this.seq,
+      t: t ?? this.t,
+      lat: lat ?? this.lat,
+      lon: lon ?? this.lon,
+      alt: alt ?? this.alt,
+      accuracy: accuracy ?? this.accuracy,
+      speed: speed ?? this.speed,
+      paused: paused ?? this.paused,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (seq.present) {
+      map['seq'] = Variable<int>(seq.value);
+    }
+    if (t.present) {
+      map['t'] = Variable<DateTime>(t.value);
+    }
+    if (lat.present) {
+      map['lat'] = Variable<double>(lat.value);
+    }
+    if (lon.present) {
+      map['lon'] = Variable<double>(lon.value);
+    }
+    if (alt.present) {
+      map['alt'] = Variable<double>(alt.value);
+    }
+    if (accuracy.present) {
+      map['accuracy'] = Variable<double>(accuracy.value);
+    }
+    if (speed.present) {
+      map['speed'] = Variable<double>(speed.value);
+    }
+    if (paused.present) {
+      map['paused'] = Variable<bool>(paused.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrackPointsCompanion(')
+          ..write('sessionId: $sessionId, ')
+          ..write('seq: $seq, ')
+          ..write('t: $t, ')
+          ..write('lat: $lat, ')
+          ..write('lon: $lon, ')
+          ..write('alt: $alt, ')
+          ..write('accuracy: $accuracy, ')
+          ..write('speed: $speed, ')
+          ..write('paused: $paused, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4980,6 +6290,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $TemplateExercisesTable templateExercises =
       $TemplateExercisesTable(this);
   late final $ActivitiesTable activities = $ActivitiesTable(this);
+  late final $TrackingSessionsTable trackingSessions = $TrackingSessionsTable(
+    this,
+  );
+  late final $TrackPointsTable trackPoints = $TrackPointsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4995,6 +6309,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     templates,
     templateExercises,
     activities,
+    trackingSessions,
+    trackPoints,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -5018,6 +6334,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('template_exercises', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'tracking_sessions',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('track_points', kind: UpdateKind.delete)],
     ),
   ]);
   @override
@@ -8542,6 +9865,11 @@ typedef $$ActivitiesTableCreateCompanionBuilder = ActivitiesCompanion Function({
   Value<int?> durationMinutes,
   Value<int?> distanceMeters,
   Value<String?> notes,
+  Value<String> source,
+  Value<int?> movingSeconds,
+  Value<int?> elevationGainMeters,
+  Value<String?> route,
+  Value<String?> splits,
   Value<int> rowid,
 });
 typedef $$ActivitiesTableUpdateCompanionBuilder = ActivitiesCompanion Function({
@@ -8553,6 +9881,11 @@ typedef $$ActivitiesTableUpdateCompanionBuilder = ActivitiesCompanion Function({
   Value<int?> durationMinutes,
   Value<int?> distanceMeters,
   Value<String?> notes,
+  Value<String> source,
+  Value<int?> movingSeconds,
+  Value<int?> elevationGainMeters,
+  Value<String?> route,
+  Value<String?> splits,
   Value<int> rowid,
 });
 
@@ -8602,6 +9935,31 @@ class $$ActivitiesTableFilterComposer
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get movingSeconds => $composableBuilder(
+    column: $table.movingSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get elevationGainMeters => $composableBuilder(
+    column: $table.elevationGainMeters,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get route => $composableBuilder(
+    column: $table.route,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get splits => $composableBuilder(
+    column: $table.splits,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -8654,6 +10012,31 @@ class $$ActivitiesTableOrderingComposer
     column: $table.notes,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get movingSeconds => $composableBuilder(
+    column: $table.movingSeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get elevationGainMeters => $composableBuilder(
+    column: $table.elevationGainMeters,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get route => $composableBuilder(
+    column: $table.route,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get splits => $composableBuilder(
+    column: $table.splits,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ActivitiesTableAnnotationComposer
@@ -8692,6 +10075,25 @@ class $$ActivitiesTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<int> get movingSeconds => $composableBuilder(
+    column: $table.movingSeconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get elevationGainMeters => $composableBuilder(
+    column: $table.elevationGainMeters,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get route =>
+      $composableBuilder(column: $table.route, builder: (column) => column);
+
+  GeneratedColumn<String> get splits =>
+      $composableBuilder(column: $table.splits, builder: (column) => column);
 }
 
 class $$ActivitiesTableTableManager
@@ -8733,6 +10135,11 @@ class $$ActivitiesTableTableManager
                 Value<int?> durationMinutes = const Value.absent(),
                 Value<int?> distanceMeters = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<int?> movingSeconds = const Value.absent(),
+                Value<int?> elevationGainMeters = const Value.absent(),
+                Value<String?> route = const Value.absent(),
+                Value<String?> splits = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ActivitiesCompanion(
                 updatedAt: updatedAt,
@@ -8743,6 +10150,11 @@ class $$ActivitiesTableTableManager
                 durationMinutes: durationMinutes,
                 distanceMeters: distanceMeters,
                 notes: notes,
+                source: source,
+                movingSeconds: movingSeconds,
+                elevationGainMeters: elevationGainMeters,
+                route: route,
+                splits: splits,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8755,6 +10167,11 @@ class $$ActivitiesTableTableManager
                 Value<int?> durationMinutes = const Value.absent(),
                 Value<int?> distanceMeters = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<int?> movingSeconds = const Value.absent(),
+                Value<int?> elevationGainMeters = const Value.absent(),
+                Value<String?> route = const Value.absent(),
+                Value<String?> splits = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ActivitiesCompanion.insert(
                 updatedAt: updatedAt,
@@ -8765,6 +10182,11 @@ class $$ActivitiesTableTableManager
                 durationMinutes: durationMinutes,
                 distanceMeters: distanceMeters,
                 notes: notes,
+                source: source,
+                movingSeconds: movingSeconds,
+                elevationGainMeters: elevationGainMeters,
+                route: route,
+                splits: splits,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -8801,6 +10223,770 @@ typedef $$ActivitiesTableProcessedTableManager =
       ActivityRow,
       PrefetchHooks Function()
     >;
+typedef $$TrackingSessionsTableCreateCompanionBuilder =
+    TrackingSessionsCompanion Function({
+      required DateTime updatedAt,
+      Value<bool> dirty,
+      required String id,
+      required String typeId,
+      required String state,
+      required DateTime startedAt,
+      Value<int> pausedMs,
+      Value<DateTime?> pausedAt,
+      Value<int> rowid,
+    });
+typedef $$TrackingSessionsTableUpdateCompanionBuilder =
+    TrackingSessionsCompanion Function({
+      Value<DateTime> updatedAt,
+      Value<bool> dirty,
+      Value<String> id,
+      Value<String> typeId,
+      Value<String> state,
+      Value<DateTime> startedAt,
+      Value<int> pausedMs,
+      Value<DateTime?> pausedAt,
+      Value<int> rowid,
+    });
+
+final class $$TrackingSessionsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $TrackingSessionsTable,
+          TrackingSessionRow
+        > {
+  $$TrackingSessionsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static MultiTypedResultKey<$TrackPointsTable, List<TrackPointRow>>
+  _trackPointsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.trackPoints,
+    aliasName: 'tracking_sessions__id__track_points__session_id',
+  );
+
+  $$TrackPointsTableProcessedTableManager get trackPointsRefs {
+    final manager = $$TrackPointsTableTableManager(
+      $_db,
+      $_db.trackPoints,
+    ).filter((f) => f.sessionId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_trackPointsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$TrackingSessionsTableFilterComposer
+    extends Composer<_$AppDatabase, $TrackingSessionsTable> {
+  $$TrackingSessionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get typeId => $composableBuilder(
+    column: $table.typeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get state => $composableBuilder(
+    column: $table.state,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pausedMs => $composableBuilder(
+    column: $table.pausedMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get pausedAt => $composableBuilder(
+    column: $table.pausedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> trackPointsRefs(
+    Expression<bool> Function($$TrackPointsTableFilterComposer f) f,
+  ) {
+    final $$TrackPointsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.trackPoints,
+      getReferencedColumn: (t) => t.sessionId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrackPointsTableFilterComposer(
+            $db: $db,
+            $table: $db.trackPoints,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$TrackingSessionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $TrackingSessionsTable> {
+  $$TrackingSessionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get typeId => $composableBuilder(
+    column: $table.typeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get state => $composableBuilder(
+    column: $table.state,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get pausedMs => $composableBuilder(
+    column: $table.pausedMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get pausedAt => $composableBuilder(
+    column: $table.pausedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TrackingSessionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TrackingSessionsTable> {
+  $$TrackingSessionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get dirty =>
+      $composableBuilder(column: $table.dirty, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get typeId =>
+      $composableBuilder(column: $table.typeId, builder: (column) => column);
+
+  GeneratedColumn<String> get state =>
+      $composableBuilder(column: $table.state, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get pausedMs =>
+      $composableBuilder(column: $table.pausedMs, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get pausedAt =>
+      $composableBuilder(column: $table.pausedAt, builder: (column) => column);
+
+  Expression<T> trackPointsRefs<T extends Object>(
+    Expression<T> Function($$TrackPointsTableAnnotationComposer a) f,
+  ) {
+    final $$TrackPointsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.trackPoints,
+      getReferencedColumn: (t) => t.sessionId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrackPointsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.trackPoints,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$TrackingSessionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TrackingSessionsTable,
+          TrackingSessionRow,
+          $$TrackingSessionsTableFilterComposer,
+          $$TrackingSessionsTableOrderingComposer,
+          $$TrackingSessionsTableAnnotationComposer,
+          $$TrackingSessionsTableCreateCompanionBuilder,
+          $$TrackingSessionsTableUpdateCompanionBuilder,
+          (TrackingSessionRow, $$TrackingSessionsTableReferences),
+          TrackingSessionRow,
+          PrefetchHooks Function({bool trackPointsRefs})
+        > {
+  $$TrackingSessionsTableTableManager(
+    _$AppDatabase db,
+    $TrackingSessionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TrackingSessionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TrackingSessionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TrackingSessionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> typeId = const Value.absent(),
+                Value<String> state = const Value.absent(),
+                Value<DateTime> startedAt = const Value.absent(),
+                Value<int> pausedMs = const Value.absent(),
+                Value<DateTime?> pausedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TrackingSessionsCompanion(
+                updatedAt: updatedAt,
+                dirty: dirty,
+                id: id,
+                typeId: typeId,
+                state: state,
+                startedAt: startedAt,
+                pausedMs: pausedMs,
+                pausedAt: pausedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required DateTime updatedAt,
+                Value<bool> dirty = const Value.absent(),
+                required String id,
+                required String typeId,
+                required String state,
+                required DateTime startedAt,
+                Value<int> pausedMs = const Value.absent(),
+                Value<DateTime?> pausedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TrackingSessionsCompanion.insert(
+                updatedAt: updatedAt,
+                dirty: dirty,
+                id: id,
+                typeId: typeId,
+                state: state,
+                startedAt: startedAt,
+                pausedMs: pausedMs,
+                pausedAt: pausedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$TrackingSessionsTable, TrackingSessionRow>(
+                    table,
+                  ),
+                  $$TrackingSessionsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({trackPointsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (trackPointsRefs) db.trackPoints],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (trackPointsRefs)
+                    await $_getPrefetchedDataByColumns<
+                      TrackingSessionRow,
+                      $TrackingSessionsTable,
+                      TrackPointRow,
+                      $TrackPointsTable
+                    >(
+                      currentTable: table,
+                      referencedTable: $$TrackingSessionsTableReferences
+                          ._trackPointsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$TrackingSessionsTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).trackPointsRefs,
+                      currentColumn: 'id',
+                      referencedColumn: 'session_id',
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$TrackingSessionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TrackingSessionsTable,
+      TrackingSessionRow,
+      $$TrackingSessionsTableFilterComposer,
+      $$TrackingSessionsTableOrderingComposer,
+      $$TrackingSessionsTableAnnotationComposer,
+      $$TrackingSessionsTableCreateCompanionBuilder,
+      $$TrackingSessionsTableUpdateCompanionBuilder,
+      (TrackingSessionRow, $$TrackingSessionsTableReferences),
+      TrackingSessionRow,
+      PrefetchHooks Function({bool trackPointsRefs})
+    >;
+typedef $$TrackPointsTableCreateCompanionBuilder =
+    TrackPointsCompanion Function({
+      required String sessionId,
+      required int seq,
+      required DateTime t,
+      required double lat,
+      required double lon,
+      Value<double?> alt,
+      required double accuracy,
+      Value<double?> speed,
+      Value<bool> paused,
+      Value<int> rowid,
+    });
+typedef $$TrackPointsTableUpdateCompanionBuilder =
+    TrackPointsCompanion Function({
+      Value<String> sessionId,
+      Value<int> seq,
+      Value<DateTime> t,
+      Value<double> lat,
+      Value<double> lon,
+      Value<double?> alt,
+      Value<double> accuracy,
+      Value<double?> speed,
+      Value<bool> paused,
+      Value<int> rowid,
+    });
+
+final class $$TrackPointsTableReferences
+    extends BaseReferences<_$AppDatabase, $TrackPointsTable, TrackPointRow> {
+  $$TrackPointsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $TrackingSessionsTable _sessionIdTable(_$AppDatabase db) => db
+      .trackingSessions
+      .createAlias('track_points__session_id__tracking_sessions__id');
+
+  $$TrackingSessionsTableProcessedTableManager get sessionId {
+    final $_column = $_itemColumn<String>('session_id')!;
+
+    final manager = $$TrackingSessionsTableTableManager(
+      $_db,
+      $_db.trackingSessions,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_sessionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$TrackPointsTableFilterComposer
+    extends Composer<_$AppDatabase, $TrackPointsTable> {
+  $$TrackPointsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get seq => $composableBuilder(
+    column: $table.seq,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get t => $composableBuilder(
+    column: $table.t,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get lat => $composableBuilder(
+    column: $table.lat,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get lon => $composableBuilder(
+    column: $table.lon,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get alt => $composableBuilder(
+    column: $table.alt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get accuracy => $composableBuilder(
+    column: $table.accuracy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get speed => $composableBuilder(
+    column: $table.speed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get paused => $composableBuilder(
+    column: $table.paused,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$TrackingSessionsTableFilterComposer get sessionId {
+    final $$TrackingSessionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.trackingSessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrackingSessionsTableFilterComposer(
+            $db: $db,
+            $table: $db.trackingSessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TrackPointsTableOrderingComposer
+    extends Composer<_$AppDatabase, $TrackPointsTable> {
+  $$TrackPointsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get seq => $composableBuilder(
+    column: $table.seq,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get t => $composableBuilder(
+    column: $table.t,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get lat => $composableBuilder(
+    column: $table.lat,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get lon => $composableBuilder(
+    column: $table.lon,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get alt => $composableBuilder(
+    column: $table.alt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get accuracy => $composableBuilder(
+    column: $table.accuracy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get speed => $composableBuilder(
+    column: $table.speed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get paused => $composableBuilder(
+    column: $table.paused,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$TrackingSessionsTableOrderingComposer get sessionId {
+    final $$TrackingSessionsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.trackingSessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrackingSessionsTableOrderingComposer(
+            $db: $db,
+            $table: $db.trackingSessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TrackPointsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TrackPointsTable> {
+  $$TrackPointsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get seq =>
+      $composableBuilder(column: $table.seq, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get t =>
+      $composableBuilder(column: $table.t, builder: (column) => column);
+
+  GeneratedColumn<double> get lat =>
+      $composableBuilder(column: $table.lat, builder: (column) => column);
+
+  GeneratedColumn<double> get lon =>
+      $composableBuilder(column: $table.lon, builder: (column) => column);
+
+  GeneratedColumn<double> get alt =>
+      $composableBuilder(column: $table.alt, builder: (column) => column);
+
+  GeneratedColumn<double> get accuracy =>
+      $composableBuilder(column: $table.accuracy, builder: (column) => column);
+
+  GeneratedColumn<double> get speed =>
+      $composableBuilder(column: $table.speed, builder: (column) => column);
+
+  GeneratedColumn<bool> get paused =>
+      $composableBuilder(column: $table.paused, builder: (column) => column);
+
+  $$TrackingSessionsTableAnnotationComposer get sessionId {
+    final $$TrackingSessionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.trackingSessions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TrackingSessionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.trackingSessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TrackPointsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TrackPointsTable,
+          TrackPointRow,
+          $$TrackPointsTableFilterComposer,
+          $$TrackPointsTableOrderingComposer,
+          $$TrackPointsTableAnnotationComposer,
+          $$TrackPointsTableCreateCompanionBuilder,
+          $$TrackPointsTableUpdateCompanionBuilder,
+          (TrackPointRow, $$TrackPointsTableReferences),
+          TrackPointRow,
+          PrefetchHooks Function({bool sessionId})
+        > {
+  $$TrackPointsTableTableManager(_$AppDatabase db, $TrackPointsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TrackPointsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TrackPointsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TrackPointsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> sessionId = const Value.absent(),
+                Value<int> seq = const Value.absent(),
+                Value<DateTime> t = const Value.absent(),
+                Value<double> lat = const Value.absent(),
+                Value<double> lon = const Value.absent(),
+                Value<double?> alt = const Value.absent(),
+                Value<double> accuracy = const Value.absent(),
+                Value<double?> speed = const Value.absent(),
+                Value<bool> paused = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TrackPointsCompanion(
+                sessionId: sessionId,
+                seq: seq,
+                t: t,
+                lat: lat,
+                lon: lon,
+                alt: alt,
+                accuracy: accuracy,
+                speed: speed,
+                paused: paused,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String sessionId,
+                required int seq,
+                required DateTime t,
+                required double lat,
+                required double lon,
+                Value<double?> alt = const Value.absent(),
+                required double accuracy,
+                Value<double?> speed = const Value.absent(),
+                Value<bool> paused = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TrackPointsCompanion.insert(
+                sessionId: sessionId,
+                seq: seq,
+                t: t,
+                lat: lat,
+                lon: lon,
+                alt: alt,
+                accuracy: accuracy,
+                speed: speed,
+                paused: paused,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$TrackPointsTable, TrackPointRow>(table),
+                  $$TrackPointsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({sessionId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (sessionId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.sessionId,
+                        referencedTable: $$TrackPointsTableReferences
+                            ._sessionIdTable(db),
+                        referencedColumn: $$TrackPointsTableReferences
+                            ._sessionIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$TrackPointsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TrackPointsTable,
+      TrackPointRow,
+      $$TrackPointsTableFilterComposer,
+      $$TrackPointsTableOrderingComposer,
+      $$TrackPointsTableAnnotationComposer,
+      $$TrackPointsTableCreateCompanionBuilder,
+      $$TrackPointsTableUpdateCompanionBuilder,
+      (TrackPointRow, $$TrackPointsTableReferences),
+      TrackPointRow,
+      PrefetchHooks Function({bool sessionId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -8824,4 +11010,8 @@ class $AppDatabaseManager {
       $$TemplateExercisesTableTableManager(_db, _db.templateExercises);
   $$ActivitiesTableTableManager get activities =>
       $$ActivitiesTableTableManager(_db, _db.activities);
+  $$TrackingSessionsTableTableManager get trackingSessions =>
+      $$TrackingSessionsTableTableManager(_db, _db.trackingSessions);
+  $$TrackPointsTableTableManager get trackPoints =>
+      $$TrackPointsTableTableManager(_db, _db.trackPoints);
 }

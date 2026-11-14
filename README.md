@@ -33,6 +33,10 @@ cp env/example.json env/dev.json   # fill in values; env/dev.json is git-ignored
 flutter run --dart-define-from-file=env/dev.json
 ```
 
+`MAP_TILES_KEY` is a free [MapTiler](https://www.maptiler.com/) API key used for the map tiles behind recorded
+routes (live GPS tracking). It is optional: without a key the app works normally and shows a plain background
+behind the route line. Put the key only in `env/dev.json` (git-ignored), never in source control.
+
 ## Test
 
 ```sh

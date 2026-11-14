@@ -61,6 +61,12 @@
 		<array>
 			<string>UIInterfaceOrientationPortrait</string>
 		</array>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>FitApp uses your location to record the route, distance and pace of runs and rides you start.</string>
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>location</string>
+		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
 	</dict>

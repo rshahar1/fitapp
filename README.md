@@ -33,6 +33,10 @@ cp env/example.json env/dev.json   # fill in values; env/dev.json is git-ignored
 flutter run --dart-define-from-file=env/dev.json
 ```
 
+`MAP_TILES_KEY` is a free [MapTiler](https://www.maptiler.com/) API key used for the map tiles behind recorded
+routes (live GPS tracking). It is optional: without a key the app works normally and shows a plain background
+behind the route line. Pass it with `--dart-define-from-file`. Put the key only in `env/dev.json` (git-ignored), never in source control.
+
 ## Test
 
 ```sh
@@ -101,6 +105,21 @@ the Progress weekly bars; **Total workouts** counts gym workouts only, and activ
 exercise stats or progression. The sports are a code-level registry in `lib/domain/activity_types.dart`;
 adding one means one registry entry plus one icon in `lib/features/activities/activity_icons.dart`.
 
+## Live GPS tracking (running and cycling)
+
+Pick Running or Cycling in **Log activity** and tap **Start live**: a setup screen waits for a good GPS fix
+(accuracy 20 m or better, or Start anyway), then the live screen shows time, distance, pace or speed and the
+route on a map, with Pause/Resume, Lock and a hold-to-finish button. Tracking continues with the screen off
+(Android foreground service with a notification) and auto-pauses when you stand still. A finish sheet shows the
+route and metrics; Save stores one activity with distance, duration, moving time, elevation gain, a simplified
+route and per-km splits, and deletes the raw GPS points. History shows a route thumbnail and opens an activity
+detail with the map and splits. GPS points are saved every few seconds, so after a crash or kill the app reopens
+the live screen and continues. Only one live session (gym workout or tracked activity) at a time. Location data
+never leaves the device; only map tile requests go to MapTiler (see `MAP_TILES_KEY` in Setup). Android
+permissions added: `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `FOREGROUND_SERVICE`,
+`FOREGROUND_SERVICE_LOCATION` (while-in-use only, no background-location permission). New packages: `geolocator`,
+`flutter_map`, `latlong2`. Schema v6 adds the tracking tables and the tracked columns on `activities`.
+
 ## Workout flow and exercise library
 
 - **Resume** any finished workout (while none is live), from History or the finish summary; a resumed workout
@@ -119,7 +138,7 @@ No schema change (still v4) and no new packages.
 
 ## Database schema and migrations
 
-The schema is at version 5 (v2 adds `templates` and `template_exercises`; v3 adds the plan columns on `template_exercises` and `workout_exercises.template_exercise_id`; v4 adds `activities`; v5 adds `activities.distance_meters`). Migrations use drift's generated `stepByStep` helper (`lib/data/db/app_database.steps.dart`). Schema dumps live in `drift_schemas/` and the migration tests in `test/drift/` (plus `test/data/migration_test.dart`). After any schema change, regenerate the dumps and test helpers with:
+The schema is at version 6 (v6 adds `tracking_sessions`, `track_points` and the tracked-activity columns on `activities`; v2 adds `templates` and `template_exercises`; v3 adds the plan columns on `template_exercises` and `workout_exercises.template_exercise_id`; v4 adds `activities`; v5 adds `activities.distance_meters`). Migrations use drift's generated `stepByStep` helper (`lib/data/db/app_database.steps.dart`). Schema dumps live in `drift_schemas/` and the migration tests in `test/drift/` (plus `test/data/migration_test.dart`). After any schema change, regenerate the dumps and test helpers with:
 
 ```sh
 dart run drift_dev make-migrations
@@ -195,7 +214,7 @@ at ~60 % of the screen height on any screen shape.
 
 - Sign-in with cloud backup and restore
 - "Repeat last workout"
-- Sport-specific tracking for activities (distance, pace, ...)
+- Snowboarding tracking, Health Connect/HealthKit import, GPX export, miles, offline map tiles
 - Drop and failure set types
 - kg / lb setting
 - Plate calculator

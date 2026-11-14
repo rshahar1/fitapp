@@ -1,0 +1,42 @@
+import 'package:fitapp/domain/tracking/track_sample.dart';
+
+/// Location permission as seen by the tracking feature.
+enum LocationPermissionState { granted, denied, deniedForever }
+
+/// Platform boundary for GPS fixes (feature 010).
+abstract interface class LocationSource {
+  Future<LocationPermissionState> checkPermission();
+
+  /// Shows the system permission prompt where the OS allows it.
+  Future<LocationPermissionState> requestPermission();
+
+  /// Whether the device's location service is switched on.
+  Future<bool> serviceEnabled();
+
+  /// Emits whether the location service is on, each time it is switched
+  /// (e.g. from the quick-settings shade, which does not resume the app).
+  Stream<bool> serviceStatus();
+
+  /// The last position the OS knows, or null when none or unsupported. May be
+  /// stale: use it to centre a map, never to judge accuracy.
+  Future<TrackSample?> lastKnownPosition();
+
+  Future<void> openAppSettings();
+
+  Future<void> openLocationSettings();
+
+  /// A stream of fixes (UTC timestamps). Cancelling the subscription stops
+  /// location updates and the foreground notification. The notification text
+  /// is shown while tracking runs in the background.
+  ///
+  /// [background] keeps updates running with the screen off (Android
+  /// foreground service); false while the app is only waiting for a fix.
+  /// [rawGps] asks the platform GPS provider directly instead of the fused
+  /// provider (fallback when the fused provider sends nothing).
+  Stream<TrackSample> positions({
+    required String notificationTitle,
+    required String notificationText,
+    bool background = true,
+    bool rawGps = false,
+  });
+}

@@ -51,3 +51,17 @@ String formatDateShort(DateTime d) => DateFormat('EEE, d MMM').format(d);
 
 /// "November 2026".
 String formatMonth(DateTime d) => DateFormat('MMMM y').format(d);
+
+/// Pace as "5:30" from seconds per km; an em dash when unknown or absurd.
+String formatPaceSec(num? secPerKm) {
+  if (secPerKm == null || !secPerKm.isFinite || secPerKm >= 3600) return '—';
+  final total = secPerKm.round();
+  return '${total ~/ 60}:${_two(total % 60)}';
+}
+
+/// "12.3" km/h from metres per second; an em dash when unknown.
+String formatSpeedMps(double? mps) =>
+    mps == null || !mps.isFinite ? '—' : (mps * 3.6).toStringAsFixed(1);
+
+/// "4.20" km from metres (two decimals, stable while ticking up).
+String formatLiveKm(num meters) => (meters / 1000).toStringAsFixed(2);

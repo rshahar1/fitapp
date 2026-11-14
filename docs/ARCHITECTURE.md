@@ -4,7 +4,7 @@
 
 - Widgets (in `lib/features/` and `lib/widgets/`) never touch the database directly.
 - Widgets read and mutate state through Riverpod providers.
-- Providers call repositories (`WorkoutRepository`, `ExerciseRepository`, `TemplateRepository`, `ActivityRepository`), which own all business writes and transactions.
+- Providers call repositories (`WorkoutRepository`, `ExerciseRepository`, `TemplateRepository`, `ActivityRepository`, `TrackingRepository`), which own all business writes and transactions.
 - Repositories use the drift database (local SQLite, source of truth); the progression logic in `lib/domain/` is pure Dart.
 - Providers live in `lib/data/providers.dart` (Riverpod 3, no codegen).
 - Read models are streams built with `watchQuery` in `lib/data/watch.dart`: it runs a loader and re-runs it whenever any table it reads is updated, so screens refresh automatically after writes.
@@ -46,6 +46,15 @@ Implementation in `WorkoutRepository`:
 - `ActivityRepository` owns create, update, delete, list and watch.
 - Merged history: `WorkoutRepository.historyEntries()` merges finished workouts and activities newest first as a sealed `HistoryEntry` (`WorkoutHistoryEntry` | `ActivityHistoryEntry`), exposed by `historyEntriesProvider`. History groups it by month; tapping an activity opens the sheet to edit or delete (delete confirmed).
 - Stats: week stats use the union of finished-workout dates and activity dates, so activities count toward This week, Week streak and the Progress weekly bars. Total workouts stays gym only, the Train Recent list stays workouts only, and activities never affect volume, exercise stats or progression.
+
+## Live GPS tracking
+
+- Layers: pure domain in `lib/domain/tracking/` (`TrackSample`, `TrackProfile` for running and cycling, `TrackState`, `track_reducer.dart`, `TrackSummary`, `geo.dart`). The reducer folds samples into state (distance, moving time, auto-pause, per-km splits, elevation gain, route simplification), ignores fixes with accuracy over 20 m or impossible speed, and is replayable: the same stored points always give the same result. Below it, `TrackingRepository` (`lib/data/repositories/tracking_repository.dart`) owns start, append points, pause, load points, finish and discard; `LocationSource` (`lib/data/tracking/location_source.dart`, `GeolocatorLocationSource` the real one, fakes in tests) wraps permission, service state and the fix stream. `TrackingController` (`lib/features/tracking/tracking_controller.dart`, Riverpod) combines them into a `TrackingUiState` (idle, acquiring, live). Screens: `TrackSetupScreen`, `LiveTrackScreen`, `FinishSheet`, with `RouteMap` and footer controls in `widgets/`.
+- Tables (schema v6): `tracking_sessions` (the single live session, local only), `track_points` (raw fixes, cascade delete) and the tracked columns on `activities` (`source`, `moving_seconds`, `elevation_gain_meters`, `route` encoded polyline, `splits` JSON).
+- Crash recovery: the controller buffers fixes and writes them in batches (every 5 s or 20 points). On launch `recoverTrackingOnLaunch` (`launch_recovery.dart`) looks for a leftover session, replays its points through the reducer, resumes the location stream and opens `/track/live`. At most about 5 s of track is lost.
+- One live session: a gym workout in progress and a tracking session exclude each other; starting one while the other exists shows a message with a button to open it.
+- Finish: `TrackingRepository.finish` runs in one transaction: it replays the points, writes one `activities` row (`source = gps`) with the simplified route and splits, and deletes the session and its raw points. Discard deletes them without an activity.
+- Map and fallback: `RouteMap` uses `flutter_map` with MapTiler tiles when `MAP_TILES_KEY` (`--dart-define-from-file`) is set; with no key or no network it draws the route on a plain dark background. History thumbnails are drawn locally with no tiles. Location data never leaves the device; only tile requests do.
 
 ## Workout flow and exercise library
 
@@ -94,7 +103,7 @@ All operations run in a drift transaction, so a failure leaves no partial state.
 
 ## Schema versioning and migration testing
 
-- `schemaVersion` is 5. Migrations use drift's generated `stepByStep` (`lib/data/db/app_database.steps.dart`): v1 to v2 creates both template tables and the `templates_name_ci` index; v2 to v3 adds the plan columns to `template_exercises` (filled from `exercise_state`) and `workout_exercises.template_exercise_id` with its index; v3 to v4 (`from3To4`) creates `activities` and its `started_at` index; v4 to v5 (`from4To5`) adds the nullable `activities.distance_meters` column. `onCreate` creates the index too.
+- `schemaVersion` is 6. Migrations use drift's generated `stepByStep` (`lib/data/db/app_database.steps.dart`): v1 to v2 creates both template tables and the `templates_name_ci` index; v2 to v3 adds the plan columns to `template_exercises` (filled from `exercise_state`) and `workout_exercises.template_exercise_id` with its index; v3 to v4 (`from3To4`) creates `activities` and its `started_at` index; v4 to v5 (`from4To5`) adds the nullable `activities.distance_meters` column; v5 to v6 adds `tracking_sessions`, `track_points` and the tracked columns on `activities`. `onCreate` creates the index too.
 - Schema dumps are in `drift_schemas/`; generated migration test helpers and tests are in `test/drift/`, plus `test/data/migration_test.dart` (upgrades keep existing workouts and sets; v3 copies exercise plans into templates; v4 keeps all existing data).
 - After a schema change, run `dart run drift_dev make-migrations` to produce the new dump and helpers.
 

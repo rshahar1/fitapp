@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.5, 14 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.6, 14 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -22,7 +22,7 @@ A minimalist, fast, offline-first gym workout logger built around one idea: **au
 The user logs sets between exercises with large tap targets and almost no typing. The app pre-fills every set
 from the user's plan and last session, and moves the working weight up automatically when they earn it.
 Other sports (functional training, cycling, snowboarding, running, Pilates) can be logged as lightweight
-activities that count toward consistency; running and cycling can carry a manually entered distance.
+activities that count toward consistency; running and cycling can carry a manually entered distance or be recorded live with GPS (section 5.8).
 
 ### 1.1 Goals
 1. Log a full set in **one tap** when the user did what was planned.
@@ -319,6 +319,30 @@ back to the exercise plan.
 
 ---
 
+### 5.8 Live GPS tracking (running and cycling; feature 010)
+- **Flow:** Train → **Log activity** → pick Running or Cycling → **Start live** (primary; the manual form stays
+  below it) → setup screen ("Searching for GPS", Start at accuracy ≤ 20 m or *Start anyway*) → live screen →
+  **Finish** (1 s hold) → finish sheet (route map, metrics, **Save** / **Discard** with confirmation) →
+  **History** row with a route thumbnail (drawn locally, no tiles) → **Activity detail** (interactive map, start and
+  finish markers, km markers, metrics, per-km splits; edit type, date, note only; delete confirmed).
+- **Live screen:** running shows elapsed time, distance, current and average pace, last km split; cycling shows
+  speed, distance, average speed, elapsed time, climb. Footer: Pause/Resume, Lock, Finish. Auto-pause when still
+  (running 10 s, cycling 5 s). Fixes with accuracy > 20 m or impossible speed are ignored. Sessions under 1 min or
+  50 m need confirmation to save.
+- **Background and recovery:** continues with the screen off (Android foreground service, persistent notification
+  with time and distance). Fixes are persisted in batches (about 5 s); after a kill the app reopens the live screen
+  with the session intact (at most about 5 s lost). Only one live session (gym workout or tracked activity) at a
+  time; starting the other shows a message with a button to open the one in progress.
+- **Saved result:** one `activities` row (`source = gps`, distance, duration, moving time, elevation gain,
+  simplified route, splits); raw points are deleted. Metrics come from pure domain code replayable from points.
+- **Permissions:** location "while in use" only, with a short rationale before the OS prompt; if denied, offer
+  settings or the manual form. Android: `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `FOREGROUND_SERVICE`,
+  `FOREGROUND_SERVICE_LOCATION`. Location services off mid-session pauses with a banner.
+- **Privacy and map:** location data never leaves the device; only map tile requests go to MapTiler. The key is
+  `MAP_TILES_KEY` via `--dart-define-from-file=env/dev.json` (never in the repo). No key or no network: the route is
+  drawn on a plain dark background.
+- **LATER:** snowboarding tracking, Health Connect/HealthKit import, GPX export, miles, offline tile download.
+
 ## 6. Navigation and screens
 
 ```
@@ -328,6 +352,8 @@ Bottom navigation (3 tabs)
 └── Progress   (weekly chart, exercises → exercise detail)
 
 Full-screen routes
+├── /track/new?type=       live tracking setup (GPS fix, Start)
+├── /track/live            live tracking screen (map, metrics, Pause/Lock/Finish)
 ├── /workout               live workout (active)
 ├── /workout/:id           finished workout in edit mode
 ├── /exercise/:id          exercise detail (Summary / History)
@@ -360,12 +386,18 @@ workout_exercises  id PK, workout_id → workouts (cascade), exercise_id → exe
 sets               id PK, workout_exercise_id → workout_exercises (cascade), set_no, weight, reps,
                    is_overload, completed_at, updated_at, dirty,
                    UNIQUE(workout_exercise_id, set_no)
-activities         id PK, type_id, started_at, duration_minutes?, distance_meters?, notes?, updated_at, dirty,
+activities         id PK, type_id, started_at, duration_minutes?, distance_meters?, notes?,
+                   source ('manual'|'gps'), moving_seconds?, elevation_gain_meters?,
+                   route? (encoded polyline), splits? (JSON), updated_at, dirty,
                    index on started_at                              -- non-gym sport activities
+tracking_sessions  id PK, type_id, state ('active'|'paused'), started_at, paused_ms, paused_at?,
+                   updated_at, dirty                                -- the one live GPS session, local only
+track_points       session_id → tracking_sessions (cascade), seq, t, lat, lon, alt?, accuracy, speed?,
+                   paused, PK(session_id, seq)                      -- raw fixes, deleted on save or discard
 pending_deletes    table_name, row_id, PK(table_name, row_id)      -- delete queue for future sync
 settings           key PK, value                                   -- local-only in v1, e.g. default_rest_seconds = 60
 ```
-- Schema version is 5 (v2 templates, v3 template plans and `template_exercise_id`, v4 `activities`, v5 `activities.distance_meters`). Use real schema **migrations** with a version number (drift `stepByStep`). Never drop user data on upgrade.
+- Schema version is 6 (v2 templates, v3 template plans and `template_exercise_id`, v4 `activities`, v5 `activities.distance_meters`, v6 `tracking_sessions`, `track_points` and the tracked columns on `activities`). Use real schema **migrations** with a version number (drift `stepByStep`). Never drop user data on upgrade.
 - Foreign keys **ON**. Writes that touch several rows (finish, resume, recalculate, delete) run in **one
   transaction**.
 
@@ -399,6 +431,7 @@ settings           key PK, value                                   -- local-only
 | SDK | Flutter **stable** channel, latest version at implementation time |
 | State management | `flutter_riverpod` (with code generation optional) |
 | Routing | `go_router` |
+| Location and map | `geolocator` (GPS), `flutter_map` + `latlong2` (OpenStreetMap tiles via MapTiler) |
 | Local DB | `drift` (type-safe SQLite, migrations, in-memory DB for tests) with its Flutter SQLite libs |
 | Charts | `fl_chart` (or `CustomPainter` for the glow line and backdrop) |
 | IDs | `uuid` |
@@ -565,7 +598,7 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 ## 14. Roadmap (after v1, not in scope now)
 - Sign-in with cloud backup and restore (M7)
 - Template folders and "repeat last workout" (templates themselves exist since feature 003)
-- Live tracking for activities (GPS, routes, maps, sensors) and miles; manual distance exists since feature 009
+- Snowboarding tracking, Health Connect/HealthKit import, GPX export, miles and offline map tiles (live GPS tracking for running and cycling exists since feature 010)
 - Drop and failure set types (warm-up sets are intentionally not planned)
 - Rest-timer notifications when the app is in the background, if not done in M3
 - kg / lb setting
@@ -633,3 +666,7 @@ resolved on 12 Nov 2026; see the decisions log.
     typed in km, stored as whole metres in `activities.distance_meters` (schema v5, `from4To5`).
   - History rows show distance and, when a duration is set too, pace (running) or speed (cycling).
   - Live GPS tracking, routes, maps, sensors and miles stay LATER. Constitution 1.3.0.
+- **2.6 (14 Nov 2026):** feature 010, live GPS tracking for running and cycling (owner approval of 14 Nov 2026).
+  - Start live from Log activity, setup, live screen, finish sheet, History route thumbnail, Activity detail (section 5.8).
+  - Schema v6: `tracking_sessions`, `track_points`, tracked columns on `activities`. New packages `geolocator`, `flutter_map`, `latlong2`; `MAP_TILES_KEY` map key.
+  - Snowboarding tracking, Health Connect, GPX export, miles, offline tiles stay LATER. Constitution 1.4.0.

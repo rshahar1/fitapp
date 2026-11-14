@@ -7,6 +7,7 @@ import 'package:fitapp/data/models.dart';
 import 'package:fitapp/domain/activity_types.dart';
 import 'package:fitapp/features/activities/activity_icons.dart';
 import 'package:fitapp/features/activities/activity_sheet.dart';
+import 'package:fitapp/features/history/route_thumbnail.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -78,20 +79,33 @@ class HistoryActivityRow extends StatelessWidget {
         },
       ?note,
     ].join(' · ');
+    final isGps = activity.source == 'gps';
+    final thumbnail = isGps ? decodeRouteOrNull(activity.route) : null;
     return Semantics(
       button: true,
-      label: '$date, $subtitle',
+      label: '$date, $subtitle${isGps ? ', GPS tracked' : ''}',
       excludeSemantics: true,
       child: GroupRow(
-        leading: HistoryIconBadge(
-          icon: activityIcon(activity.typeId),
-          color: context.metrics.volume,
-          bg: AppColors.surfaceHigh,
-        ),
+        leading: thumbnail != null
+            ? RouteThumbnail(points: thumbnail)
+            : HistoryIconBadge(
+                icon: activityIcon(activity.typeId),
+                color: context.metrics.volume,
+                bg: AppColors.surfaceHigh,
+              ),
         title: date,
         subtitle: subtitle,
+        trailing: isGps
+            ? const Icon(
+                Icons.location_on,
+                size: 16,
+                color: AppColors.textSecondary,
+              )
+            : null,
         showChevron: true,
-        onTap: () => showActivitySheet(context, existing: activity),
+        onTap: () => isGps
+            ? context.push(Routes.activity(activity.id))
+            : showActivitySheet(context, existing: activity),
       ),
     );
   }

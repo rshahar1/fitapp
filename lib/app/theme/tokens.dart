@@ -60,6 +60,19 @@ abstract final class Sizes {
 
   /// Height of the fixed workout footer (rest pill + Finish).
   static const footer = 72.0;
+
+  /// Footer controls of the live tracking screen (feature 010).
+  static const control = 56.0;
+
+  /// Route line width and start/finish dot size on maps.
+  static const routeStroke = 4.0;
+  static const mapMarker = 14.0;
+
+  /// Height of the route map on the finish sheet.
+  static const mapPreview = 200.0;
+
+  /// Smallest map shown on the live screen.
+  static const mapMin = 120.0;
 }
 
 abstract final class Motion {

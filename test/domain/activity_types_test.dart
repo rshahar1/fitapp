@@ -23,6 +23,13 @@ void main() {
     expect(activityTypes.map((t) => t.id).toSet(), hasLength(5));
   });
 
+  test('hasLiveTracking only for running and cycling', () {
+    expect(activityTypes.where((t) => t.hasLiveTracking).map((t) => t.id), [
+      'cycling',
+      'running',
+    ]);
+  });
+
   test('lookup by id; unknown -> null', () {
     expect(activityTypeById('cycling')!.label, 'Cycling');
     expect(activityTypeById('curling'), isNull);

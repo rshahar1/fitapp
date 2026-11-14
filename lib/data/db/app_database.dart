@@ -18,6 +18,8 @@ part 'app_database.g.dart';
     Templates,
     TemplateExercises,
     Activities,
+    TrackingSessions,
+    TrackPoints,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -32,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   DateTime now() => _clock().toUtc();
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -75,6 +77,21 @@ class AppDatabase extends _$AppDatabase {
             schema.activities,
             schema.activities.distanceMeters,
           );
+        },
+        from5To6: (m, schema) async {
+          // Feature 010: live GPS tracking.
+          await m.createTable(schema.trackingSessions);
+          await m.createTable(schema.trackPoints);
+          final a = schema.activities;
+          for (final c in <GeneratedColumn<Object>>[
+            a.source,
+            a.movingSeconds,
+            a.elevationGainMeters,
+            a.route,
+            a.splits,
+          ]) {
+            await m.addColumn(a, c);
+          }
         },
       )(m, from, to);
       await _createIndexes(version: to);

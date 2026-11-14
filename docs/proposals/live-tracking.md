@@ -1,6 +1,6 @@
 # Proposal: Live GPS / Sensor Tracking (Running, Cycling, Snowboarding)
 
-**Status**: Proposal — not approved, not built | **Date**: 2026-11-14 | **Author**: Claude (for the owner)
+**Status**: Phase A (running/cycling) approved 2026-11-14 and implemented in feature 010 (`specs/010-live-gps-tracking/`); map: MapTiler (OpenStreetMap), raw points not kept, Health Connect not now; snowboarding pending a separate session | **Date**: 2026-11-14 | **Author**: Claude (for the owner)
 
 **Context**: Feature 009 adds manual distance for running/cycling. This document answers whether
 live tracking fits FitApp's current architecture, what it would take, and how it should look.

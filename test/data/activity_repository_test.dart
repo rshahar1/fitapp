@@ -161,4 +161,50 @@ void main() {
     );
     expect(await activities.list(), hasLength(1));
   });
+
+  test(
+    'update keeps the GPS columns and watchActivity follows changes',
+    () async {
+      final id = await activities.create(
+        typeId: 'running',
+        startedAt: h.now,
+        durationMinutes: 28,
+        distanceMeters: 5200,
+      );
+      await (h.db.update(h.db.activities)..where((t) => t.id.equals(id))).write(
+        const ActivitiesCompanion(
+          source: Value('gps'),
+          movingSeconds: Value(1650),
+          elevationGainMeters: Value(42),
+          route: Value('_p~iF~ps|U_ulLnnqC'),
+          splits: Value('[300,310]'),
+        ),
+      );
+      final seen = <ActivityRow?>[];
+      final sub = activities.watchActivity(id).listen(seen.add);
+      await pumpEventQueue();
+      await activities.update(
+        id,
+        typeId: 'cycling',
+        startedAt: h.now,
+        durationMinutes: 28,
+        distanceMeters: 5200,
+        notes: 'edited',
+      );
+      await pumpEventQueue();
+      final a = (await activities.activity(id))!;
+      expect(a.typeId, 'cycling');
+      expect(a.notes, 'edited');
+      expect(a.source, 'gps');
+      expect(a.movingSeconds, 1650);
+      expect(a.elevationGainMeters, 42);
+      expect(a.route, '_p~iF~ps|U_ulLnnqC');
+      expect(a.splits, '[300,310]');
+      expect(seen.last!.notes, 'edited');
+      await activities.delete(id);
+      await pumpEventQueue();
+      expect(seen.last, isNull);
+      await sub.cancel();
+    },
+  );
 }

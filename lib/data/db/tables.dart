@@ -169,6 +169,51 @@ class Activities extends Table with SyncColumns {
   IntColumn get distanceMeters => integer().nullable()();
   TextColumn get notes => text().nullable()();
 
+  /// 'manual' (typed in) or 'gps' (recorded by live GPS tracking).
+  TextColumn get source => text().withDefault(const Constant('manual'))();
+  IntColumn get movingSeconds => integer().nullable()();
+  IntColumn get elevationGainMeters => integer().nullable()();
+
+  /// Simplified route as an encoded polyline (precision 5), tracked activities only.
+  TextColumn get route => text().nullable()();
+
+  /// Encoded per-km splits (JSON) for tracked activities.
+  TextColumn get splits => text().nullable()();
+
   @override
   Set<Column<Object>> get primaryKey => {id};
+}
+
+/// The in-progress GPS tracking session (feature 010). Local-only, no sync.
+@DataClassName('TrackingSessionRow')
+class TrackingSessions extends Table with SyncColumns {
+  TextColumn get id => text()();
+  TextColumn get typeId => text()();
+
+  /// 'active' or 'paused'.
+  TextColumn get state => text()();
+  DateTimeColumn get startedAt => dateTime()();
+  IntColumn get pausedMs => integer().withDefault(const Constant(0))();
+  DateTimeColumn get pausedAt => dateTime().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Raw GPS fixes of a tracking session; local scratch data.
+@DataClassName('TrackPointRow')
+class TrackPoints extends Table {
+  TextColumn get sessionId =>
+      text().references(TrackingSessions, #id, onDelete: KeyAction.cascade)();
+  IntColumn get seq => integer()();
+  DateTimeColumn get t => dateTime()();
+  RealColumn get lat => real()();
+  RealColumn get lon => real()();
+  RealColumn get alt => real().nullable()();
+  RealColumn get accuracy => real()();
+  RealColumn get speed => real().nullable()();
+  BoolColumn get paused => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {sessionId, seq};
 }

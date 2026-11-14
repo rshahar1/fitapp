@@ -5,7 +5,11 @@ import 'package:fitapp/core/format.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/providers.dart';
+import 'package:fitapp/domain/activity_types.dart';
+import 'package:fitapp/domain/tracking/track_reducer.dart' show elapsedAt;
 import 'package:fitapp/features/activities/activity_sheet.dart';
+import 'package:fitapp/features/tracking/tracking_controller.dart';
+import 'package:fitapp/features/workout/widgets/tick.dart';
 import 'package:fitapp/widgets/guard.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +27,7 @@ class TrainScreen extends ConsumerWidget {
     final stats = ref.watch(homeStatsProvider).value;
     final active = ref.watch(activeWorkoutProvider).value;
     final now = ref.watch(clockProvider)();
+    final tracking = ref.watch(activeTrackingProvider).value;
     final liveSession = ref.watch(liveSessionProvider).value;
     final session = liveSession?.workoutId == active?.id ? liveSession : null;
     final templates = ref.watch(templatesProvider).value ?? const [];
@@ -133,6 +138,10 @@ class TrainScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: Space.s),
+            if (tracking != null) ...[
+              _TrackingBanner(typeId: tracking.typeId),
+              const SizedBox(height: Space.s),
+            ],
             AppButton(
               label: 'Log activity',
               expand: true,
@@ -277,6 +286,54 @@ class _TemplateCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// "Running in progress · 23:41 · 4.2 km": opens the live screen.
+class _TrackingBanner extends ConsumerWidget {
+  const new({required this.typeId});
+
+  final String typeId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final text = Theme.of(context).textTheme;
+    final live = ref.watch(trackingControllerProvider);
+    final title = '${activityLabel(typeId)} in progress';
+    return Semantics(
+      button: true,
+      label: title,
+      excludeSemantics: true,
+      onTap: () => context.push(Routes.trackLive),
+      child: AppCard(
+        borderColor: AppColors.accent,
+        onTap: () => context.push(Routes.trackLive),
+        child: Row(
+          children: [
+            const Icon(Icons.my_location, color: AppColors.accent),
+            const SizedBox(width: Space.m),
+            Expanded(
+              child: live is TrackingLive
+                  ? Tick(
+                      builder: (_) {
+                        final elapsed = elapsedAt(
+                          live.state,
+                          ref.read(clockProvider)().toUtc(),
+                        );
+                        return Text(
+                          '$title · ${formatClock(elapsed)} · '
+                          '${(live.state.distanceMeters / 1000).toStringAsFixed(1)} km',
+                          style: text.titleMedium,
+                        );
+                      },
+                    )
+                  : Text(title, style: text.titleMedium),
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+          ],
+        ),
       ),
     );
   }

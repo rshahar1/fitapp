@@ -1,3 +1,4 @@
+import 'package:fitapp/features/activities/activity_detail_screen.dart';
 import 'package:fitapp/features/exercises/exercise_library_screen.dart';
 import 'package:fitapp/features/exercises/exercise_picker_screen.dart';
 import 'package:fitapp/features/history/history_screen.dart';
@@ -6,6 +7,8 @@ import 'package:fitapp/features/progress/progress_screen.dart';
 import 'package:fitapp/features/settings/settings_screen.dart';
 import 'package:fitapp/features/shell/shell_scaffold.dart';
 import 'package:fitapp/features/templates/template_editor_screen.dart';
+import 'package:fitapp/features/tracking/live_track_screen.dart';
+import 'package:fitapp/features/tracking/track_setup_screen.dart';
 import 'package:fitapp/features/train/train_screen.dart';
 import 'package:fitapp/features/workout/workout_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,9 +23,15 @@ abstract final class Routes {
   static const workout = '/workout';
   static const settings = '/settings';
 
+  /// Live GPS tracking (feature 010): setup (GPS check) and the live screen.
+  static const trackNew = '/track/new';
+  static const trackLive = '/track/live';
+  static String newTrack(String typeId) => '$trackNew?type=$typeId';
+
   /// Exercise library (feature 007), reachable without a workout.
   static const exercises = '/exercises';
   static String finishedWorkout(String id) => '/workout/$id';
+  static String activity(String id) => '/activity/$id';
   static String exercise(String id) => '/exercise/$id';
   static const newTemplate = '/template/new';
   static String template(String id) => '/template/$id';
@@ -76,6 +85,23 @@ GoRouter buildRouter() => GoRouter(
               WorkoutScreen(workoutId: state.pathParameters['id']),
         ),
       ],
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootKey,
+      path: Routes.trackNew,
+      builder: (_, state) =>
+          TrackSetupScreen(typeId: state.uri.queryParameters['type']),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootKey,
+      path: Routes.trackLive,
+      builder: (_, _) => const LiveTrackScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootKey,
+      path: '/activity/:id',
+      builder: (_, state) =>
+          ActivityDetailScreen(activityId: state.pathParameters['id']!),
     ),
     GoRoute(
       parentNavigatorKey: _rootKey,

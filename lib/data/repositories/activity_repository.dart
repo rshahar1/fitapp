@@ -104,6 +104,11 @@ class ActivityRepository {
         (a) => OrderingTerm.desc(a.id),
       ]);
 
+  /// One activity, re-emitted on change; null once it is deleted.
+  Stream<ActivityRow?> watchActivity(String id) => (_db.select(
+    _db.activities,
+  )..where((a) => a.id.equals(id))).watchSingleOrNull();
+
   /// All activities, newest first.
   Future<List<ActivityRow>> list() => _newestFirst().get();
 

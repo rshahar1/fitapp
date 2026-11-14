@@ -1,5 +1,17 @@
 <!--
 Sync Impact Report
+- Version change: 1.3.0 → 1.4.0 (feature 010, live GPS tracking for running and cycling)
+- Modified principles: IV (`TrackingRepository` added to the repositories that own business writes);
+  VI (location data stays on device; only map tile requests leave it; the map key comes from
+  `--dart-define-from-file` as `MAP_TILES_KEY`); VII (live GPS tracking for running and cycling,
+  with an in-app map via a tile provider, is in scope, owner approval 2026-11-14; snowboarding
+  tracking, Health Connect/HealthKit import, GPX export, miles and offline tile download remain out
+  of scope until requested)
+- Added sections: none (Technology & Platform Constraints lists geolocator, flutter_map, latlong2)
+- Removed sections: none
+- Deferred TODOs: none
+
+Previous report (1.3.0)
 - Version change: 1.2.1 → 1.3.0 (feature 009, Pilates and manual distance)
 - Modified principles: VII (manual distance entry for running and cycling is now in scope, owner
   request 2026-11-14; live GPS tracking, routes, maps and sensors remain out of scope until the
@@ -92,7 +104,7 @@ Rationale: correctness of history edits is subtle; only tests make refactoring s
   sync), `features/<feature>/`, `widgets/` (shared UI kit); `test/` mirrors `lib/`.
 - Widgets MUST NOT touch the database; they reach repositories through Riverpod providers.
   No business logic in widgets.
-- All business writes go through repositories (`WorkoutRepository`, `ExerciseRepository`, `TemplateRepository`, `ActivityRepository`).
+- All business writes go through repositories (`WorkoutRepository`, `ExerciseRepository`, `TemplateRepository`, `ActivityRepository`, `TrackingRepository`).
 - Colors, spacing, radii and type MUST come from the theme (tokens + `ThemeExtension`); no
   hard-coded colors or sizes in widgets.
 - Prefer Flutter/Material 3 built-ins over third-party UI kits; every added package MUST be
@@ -121,6 +133,10 @@ Rationale: the user is sweaty, distracted and between sets; mis-taps corrupt dat
   committed.
 - `.gitignore` MUST cover every path listed in PRD section 9.3; no IDE folders or build output in git.
 - No analytics or trackers in v1; data stays on device until the user opts into Phase 2 sync.
+- Location data (GPS fixes, routes) stays on the device. The only network traffic live tracking adds
+  is map tile requests to the tile provider. The map key is read from `--dart-define-from-file`
+  (`MAP_TILES_KEY` in `env/dev.json`, git-ignored); without it the app still works and draws routes
+  on a plain background.
 - The app MUST never crash on bad data: DB errors are caught, logged, and shown as a short message;
   sync errors are silent and retried.
 
@@ -135,8 +151,10 @@ Rationale: a personal health log is private data; leaked keys are irreversible.
   theme, no videos, no AI workouts, no ads or paid features.
 - Lightweight logging of sport activities besides gym workouts (feature 006, owner request) is in
   scope. Manual distance entry for running and cycling, with derived pace or speed (feature 009,
-  owner request 2026-11-14), is in scope. Live GPS tracking, routes, maps and sensors remain out of
-  scope until the owner requests them.
+  owner request 2026-11-14), is in scope. Live GPS tracking for running and cycling (distance,
+  pace, route, splits) with an in-app map via a tile provider (feature 010, owner approval
+  2026-11-14) is in scope. Snowboarding tracking, Health Connect/HealthKit import, GPX export, miles
+  and offline tile download remain out of scope until the owner requests them.
 - Phase 2 is designed for (UUIDs, `dirty`, `pending_deletes`) but not built.
 
 Rationale: the owner explicitly dropped these; speculative code is maintenance debt.
@@ -145,7 +163,7 @@ Rationale: the owner explicitly dropped these; speculative code is maintenance d
 
 - Flutter stable (latest) + Dart with sound null safety; Android first (APK), iOS later.
 - Packages: `flutter_riverpod`, `go_router`, `drift` (+ SQLite libs), `fl_chart` or `CustomPainter`,
-  `uuid`, `intl`; tests with `flutter_test`, `mocktail` if needed. `supabase_flutter` only in Phase 2.
+  `uuid`, `intl`, `geolocator` (location), `flutter_map` + `latlong2` (map); tests with `flutter_test`, `mocktail` if needed. `supabase_flutter` only in Phase 2.
 - Android application id `com.fitapp.app`; app name **FitApp**; kg only internally and in the UI.
 - Builds are local (`flutter build apk`); no third-party build cloud.
 - Generated code (`*.g.dart`) policy is chosen once (commit or generate in CI) and documented in
@@ -170,4 +188,4 @@ Rationale: the owner explicitly dropped these; speculative code is maintenance d
   version (MAJOR: principle removed/redefined; MINOR: principle/section added; PATCH: wording).
 - Reviews verify compliance with principles II, III and VI on every milestone.
 
-**Version**: 1.3.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-14
+**Version**: 1.4.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-14

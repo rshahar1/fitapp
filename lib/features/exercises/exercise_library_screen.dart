@@ -42,6 +42,58 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
   Future<void> _edit(ExerciseRow e) =>
       showCustomExerciseSheet(context, existing: e);
 
+  Future<void> _delete(ExerciseRow e) async {
+    final repo = ref.read(exerciseRepositoryProvider);
+    final usage = await repo.templatesUsing(e.id);
+    if (!mounted) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Delete "${e.name}"?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'It will no longer appear in your library, templates or '
+              'Progress. Past workouts keep it.',
+            ),
+            if (usage.isNotEmpty) ...[
+              const SizedBox(height: Space.s),
+              Text('Removed from: ${usage.map((t) => t.name).join(', ')}.'),
+            ],
+            for (final t in usage.where((t) => t.wouldBeEmpty)) ...[
+              const SizedBox(height: Space.s),
+              Text('"${t.name}" has no other exercises and will be deleted.'),
+            ],
+            const SizedBox(height: Space.s),
+            const Text(
+              'To bring it back, create an exercise with the same name.',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    await repo.delete(e.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('Deleted ${e.name}')));
+  }
+
   @override
   Widget build(BuildContext context) {
     final exercises = ref.watch(exercisesProvider(_query.trim()));
@@ -49,7 +101,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
     return Scaffold(
       backgroundColor: const Color(0x00000000),
       appBar: AppBar(
-        title: const Text('Exercises'),
+        title: const Text('Gym Exercise Library'),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -121,14 +173,23 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                             GroupRow(
                               title: e.name,
                               subtitle: exerciseSubtitle(e),
-                              showChevron: !e.isCustom,
-                              trailing: e.isCustom
-                                  ? IconButton(
-                                      icon: const Icon(Icons.edit_outlined),
-                                      tooltip: 'Edit ${e.name}',
-                                      onPressed: () => _edit(e),
-                                    )
-                                  : null,
+                              trailing: PopupMenuButton<String>(
+                                tooltip: 'Options for ${e.name}',
+                                icon: const Icon(Icons.more_vert),
+                                onSelected: (v) =>
+                                    v == 'edit' ? _edit(e) : _delete(e),
+                                itemBuilder: (_) => [
+                                  if (e.isCustom)
+                                    const PopupMenuItem(
+                                      value: 'edit',
+                                      child: Text('Edit'),
+                                    ),
+                                  const PopupMenuItem(
+                                    value: 'delete',
+                                    child: Text('Delete'),
+                                  ),
+                                ],
+                              ),
                               onTap: () => context.push(Routes.exercise(e.id)),
                             ),
                         ],

@@ -34,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   DateTime now() => _clock().toUtc();
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -92,6 +92,10 @@ class AppDatabase extends _$AppDatabase {
           ]) {
             await m.addColumn(a, c);
           }
+        },
+        from6To7: (m, schema) async {
+          // Feature 012: soft-deleted exercises.
+          await m.addColumn(schema.exercises, schema.exercises.deletedAt);
         },
       )(m, from, to);
       await _createIndexes(version: to);

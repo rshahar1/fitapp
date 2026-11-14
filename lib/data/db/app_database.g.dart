@@ -101,6 +101,17 @@ class $ExercisesTable extends Exercises
       'CHECK ("is_custom" IN (0, 1))',
     ),
   );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     updatedAt,
@@ -111,6 +122,7 @@ class $ExercisesTable extends Exercises
     isPerHand,
     defaultIncrement,
     isCustom,
+    deletedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -187,6 +199,12 @@ class $ExercisesTable extends Exercises
     } else if (isInserting) {
       context.missing(_isCustomMeta);
     }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -228,6 +246,10 @@ class $ExercisesTable extends Exercises
         DriftSqlType.bool,
         data['${effectivePrefix}is_custom'],
       )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
     );
   }
 
@@ -246,6 +268,11 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
   final bool isPerHand;
   final double defaultIncrement;
   final bool isCustom;
+
+  /// Set when the user deleted the exercise (feature 012, soft delete):
+  /// hidden from the library, picker, templates and Progress; history keeps
+  /// it. NULL means active.
+  final DateTime? deletedAt;
   const ExerciseRow({
     required this.updatedAt,
     required this.dirty,
@@ -255,6 +282,7 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
     required this.isPerHand,
     required this.defaultIncrement,
     required this.isCustom,
+    this.deletedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -269,6 +297,9 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
     map['is_per_hand'] = Variable<bool>(isPerHand);
     map['default_increment'] = Variable<double>(defaultIncrement);
     map['is_custom'] = Variable<bool>(isCustom);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
     return map;
   }
 
@@ -284,6 +315,9 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
       isPerHand: Value(isPerHand),
       defaultIncrement: Value(defaultIncrement),
       isCustom: Value(isCustom),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
     );
   }
 
@@ -301,6 +335,7 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
       isPerHand: serializer.fromJson<bool>(json['isPerHand']),
       defaultIncrement: serializer.fromJson<double>(json['defaultIncrement']),
       isCustom: serializer.fromJson<bool>(json['isCustom']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
     );
   }
   @override
@@ -315,6 +350,7 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
       'isPerHand': serializer.toJson<bool>(isPerHand),
       'defaultIncrement': serializer.toJson<double>(defaultIncrement),
       'isCustom': serializer.toJson<bool>(isCustom),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
     };
   }
 
@@ -327,6 +363,7 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
     bool? isPerHand,
     double? defaultIncrement,
     bool? isCustom,
+    Value<DateTime?> deletedAt = const Value.absent(),
   }) => ExerciseRow(
     updatedAt: updatedAt ?? this.updatedAt,
     dirty: dirty ?? this.dirty,
@@ -336,6 +373,7 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
     isPerHand: isPerHand ?? this.isPerHand,
     defaultIncrement: defaultIncrement ?? this.defaultIncrement,
     isCustom: isCustom ?? this.isCustom,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
   );
   ExerciseRow copyWithCompanion(ExercisesCompanion data) {
     return ExerciseRow(
@@ -351,6 +389,7 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
           ? data.defaultIncrement.value
           : this.defaultIncrement,
       isCustom: data.isCustom.present ? data.isCustom.value : this.isCustom,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
     );
   }
 
@@ -364,7 +403,8 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
           ..write('muscleGroup: $muscleGroup, ')
           ..write('isPerHand: $isPerHand, ')
           ..write('defaultIncrement: $defaultIncrement, ')
-          ..write('isCustom: $isCustom')
+          ..write('isCustom: $isCustom, ')
+          ..write('deletedAt: $deletedAt')
           ..write(')'))
         .toString();
   }
@@ -379,6 +419,7 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
     isPerHand,
     defaultIncrement,
     isCustom,
+    deletedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -391,7 +432,8 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
           other.muscleGroup == this.muscleGroup &&
           other.isPerHand == this.isPerHand &&
           other.defaultIncrement == this.defaultIncrement &&
-          other.isCustom == this.isCustom);
+          other.isCustom == this.isCustom &&
+          other.deletedAt == this.deletedAt);
 }
 
 class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
@@ -403,6 +445,7 @@ class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
   final Value<bool> isPerHand;
   final Value<double> defaultIncrement;
   final Value<bool> isCustom;
+  final Value<DateTime?> deletedAt;
   final Value<int> rowid;
   const ExercisesCompanion({
     this.updatedAt = const Value.absent(),
@@ -413,6 +456,7 @@ class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
     this.isPerHand = const Value.absent(),
     this.defaultIncrement = const Value.absent(),
     this.isCustom = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ExercisesCompanion.insert({
@@ -424,6 +468,7 @@ class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
     required bool isPerHand,
     required double defaultIncrement,
     required bool isCustom,
+    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : updatedAt = Value(updatedAt),
        id = Value(id),
@@ -440,6 +485,7 @@ class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
     Expression<bool>? isPerHand,
     Expression<double>? defaultIncrement,
     Expression<bool>? isCustom,
+    Expression<DateTime>? deletedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -451,6 +497,7 @@ class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
       if (isPerHand != null) 'is_per_hand': isPerHand,
       if (defaultIncrement != null) 'default_increment': defaultIncrement,
       if (isCustom != null) 'is_custom': isCustom,
+      if (deletedAt != null) 'deleted_at': deletedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -464,6 +511,7 @@ class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
     Value<bool>? isPerHand,
     Value<double>? defaultIncrement,
     Value<bool>? isCustom,
+    Value<DateTime?>? deletedAt,
     Value<int>? rowid,
   }) {
     return ExercisesCompanion(
@@ -475,6 +523,7 @@ class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
       isPerHand: isPerHand ?? this.isPerHand,
       defaultIncrement: defaultIncrement ?? this.defaultIncrement,
       isCustom: isCustom ?? this.isCustom,
+      deletedAt: deletedAt ?? this.deletedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -506,6 +555,9 @@ class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
     if (isCustom.present) {
       map['is_custom'] = Variable<bool>(isCustom.value);
     }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -523,6 +575,7 @@ class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
           ..write('isPerHand: $isPerHand, ')
           ..write('defaultIncrement: $defaultIncrement, ')
           ..write('isCustom: $isCustom, ')
+          ..write('deletedAt: $deletedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -6357,6 +6410,7 @@ typedef $$ExercisesTableCreateCompanionBuilder = ExercisesCompanion Function({
   required bool isPerHand,
   required double defaultIncrement,
   required bool isCustom,
+  Value<DateTime?> deletedAt,
   Value<int> rowid,
 });
 typedef $$ExercisesTableUpdateCompanionBuilder = ExercisesCompanion Function({
@@ -6368,6 +6422,7 @@ typedef $$ExercisesTableUpdateCompanionBuilder = ExercisesCompanion Function({
   Value<bool> isPerHand,
   Value<double> defaultIncrement,
   Value<bool> isCustom,
+  Value<DateTime?> deletedAt,
   Value<int> rowid,
 });
 
@@ -6481,6 +6536,11 @@ class $$ExercisesTableFilterComposer
 
   ColumnFilters<bool> get isCustom => $composableBuilder(
     column: $table.isCustom,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6608,6 +6668,11 @@ class $$ExercisesTableOrderingComposer
     column: $table.isCustom,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ExercisesTableAnnotationComposer
@@ -6646,6 +6711,9 @@ class $$ExercisesTableAnnotationComposer
 
   GeneratedColumn<bool> get isCustom =>
       $composableBuilder(column: $table.isCustom, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 
   Expression<T> exerciseStateRefs<T extends Object>(
     Expression<T> Function($$ExerciseStateTableAnnotationComposer a) f,
@@ -6764,6 +6832,7 @@ class $$ExercisesTableTableManager
                 Value<bool> isPerHand = const Value.absent(),
                 Value<double> defaultIncrement = const Value.absent(),
                 Value<bool> isCustom = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExercisesCompanion(
                 updatedAt: updatedAt,
@@ -6774,6 +6843,7 @@ class $$ExercisesTableTableManager
                 isPerHand: isPerHand,
                 defaultIncrement: defaultIncrement,
                 isCustom: isCustom,
+                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -6786,6 +6856,7 @@ class $$ExercisesTableTableManager
                 required bool isPerHand,
                 required double defaultIncrement,
                 required bool isCustom,
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExercisesCompanion.insert(
                 updatedAt: updatedAt,
@@ -6796,6 +6867,7 @@ class $$ExercisesTableTableManager
                 isPerHand: isPerHand,
                 defaultIncrement: defaultIncrement,
                 isCustom: isCustom,
+                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

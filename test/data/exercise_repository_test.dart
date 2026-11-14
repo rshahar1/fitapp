@@ -1,5 +1,6 @@
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/repositories/exercise_repository.dart';
+import 'package:fitapp/data/repositories/template_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers.dart';
@@ -258,5 +259,132 @@ void main() {
     for (var i = 1; i < top.length; i++) {
       expect(top[i - 1].date.isAfter(top[i].date), isTrue);
     }
+  });
+
+  group('delete (feature 012)', () {
+    late TemplateRepository templates;
+    setUp(() => templates = TemplateRepository(h.db));
+
+    Future<List<String>> listedIds() async => [
+      for (final e in await h.exercises.watchExercises().first) e.id,
+    ];
+
+    test(
+      'built-in: hidden from the library and stays deleted after seeding',
+      () async {
+        await h.exercises.delete(latId);
+        expect(await listedIds(), isNot(contains(latId)));
+        final row = (await h.exercises.exercise(latId))!;
+        expect(row.deletedAt, isNotNull);
+        expect(row.dirty, isTrue);
+        await h.db.seedLibrary();
+        expect(await listedIds(), isNot(contains(latId)));
+      },
+    );
+
+    test('custom: hidden from the library and from search', () async {
+      final e = await h.exercises.createCustom(
+        name: 'Zottman Curl',
+        perHand: true,
+        increment: 2,
+      );
+      await h.exercises.delete(e.id);
+      expect(await listedIds(), isNot(contains(e.id)));
+      expect(await h.exercises.watchExercises(query: 'zott').first, isEmpty);
+    });
+
+    test('keeps history and plan, hides from trained exercises', () async {
+      await h.plan();
+      await h.session([(20, 10), (20, 10), (20, 10)]);
+      await h.exercises.delete(inclineId);
+      expect(await h.exercises.history(inclineId), hasLength(1));
+      expect(await h.exercises.plan(inclineId), isNotNull);
+      expect(await h.exercises.trainedExercises(), isEmpty);
+    });
+
+    test(
+      'removes it from templates and deletes templates left empty',
+      () async {
+        final both = await templates.create(
+          name: 'Both',
+          exerciseIds: [inclineId, latId],
+        );
+        await templates.create(name: 'Only incline', exerciseIds: [inclineId]);
+        final usage = await h.exercises.templatesUsing(inclineId);
+        expect(
+          {for (final u in usage) u.name: u.wouldBeEmpty},
+          {'Both': false, 'Only incline': true},
+        );
+        await h.exercises.delete(inclineId);
+        final left = await templates.list();
+        expect(left.map((t) => t.id), [both]);
+        expect(left.single.exercises.map((e) => e.id), [latId]);
+      },
+    );
+
+    test('creating a deleted name restores the exercise', () async {
+      final e = await h.exercises.createCustom(
+        name: 'Zottman Curl',
+        perHand: true,
+        increment: 2,
+      );
+      await h.exercises.delete(e.id);
+      final back = await h.exercises.createCustom(
+        name: 'zottman curl',
+        perHand: false,
+        increment: 5,
+      );
+      expect(back.id, e.id);
+      expect(back.deletedAt, isNull);
+      expect(back.isPerHand, isFalse);
+      expect(back.defaultIncrement, 5);
+      expect(await listedIds(), contains(e.id));
+    });
+
+    test('creating a deleted built-in name restores it unchanged', () async {
+      final lat = (await h.exercises.exercise(latId))!;
+      await h.exercises.delete(latId);
+      final back = await h.exercises.createCustom(
+        name: lat.name.toUpperCase(),
+        perHand: true,
+        increment: 9,
+      );
+      expect(back.id, latId);
+      expect(back.isCustom, isFalse);
+      expect(back.isPerHand, lat.isPerHand);
+      expect(back.defaultIncrement, lat.defaultIncrement);
+      expect(back.deletedAt, isNull);
+    });
+
+    test('active names still clash; deleted custom cannot be edited', () async {
+      final e = await h.exercises.createCustom(
+        name: 'Zottman Curl',
+        perHand: true,
+        increment: 2,
+      );
+      await expectLater(
+        h.exercises.createCustom(
+          name: 'ZOTTMAN CURL',
+          perHand: true,
+          increment: 2,
+        ),
+        throwsA(isA<DuplicateExerciseName>()),
+      );
+      await h.exercises.delete(e.id);
+      await expectLater(
+        h.exercises.updateCustom(
+          e.id,
+          name: 'X',
+          muscleGroup: null,
+          perHand: true,
+          increment: 2,
+        ),
+        throwsStateError,
+      );
+    });
+
+    test('unknown id throws', () async {
+      await expectLater(h.exercises.delete('nope'), throwsStateError);
+    });
   });
 }

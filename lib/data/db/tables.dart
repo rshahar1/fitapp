@@ -15,6 +15,11 @@ class Exercises extends Table with SyncColumns {
   RealColumn get defaultIncrement => real()();
   BoolColumn get isCustom => boolean()();
 
+  /// Set when the user deleted the exercise (feature 012, soft delete):
+  /// hidden from the library, picker, templates and Progress; history keeps
+  /// it. NULL means active.
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
   @override
   Set<Column<Object>> get primaryKey => {id};
 }

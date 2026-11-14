@@ -66,6 +66,8 @@ class SettingsRepository {
   static const _kRestTarget = 'active_rest_target_seconds';
   static const _kRestExercise = 'active_rest_exercise';
   static const _kPermissionAsked = 'notif_permission_asked';
+  static const _kSyncUpdatedAt = 'sync.settings_updated_at';
+  static const _kSyncDirty = 'sync.settings_dirty';
 
   /// Clamps to 10 s..10 min and snaps to 5 s steps.
   static int normalizeRest(int seconds) {
@@ -101,8 +103,10 @@ class SettingsRepository {
 
   Future<int> defaultRest() async => _rest(await _all());
 
-  Future<void> setDefaultRestSeconds(int seconds) =>
-      _put(_kDefaultRest, normalizeRest(seconds).toString());
+  Future<void> setDefaultRestSeconds(int seconds) => _db.transaction(() async {
+    await _put(_kDefaultRest, normalizeRest(seconds).toString());
+    await _stamp();
+  });
 
   Stream<RestAlertPrefs> watchAlertPrefs() =>
       _watchAll().map(_prefs).distinct();
@@ -112,6 +116,7 @@ class SettingsRepository {
   Future<void> setAlertPrefs(RestAlertPrefs prefs) => _db.transaction(() async {
     await _put(_kHaptic, prefs.haptic.toString());
     await _put(_kSound, prefs.sound.toString());
+    await _stamp();
   });
 
   Future<ActiveRest?> readActiveRest() async {
@@ -149,4 +154,61 @@ class SettingsRepository {
 
   Future<void> markNotificationPermissionAsked() =>
       _put(_kPermissionAsked, 'true');
+
+  // ---- Cloud sync (feature 013): whitelisted settings --------------------
+
+  /// Marks the synced settings as locally changed (call inside the write's
+  /// transaction).
+  Future<void> _stamp() async {
+    await _put(_kSyncUpdatedAt, _db.now().toIso8601String());
+    await _put(_kSyncDirty, '1');
+  }
+
+  /// The whitelisted settings that exist, typed.
+  Future<Map<String, Object?>> syncedSettings() async {
+    final m = await _all();
+    final rest = int.tryParse(m[_kDefaultRest] ?? '');
+    return {
+      _kDefaultRest: ?rest,
+      if (m[_kHaptic] != null) _kHaptic: m[_kHaptic] != 'false',
+      if (m[_kSound] != null) _kSound: m[_kSound] != 'false',
+    };
+  }
+
+  Future<DateTime?> syncedSettingsUpdatedAt() async {
+    final v = (await _all())[_kSyncUpdatedAt];
+    return v == null ? null : DateTime.tryParse(v)?.toUtc();
+  }
+
+  Future<bool> syncedSettingsDirty() async =>
+      (await _all())[_kSyncDirty] == '1';
+
+  /// Clears the dirty flag unless the settings changed again after
+  /// [updatedAtSent] was read.
+  Future<void> markSyncedSettingsClean(DateTime updatedAtSent) =>
+      _db.transaction(() async {
+        final current = await syncedSettingsUpdatedAt();
+        if (current == updatedAtSent.toUtc()) await _put(_kSyncDirty, '0');
+      });
+
+  /// Applies settings pulled from the cloud without marking them dirty.
+  /// Ignored when local edits are pending and newer than [updatedAt].
+  Future<void> applySyncedSettings(
+    Map<String, Object?> data,
+    DateTime updatedAt,
+  ) => _db.transaction(() async {
+    final localAt = await syncedSettingsUpdatedAt();
+    if (await syncedSettingsDirty() &&
+        localAt != null &&
+        localAt.isAfter(updatedAt.toUtc())) {
+      return;
+    }
+    final rest = data[_kDefaultRest];
+    if (rest is int) await _put(_kDefaultRest, normalizeRest(rest).toString());
+    final haptic = data[_kHaptic];
+    if (haptic is bool) await _put(_kHaptic, haptic.toString());
+    final sound = data[_kSound];
+    if (sound is bool) await _put(_kSound, sound.toString());
+    await _put(_kSyncUpdatedAt, updatedAt.toUtc().toIso8601String());
+  });
 }

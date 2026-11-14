@@ -9,7 +9,7 @@ Sync Impact Report
   VII (Phase 2 sync is in scope; Apple Sign-In, email magic link, live multi-device push and sharing
   remain out of scope)
 - Added sections: none (Technology & Platform Constraints adds `supabase_flutter`, `google_sign_in`,
-  Supabase CLI migrations with pgTAP tests; Workflow moves M7 into scope)
+  Supabase CLI migrations with SQL tests on PGlite; Workflow moves M7 into scope)
 - Removed sections: none
 - Deferred TODOs: none
 
@@ -191,7 +191,7 @@ Rationale: the owner explicitly dropped these; speculative code is maintenance d
   `uuid`, `intl`, `geolocator` (location), `flutter_map` + `latlong2` (map), `supabase_flutter` +
   `google_sign_in` (sync, auth); tests with `flutter_test`, `mocktail` if needed.
 - Backend schema, triggers and row-level security live as Supabase CLI migrations in
-  `supabase/migrations/`, tested with pgTAP (`supabase test db`) against the local stack.
+  `supabase/migrations/`, tested by SQL tests on PGlite (`node tool/db_test.mjs`, also in CI).
 - Android application id `com.fitapp.app`; app name **FitApp**; kg only internally and in the UI.
 - Builds are local (`flutter build apk`); no third-party build cloud.
 - Generated code (`*.g.dart`) policy is chosen once (commit or generate in CI) and documented in

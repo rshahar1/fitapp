@@ -63,6 +63,56 @@ void main() {
       expect(await h.workouts.activeWorkout(), isNull);
     });
 
+    test('queues pending delete when discarding an active workout', () async {
+      final w = await h.workouts.startWorkout();
+      await h.workouts.discardWorkout(w.id);
+      final pending = await h.db.select(h.db.pendingDeletes).get();
+      expect(pending.map((p) => (p.tableNameValue, p.rowId)), [
+        ('workouts', w.id),
+      ]);
+    });
+
+    test('queues pending delete when finishing an empty workout', () async {
+      final w = await h.workouts.startWorkout();
+      await h.workouts.addExercise(w.id, inclineId);
+      await h.workouts.finishWorkout(w.id);
+      final pending = await h.db.select(h.db.pendingDeletes).get();
+      expect(
+        pending.where((p) => p.tableNameValue == 'workouts').single.rowId,
+        w.id,
+      );
+    });
+
+    test(
+      'queues pending deletes when removing an exercise from a workout',
+      () async {
+        final (_, we) = await h.session([(20, 10), (20, 10)], finish: false);
+        final setIds = (await h.db.select(h.db.sets).get()).map((s) => s.id);
+        await h.workouts.removeExercise(we);
+        final pending = await h.db.select(h.db.pendingDeletes).get();
+        expect(
+          pending
+              .where((p) => p.tableNameValue == 'workout_exercises')
+              .map((p) => p.rowId),
+          [we],
+        );
+        expect(
+          pending
+              .where((p) => p.tableNameValue == 'sets')
+              .map((p) => p.rowId)
+              .toSet(),
+          setIds.toSet(),
+        );
+      },
+    );
+
+    test('never queues exercise rows for deletion', () async {
+      final w = await h.workouts.startWorkout();
+      await h.workouts.discardWorkout(w.id);
+      final pending = await h.db.select(h.db.pendingDeletes).get();
+      expect(pending.where((p) => p.tableNameValue == 'exercises'), isEmpty);
+    });
+
     test('exercises are appended in order', () async {
       final w = await h.workouts.startWorkout();
       final a = await h.workouts.addExercise(w.id, inclineId);

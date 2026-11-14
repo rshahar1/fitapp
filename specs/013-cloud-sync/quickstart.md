@@ -2,21 +2,21 @@
 
 ## Prerequisites
 
-- Docker running; Supabase CLI installed (`brew install supabase/tap/supabase`).
+- Node 20+ (backend SQL tests on PGlite: `npm install` once). Supabase CLI only to deploy migrations.
 - `env/dev.json` (git-ignored) with `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `GOOGLE_WEB_CLIENT_ID`; keys listed with
   empty values in `env/example.json`.
 - For real Google sign-in: Google Cloud Web client + Android clients (debug and release SHA-1), registered on the
   Supabase Google provider (see `docs/sync-setup.md`, created in implementation).
 
-## 1. Backend rules (pgTAP)
+## 1. Backend rules (PGlite)
 
 ```bash
-supabase start
-supabase db reset          # applies supabase/migrations and seed (two test users)
-supabase test db           # RLS isolation, LWW, delete-wins, tombstone cascade, sync_push isolation
+npm install
+node tool/db_test.mjs      # applies supabase/migrations on PGlite + auth stub, runs supabase/tests/*.sql
 ```
 
-Expected: all tests pass; SC-006 is covered by the RLS tests.
+Expected: all tests pass (RLS isolation, LWW, delete-wins, tombstone cascade, sync_push isolation); SC-006 is covered
+by the RLS tests.
 
 ## 2. App logic (fast, offline)
 
@@ -29,14 +29,10 @@ flutter test test/data/sync test/data/db
 Expected: two simulated devices converge for create / edit / conflicting edit / delete / offline-reconnect scenarios
 (SC-007); migration v7→v8 keeps data (FR-025); full suite `flutter test` stays green.
 
-## 3. End to end against the local stack
+## 3. End to end against a real backend
 
-```bash
-flutter test integration_test/sync_test.dart --dart-define-from-file=env/dev.json
-```
-
-Uses the seed test users (email/password sign-in is enabled only on the local stack for this test). Scenario: device A
-logs history → syncs → fresh database B signs in as the same user → restore → contents equal (SC-001).
+Deferred automated test (needs Docker for the local Supabase stack). Until then: create the hosted project, apply
+migrations with `supabase db push`, deploy `delete-account`, and run §4.
 
 ## 4. Manual on emulators (real Google sign-in)
 

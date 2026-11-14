@@ -222,3 +222,18 @@ class TrackPoints extends Table {
   @override
   Set<Column<Object>> get primaryKey => {sessionId, seq};
 }
+
+/// Pull cursor per synced server table (feature 013). Local only.
+@DataClassName('SyncStateRow')
+class SyncState extends Table {
+  TextColumn get tableNameValue => text().named('table_name')();
+
+  /// Max server_updated_at already pulled for this table (UTC).
+  DateTimeColumn get cursor => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {tableNameValue};
+
+  @override
+  String get tableName => 'sync_state';
+}

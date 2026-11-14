@@ -73,3 +73,6 @@ env/*.json
 supabase/.temp/
 
 # Note: generated drift code (*.g.dart) IS committed; do not ignore it.
+
+# Node (backend SQL tests)
+node_modules/

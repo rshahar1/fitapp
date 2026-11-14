@@ -15,7 +15,10 @@ Background analysis: `docs/proposals/cloud-sync-supabase.md`. This file records 
 ## R2. Backend
 
 - **Decision**: Supabase (Postgres + Auth + row-level security), schema managed as Supabase CLI migrations in
-  `supabase/migrations/`, tested with pgTAP via `supabase test db` against the local Docker stack.
+  `supabase/migrations/`. Backend tests run on **PGlite** (Postgres in WASM, via Node) with a small stub of
+  Supabase's `auth` schema (`auth.users`, `auth.uid()` from `request.jwt.claim.sub`, roles `anon`/`authenticated`),
+  so they run on any machine and in CI without Docker (PRD §8 names PGlite). The same migrations deploy unchanged to
+  Supabase.
 - **Rationale**: Already chosen in PRD §8/§10; relational data, SQL, RLS, no per-read billing.
 - **Alternatives**: Firebase (rejected in PRD); a custom server (more ops).
 
@@ -128,12 +131,12 @@ Background analysis: `docs/proposals/cloud-sync-supabase.md`. This file records 
 ## R15. Testing strategy
 
 - **Decision**:
-  - pgTAP (`supabase/tests/`): RLS isolation (user A vs B vs anon), LWW, delete-wins, tombstone cascade, child under
+  - SQL tests (`supabase/tests/*.sql`, plain `DO`/`ASSERT`, runner `tool/db_test.mjs` on PGlite): RLS isolation (user A vs B vs anon), LWW, delete-wins, tombstone cascade, child under
     tombstoned parent, `sync_push` rejected-row isolation, `user_id` immutability.
   - Dart unit tests (`test/data/sync/`): `SyncService` against in-memory Drift + `FakeSyncRemote` that implements the
     same server rules (LWW, tombstones, cursors); two simulated devices converge (SC-007); edit during push stays dirty;
     pull never clobbers newer dirty rows; name/set collision resolution; drift migration v7→v8.
   - Widget tests: Account section states, sign-in decision dialogs.
-  - Opt-in integration test (`integration_test/sync_test.dart`, tag `supabase`) against the local stack with two
-    test users created by the seed script.
-- **Rationale**: Constitution III; the fake keeps unit tests fast and offline while pgTAP proves the real rules.
+  - Deferred until Docker is available: an opt-in integration test (`integration_test/sync_test.dart`) against the
+    local Supabase stack. Until then the real-backend path is checked manually (quickstart §4).
+- **Rationale**: Constitution III; the fake keeps unit tests fast and offline while the PGlite SQL tests prove the real rules.

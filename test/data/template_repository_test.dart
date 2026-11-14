@@ -192,4 +192,34 @@ void main() {
       );
     });
   });
+
+  test(
+    'queues pending delete when removing an exercise from templates',
+    () async {
+      final keep = await templates.create(
+        name: 'Push',
+        exerciseIds: [_bench, inclineId],
+      );
+      final solo = await templates.create(
+        name: 'Solo',
+        exerciseIds: [inclineId],
+      );
+      final rows = await h.db.select(h.db.templateExercises).get();
+      final inclineRows = rows.where((r) => r.exerciseId == inclineId);
+      await templates.removeExercise(inclineId);
+      final pending = await h.db.select(h.db.pendingDeletes).get();
+      expect(
+        pending
+            .where((p) => p.tableNameValue == 'template_exercises')
+            .map((p) => p.rowId)
+            .toSet(),
+        inclineRows.map((r) => r.id).toSet(),
+      );
+      expect(
+        pending.where((p) => p.tableNameValue == 'templates').single.rowId,
+        solo,
+      );
+      expect(await templates.template(keep), isNotNull);
+    },
+  );
 }

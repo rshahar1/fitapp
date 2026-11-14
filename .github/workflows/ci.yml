@@ -17,6 +17,11 @@ jobs:
         with:
           channel: stable
           cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Backend SQL tests (PGlite)
+        run: npm ci && node tool/db_test.mjs
       - name: Install dependencies
         run: flutter pub get
       - name: Generate code (must be committed and current)

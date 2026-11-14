@@ -20,12 +20,12 @@ backup, restore, merge and account switch. Design: [research.md](research.md), [
 one Edge Function
 
 **Primary Dependencies**: existing `drift`, `flutter_riverpod`, `go_router`; new `supabase_flutter`,
-`google_sign_in` (7.x); Supabase CLI (dev tool)
+`google_sign_in` (7.x); Supabase CLI (deploy), `@electric-sql/pglite` (dev-only, backend tests)
 
 **Storage**: Drift/SQLite on device (schema v7 → v8, adds `sync_state`); Supabase Postgres (10 synced tables)
 
-**Testing**: `flutter_test` + in-memory Drift + `FakeSyncRemote`; widget tests; pgTAP via `supabase test db`;
-opt-in `integration_test/sync_test.dart` against the local Supabase stack
+**Testing**: `flutter_test` + in-memory Drift + `FakeSyncRemote`; widget tests; SQL tests on PGlite (`node tool/db_test.mjs`);
+manual end-to-end on emulators (local-stack integration test deferred until Docker is available)
 
 **Target Platform**: Android (debug + release signing for Google sign-in); iOS out of scope
 
@@ -47,12 +47,12 @@ finished workout < 30 s (SC-003); set logging stays < 100 ms (constitution V, SC
 |---|---|---|---|
 | I. Offline-first, local source of truth | Drift stays authoritative; screens never read the backend; v8 migration only adds `sync_state`; multi-row apply/push bookkeeping in one transaction per page | ✅ | ✅ |
 | II. Pure, fully tested domain | Progression untouched; pulled plans are data, no recalculation (FR-024). Pure conflict helpers (`resolveIncoming`, `suffixName`) live in `lib/domain/sync_rules.dart` with tests first | ✅ | ✅ |
-| III. Test-first gates | Tests before code for sync rules, service, migration; pgTAP for backend; gates per milestone | ✅ | ✅ |
+| III. Test-first gates | Tests before code for sync rules, service, migration; SQL tests on PGlite for backend; gates per milestone | ✅ | ✅ |
 | IV. Layered architecture | `lib/data/sync/` behind `SyncRemote`; `AuthRepository`; widgets use providers only; no new UI kit | ✅ | ✅ |
 | V. One-tap gym UX | No UI in the workout flow; destructive account actions confirm | ✅ | ✅ |
 | VI. Privacy & secrets | Opt-in Google sign-in; RLS owner-only tested; keys via `--dart-define-from-file`; service-role key only in Edge Function secrets; raw GPS fixes never synced | ✅ | ✅ |
 | VII. Scope discipline | Android + Google only; no Apple/email login, no live push, no sharing; no social columns | ✅ | ✅ |
-| Tech constraints | `supabase_flutter`, `google_sign_in` allowed in v1.5.0; migrations in `supabase/migrations/` with pgTAP | ✅ | ✅ |
+| Tech constraints | `supabase_flutter`, `google_sign_in` allowed in v1.5.0; migrations in `supabase/migrations/`, tested on PGlite | ✅ | ✅ |
 
 No violations; Complexity Tracking is empty.
 
@@ -85,8 +85,8 @@ supabase/
 │   ├── <ts>_sync_rls.sql           # RLS + grants
 │   └── <ts>_sync_push.sql          # sync_push(payload jsonb)
 ├── functions/delete-account/index.ts
-├── seed.sql                        # two local test users (local stack only)
-└── tests/                          # pgTAP: rls, lww, tombstones, sync_push
+└── tests/                          # SQL tests: _auth_stub, rls, lww, tombstones, sync_push
+tool/db_test.mjs                    # PGlite runner (package.json devDependency)
 
 lib/
 ├── domain/sync_rules.dart          # pure: incoming-vs-local decision, name suffixing, set collision pick
@@ -112,7 +112,6 @@ test/
 ├── data/db/migration_v8_test.dart
 ├── data/sync/ (fake_sync_remote.dart, push_test, pull_test, two_device_test, binding_test)
 └── features/settings/account_section_test.dart
-integration_test/sync_test.dart     # opt-in, local Supabase stack
 docs/sync-setup.md                  # Google Cloud + Supabase setup steps
 env/example.json                    # + SUPABASE_URL, SUPABASE_ANON_KEY, GOOGLE_WEB_CLIENT_ID (empty)
 ```
@@ -127,12 +126,12 @@ Each phase ends with format + analyze + test green and a commit.
 
 1. **Groundwork**: add packages, env keys (empty example), `Supabase.initialize` only when configured;
    `docs/sync-setup.md`. Update PRD §8 and `docs/ARCHITECTURE.md` "Sync design" to this plan.
-2. **Backend** (tests first, pgTAP): tables, triggers, RLS, `sync_push`, seed users, Edge Function.
+2. **Backend** (tests first, PGlite): tables, triggers, RLS, `sync_push`, Edge Function; CI job runs the SQL tests.
 3. **Local schema v8**: `sync_state`, migration + test; audit every delete path queues `pending_deletes` (test per
    repository delete); settings sync stamps.
 4. **Sync engine** (tests first): `sync_rules` (domain), table registry, `FakeSyncRemote`, push collector, pull
    applier, `SyncService`; two-device convergence tests (SC-007).
-5. **Supabase remote**: `SupabaseSyncRemote`; opt-in integration test against the local stack.
+5. **Supabase remote**: `SupabaseSyncRemote` with unit tests for row (de)serialisation and request shape.
 6. **Auth & binding**: `AuthRepository` (Google), `DeviceBinding`, decision flow and dialogs; Settings "Account &
    backup" section; widget tests.
 7. **Triggers & polish**: app start/resume/finish/sign-in triggers, debounce, status stream, restore progress,
@@ -143,7 +142,7 @@ Each phase ends with format + analyze + test green and a commit.
 
 | Risk | Mitigation |
 |---|---|
-| Fake remote drifts from real server rules | Same scenario list runs against fake (unit) and local stack (integration); pgTAP covers the triggers |
+| Fake remote drifts from real server rules | Shared scenario list: SQL tests prove the server rules, Dart tests prove the fake follows the same list; manual two-emulator check |
 | Google sign-in config errors (SHA-1, nonce) | `docs/sync-setup.md` checklist; R11 nonce fallback; manual check in phase 8 |
 | Large restore freezes UI | Paged pull, one transaction per page, progress stream; perf check against SC-002 with a generated history |
 | A delete path forgets `pending_deletes` | Phase 3 audit with a test per delete path |

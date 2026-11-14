@@ -37,6 +37,10 @@ flutter run --dart-define-from-file=env/dev.json
 routes (live GPS tracking). It is optional: without a key the app works normally and shows a plain background
 behind the route line. Pass it with `--dart-define-from-file`. Put the key only in `env/dev.json` (git-ignored), never in source control.
 
+Optional cloud backup (Supabase + Google sign-in) is configured with `SUPABASE_URL`, `SUPABASE_ANON_KEY` and
+`GOOGLE_WEB_CLIENT_ID` in `env/dev.json`. Leave them empty to disable backup; the app works fully offline. See
+[docs/sync-setup.md](docs/sync-setup.md).
+
 ## Test
 
 ```sh

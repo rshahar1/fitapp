@@ -1,0 +1,12 @@
+{
+  "name": "fitapp-backend-tests",
+  "private": true,
+  "type": "module",
+  "description": "Dev-only: runs supabase/tests/*.sql against supabase/migrations on PGlite.",
+  "scripts": {
+    "test:db": "node tool/db_test.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.3.0"
+  }
+}

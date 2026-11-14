@@ -2,17 +2,16 @@
 
 ## Prerequisites
 
-- Node 20+ (backend SQL tests on PGlite: `npm install` once). Supabase CLI only to deploy migrations.
+- Node 20+ (backend SQL tests on PGlite: `npm ci` once). Supabase CLI only to deploy migrations.
 - `env/dev.json` (git-ignored) with `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `GOOGLE_WEB_CLIENT_ID`; keys listed with
   empty values in `env/example.json`.
 - For real Google sign-in: Google Cloud Web client + Android clients (debug and release SHA-1), registered on the
-  Supabase Google provider (see `docs/sync-setup.md`, created in implementation).
+  Supabase Google provider (see `docs/sync-setup.md`).
 
 ## 1. Backend rules (PGlite)
 
 ```bash
-npm install
-node tool/db_test.mjs      # applies supabase/migrations on PGlite + auth stub, runs supabase/tests/*.sql
+npm ci && node tool/db_test.mjs      # applies supabase/migrations on PGlite + auth stub, runs supabase/tests/*.sql
 ```
 
 Expected: all tests pass (RLS isolation, LWW, delete-wins, tombstone cascade, sync_push isolation); SC-006 is covered
@@ -23,7 +22,8 @@ by the RLS tests.
 ```bash
 dart format --set-exit-if-changed .
 flutter analyze
-flutter test test/data/sync test/data/db
+flutter test test/data/sync
+flutter test test/drift
 ```
 
 Expected: two simulated devices converge for create / edit / conflicting edit / delete / offline-reconnect scenarios

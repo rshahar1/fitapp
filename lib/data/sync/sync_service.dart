@@ -91,15 +91,18 @@ class SyncService {
   /// Pulls the whole account again (new or wiped phone, FR-022), then pushes.
   /// Resumable: progress is kept per page.
   Future<SyncOutcome> restore() async {
-    final running = _running;
-    if (running != null) await running;
-    await _pull.resetCursors();
+    // Claim the single-flight slot synchronously after the running cycle, so
+    // no other cycle can start in between.
+    for (var running = _running; running != null; running = _running) {
+      await running;
+    }
     final run = _running = _loop(restore: true);
     return await run;
   }
 
   Future<SyncOutcome> _loop({required bool restore}) async {
     try {
+      if (restore) await _pull.resetCursors();
       var outcome = await _cycle(restore: restore);
       while (_rerun && outcome != SyncOutcome.failed) {
         _rerun = false;
@@ -121,6 +124,7 @@ class SyncService {
     _emit(SyncStatus(phase: restore ? SyncPhase.restoring : SyncPhase.syncing));
     try {
       for (final table in pulledTables) {
+        _pull.startTable(table);
         DateTime? since = pullSince(await _pull.cursor(table));
         String? afterKey;
         while (true) {

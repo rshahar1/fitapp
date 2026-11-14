@@ -103,7 +103,7 @@ All operations run in a drift transaction, so a failure leaves no partial state.
 
 ## Schema versioning and migration testing
 
-- `schemaVersion` is 6. Migrations use drift's generated `stepByStep` (`lib/data/db/app_database.steps.dart`): v1 to v2 creates both template tables and the `templates_name_ci` index; v2 to v3 adds the plan columns to `template_exercises` (filled from `exercise_state`) and `workout_exercises.template_exercise_id` with its index; v3 to v4 (`from3To4`) creates `activities` and its `started_at` index; v4 to v5 (`from4To5`) adds the nullable `activities.distance_meters` column; v5 to v6 adds `tracking_sessions`, `track_points` and the tracked columns on `activities`. `onCreate` creates the index too.
+- `schemaVersion` is 8 (v7 and v8 belong to feature 013: sync columns and the `sync_state` table). Migrations use drift's generated `stepByStep` (`lib/data/db/app_database.steps.dart`): v1 to v2 creates both template tables and the `templates_name_ci` index; v2 to v3 adds the plan columns to `template_exercises` (filled from `exercise_state`) and `workout_exercises.template_exercise_id` with its index; v3 to v4 (`from3To4`) creates `activities` and its `started_at` index; v4 to v5 (`from4To5`) adds the nullable `activities.distance_meters` column; v5 to v6 adds `tracking_sessions`, `track_points` and the tracked columns on `activities`. `onCreate` creates the index too.
 - Schema dumps are in `drift_schemas/`; generated migration test helpers and tests are in `test/drift/`, plus `test/data/migration_test.dart` (upgrades keep existing workouts and sets; v3 copies exercise plans into templates; v4 keeps all existing data).
 - After a schema change, run `dart run drift_dev make-migrations` to produce the new dump and helpers.
 
@@ -119,10 +119,31 @@ All operations run in a drift transaction, so a failure leaves no partial state.
 - Widget tests cover screens and shared widgets; an end-to-end widget test lives in `test/e2e`.
 - `integration_test/` runs key flows on a device or emulator (`flutter test integration_test`).
 
-## Sync design (Phase 2)
+## Sync design (feature 013)
 
-- Supabase (Postgres, Auth, RLS owner-only on every table); the server schema mirrors the local one plus `user_id`.
-- Push: replay `pending_deletes` first (sets, then workout_exercises, then workouts), then upsert dirty rows in FK order (custom exercises, exercise_state, templates, template_exercises, workouts, workout_exercises, sets, activities; deletes always first), clearing `dirty` only if `updated_at` is unchanged since read.
-- Failures leave rows dirty for retry; sync is silent on failure.
-- Server-side library (`owner_id IS NULL`) is readable by all; there are no friendship tables.
-- Pull/restore downloads the user's rows into the local DB on a new device; triggers are app start, foreground, and after finishing a workout.
+Opt-in cloud backup on Supabase (Postgres, Auth, RLS). The local drift database stays the source of truth; nothing
+is sent until the user signs in. Local schema v8 adds the `sync_state` table (per-table pull cursors).
+
+### Client (`lib/data/sync/`)
+
+- `sync_table.dart`: registry of synced tables in FK order (custom_exercises, exercise_overrides, exercise_state, templates, template_exercises, workouts, workout_exercises, sets, activities, user_settings) with their local/server column mapping.
+- `push_collector.dart`: gathers `pending_deletes` (children first) and dirty rows into pages of at most 500; clears `dirty` only where `updated_at` is unchanged.
+- `pull_applier.dart`: applies pulled pages in one transaction per page (tombstone, overwrite, keep-local-if-dirty-newer, rename or drop on name/set collisions) and advances the cursor.
+- `sync_service.dart`: one cycle (pull, then push), single-flight, 5 s debounce, status stream; failures are silent.
+- `sync_remote.dart` / `supabase_sync_remote.dart`: the remote interface and its Supabase implementation (`sync_push` RPC, paged PostgREST selects, cloud-has-data probe).
+- `device_binding.dart`: remembers which account the phone's data belongs to and decides first backup, restore, merge or replace on sign-in.
+- `account_service.dart`: sign out, remove local data, delete account (calls the `delete-account` Edge Function).
+- `lib/domain/sync_rules.dart`: pure rules (last-writer-wins, delete wins, collision renaming, settings whitelist).
+- `lib/data/repositories/auth_repository.dart`: native Google sign-in then `signInWithIdToken`. Providers (`authRepositoryProvider`, `syncServiceProvider`, `accountServiceProvider`, `syncStatusProvider`) are in `lib/data/providers.dart` and are null when backup is not configured.
+- Triggers: app start, return to foreground, after finishing a workout, after sign-in, manual "Back up now".
+
+### Backend (`supabase/`)
+
+- `migrations/`: tables (`user_id`, `deleted_at`, `server_updated_at`), triggers (LWW guard, delete wins, cascade and child-of-tombstone), owner-only RLS, `sync_push` (`SECURITY INVOKER`, per-row rejection).
+- `functions/delete-account/`: Edge Function that deletes the caller's auth user; tables cascade.
+- No server-side uniqueness; collisions are resolved on pull. Built-in exercises are not stored per user; hidden ones sync as `exercise_overrides.archived_at`. Raw GPS points and live sessions are never synced.
+
+### Testing
+
+- Backend rules run on PGlite with a stub of Supabase's `auth` schema: `supabase/tests/*.sql` via `npm ci && node tool/db_test.mjs` (RLS, LWW, tombstones, `sync_push`). No Docker needed.
+- Client logic runs against `FakeSyncRemote`, an in-memory remote that mirrors the SQL rules, with two simulated devices on in-memory drift (`flutter test test/data/sync`).

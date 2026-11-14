@@ -27,7 +27,7 @@ description: "Task list for cloud backup and sync"
 
 ### Local schema v8
 
-- [x] T011 Tests: migration v7→v8 keeps data, creates `sync_state` — test/data/db/
+- [x] T011 Tests: migration v7→v8 keeps data, creates `sync_state` — test/drift/fitapp/migration_test.dart
 - [x] T012 `SyncState` table, schemaVersion 8, `from7To8`, regenerate, `make-migrations` (drift_schema_v8.json)
 - [x] T013 [P] Delete-queue audit: a test per hard-delete path asserting `pending_deletes` (workout, workout exercise, set, template, template exercise, activity); fix any gap
 - [x] T014 [P] `SettingsRepository`: whitelisted keys stamp `sync.settings_updated_at` / `sync.settings_dirty`; `syncedSettings()` / `applySyncedSettings()`; tests
@@ -50,40 +50,41 @@ Independent test: sign in on a phone with history → all rows reach the backend
 - [x] T023 [US1] `SupabaseSyncRemote` (rpc push, paged select, cloud-data probe) + unit tests on request/response mapping — lib/data/sync/supabase_sync_remote.dart
 - [x] T024 [US1] `AuthRepository` (google_sign_in 7.x → `signInWithIdToken`, account stream, sign out, `isConfigured`) — lib/data/repositories/auth_repository.dart; tests with mocked auth seams
 - [x] T025 [US1] `Supabase.initialize` only when configured; providers for client, auth, sync service — lib/main.dart, lib/data/providers.dart
-- [ ] T026 [US1] Settings "Account & backup" section (states per contracts/app-interfaces.md, Back up now, last backed up) + widget tests — lib/features/settings/
+- [x] T026 [US1] Settings "Account & backup" section (states per contracts/app-interfaces.md, Back up now, last backed up) + widget tests — lib/features/settings/
 - [x] T027 [US1] Sync triggers: start, resume, after finish, after sign-in — lib/app/app.dart, workout finish call site
-- [ ] T028 [US1] Milestone gate; commit
+- [x] T028 [US1] Milestone gate; commit
 
 ## Phase 4: US2 — Restore on a new phone (P1)
 
 - [x] T029 [US2] `DeviceBinding.decide/bind` (+ tests for each branch of data-model §5) — lib/data/sync/device_binding.dart
 - [x] T030 [US2] `SyncService.restore` with progress; resumable (cursors) + tests incl. interrupted restore
-- [ ] T031 [US2] Restore progress UI in the account section; restored plans drive next suggestion (test)
-- [ ] T032 [US2] Milestone gate; commit
+- [x] T031 [US2] Restore progress UI in the account section; restored plans drive next suggestion (test)
+- [x] T032 [US2] Milestone gate; commit
 
 ## Phase 5: US3 — Two phones in step (P2)
 
 - [x] T033 [US3] Extend two-device tests: delete-vs-offline-edit, plan conflict, template deleted while used, hidden built-in stays hidden
-- [ ] T034 [US3] Milestone gate; commit
+- [x] T034 [US3] Milestone gate; commit
 
 ## Phase 6: US4 — Sign-in on a phone with data (P2)
 
-- [ ] T035 [US4] Merge and Replace dialogs wired to `DeviceBinding` decisions + widget tests
+- [x] T035 [US4] Merge and Replace dialogs wired to `DeviceBinding` decisions + widget tests
 - [x] T036 [US4] `wipeUserData` (keeps built-ins, clears queues/cursors) + tests; name-clash merge test
-- [ ] T037 [US4] Milestone gate; commit
+- [x] T037 [US4] Milestone gate; commit
 
 ## Phase 7: US5 — Sign out, remove data, delete account (P3)
 
-- [ ] T038 [P] [US5] Edge Function `supabase/functions/delete-account/index.ts`
-- [ ] T039 [US5] Sign out / Remove data / Delete account actions with confirmations + widget tests
-- [ ] T040 [US5] Milestone gate; commit
+- [x] T038 [P] [US5] Edge Function `supabase/functions/delete-account/index.ts`
+- [x] T039 [US5] Sign out / Remove data / Delete account actions with confirmations + widget tests
+- [x] T040 [US5] Milestone gate; commit
 
 ## Phase 8: Polish
 
-- [ ] T041 [P] One-time backup nudge after 3rd finished workout (setting `sync.nudge_shown`) + test
-- [ ] T042 [P] Docs: PRD §8, `docs/ARCHITECTURE.md` sync design, README (setup, privacy, sync)
-- [ ] T043 Performance check: generated 300 workouts / 15k sets restore through `FakeSyncRemote` under budget (SC-002)
-- [ ] T044 Final gate; quickstart §1–2; owner steps for §3–4 listed in docs/sync-setup.md; commit
+- [x] T041 [P] One-time backup nudge after 3rd finished workout (setting `sync.nudge_shown`) + test
+- [x] T042 [P] Docs: PRD §8, `docs/ARCHITECTURE.md` sync design, README (setup, privacy, sync)
+- [x] T043 Performance check: generated 300 workouts / 15k sets restore through `FakeSyncRemote` under budget (SC-002)
+- [x] T044 Final gate; quickstart §1–2; owner steps for §3–4 listed in docs/sync-setup.md; commit
+- [ ] T045 Owner: hosted Supabase project + Google Cloud OAuth clients (docs/sync-setup.md), then quickstart §4 on two phones
 
 ## Dependencies
 

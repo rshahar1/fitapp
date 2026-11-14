@@ -17,3 +17,6 @@ enabled = true
 client_id = "env(GOOGLE_WEB_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_GOOGLE_SECRET)"
 skip_nonce_check = false
+
+[functions.delete-account]
+verify_jwt = true

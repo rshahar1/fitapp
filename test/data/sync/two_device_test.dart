@@ -259,4 +259,32 @@ void main() {
     await sub.cancel();
     expect(counts.last, 1);
   });
+
+  test('a row this phone cannot apply yet is retried, not lost', () async {
+    // A built-in exercise from a newer app version, unknown on B.
+    const newBuiltIn = '00000000-0000-4000-8000-0000000000ff';
+    await a.h.db.customStatement(
+      'INSERT INTO exercises (id, name, is_per_hand, default_increment, '
+      "is_custom, updated_at, dirty) VALUES (?, 'Future lift', 0, 2.5, 0, ?, 0)",
+      [newBuiltIn, a.h.now.toIso8601String()],
+    );
+    await a.h.session([(20, 10)], exerciseId: newBuiltIn);
+    await a.h.session([(20, 10)]);
+    await a.sync.syncNow();
+
+    await b.sync.syncNow();
+    expect(await b.count('SELECT COUNT(*) FROM workouts'), 2);
+    expect(await b.count('SELECT COUNT(*) FROM workout_exercises'), 1);
+    expect(await b.count('SELECT COUNT(*) FROM sets'), 1);
+
+    // B's app update ships the exercise: the held rows now apply.
+    await b.h.db.customStatement(
+      'INSERT INTO exercises (id, name, is_per_hand, default_increment, '
+      "is_custom, updated_at, dirty) VALUES (?, 'Future lift', 0, 2.5, 0, ?, 0)",
+      [newBuiltIn, b.h.now.toIso8601String()],
+    );
+    await b.sync.syncNow();
+    expect(await b.count('SELECT COUNT(*) FROM workout_exercises'), 2);
+    expect(await b.count('SELECT COUNT(*) FROM sets'), 2);
+  });
 }

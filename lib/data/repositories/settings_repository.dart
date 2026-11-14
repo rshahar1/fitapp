@@ -155,6 +155,12 @@ class SettingsRepository {
   Future<void> markNotificationPermissionAsked() =>
       _put(_kPermissionAsked, 'true');
 
+  /// Reads a free-form local flag (not synced); null when unset.
+  Future<String?> readFlag(String key) async => (await _all())[key];
+
+  /// Stores a free-form local flag (not synced).
+  Future<void> writeFlag(String key, String value) => _put(key, value);
+
   // ---- Cloud sync (feature 013): whitelisted settings --------------------
 
   /// Marks the synced settings as locally changed (call inside the write's

@@ -18,6 +18,15 @@ class PullApplier {
 
   static const maxNameLength = 40;
 
+  /// Per table, the server time of the first row skipped in this pull. The
+  /// cursor is held just before it so the row is retried on the next sync
+  /// (e.g. a parent not yet here, or a built-in exercise this app version
+  /// does not ship yet) instead of being lost.
+  final _holds = <String, DateTime>{};
+
+  /// Call before pulling the pages of [serverTable] in a cycle.
+  void startTable(String serverTable) => _holds.remove(serverTable);
+
   /// Stored pull cursor of a server table.
   Future<DateTime?> cursor(String serverTable) async {
     final row = await _db
@@ -57,8 +66,12 @@ class PullApplier {
         try {
           if (await _applyRow(table, r, touched)) changed++;
         } on Object catch (e) {
-          // E.g. a child whose parent was deleted here: skip; the server
-          // tombstones it once the parent delete is pushed.
+          // E.g. a child whose parent is missing here: skip it for now and
+          // hold the cursor so it is retried.
+          _holds.putIfAbsent(
+            serverTable,
+            () => parseUtc(r['server_updated_at']!),
+          );
           developer.log(
             'sync: skipped ${table.server} ${r[table.key]}: $e',
             name: 'fitapp.sync',
@@ -79,6 +92,8 @@ class PullApplier {
       final at = parseUtc(r['server_updated_at']!);
       if (max == null || at.isAfter(max)) max = at;
     }
+    final hold = _holds[serverTable];
+    if (hold != null) max = hold.subtract(const Duration(microseconds: 1));
     await _db.customStatement(
       'INSERT INTO sync_state (table_name, cursor) VALUES (?, ?) '
       'ON CONFLICT(table_name) DO UPDATE SET cursor = excluded.cursor',

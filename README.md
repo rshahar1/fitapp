@@ -3,7 +3,7 @@
 FitApp is an offline-first gym logger for Android (Flutter) with automatic progressive overload. You set a
 plan per exercise (base weight, reps, sets, increment) and log sets during a workout; when you finish, the
 app decides whether to raise the base weight for next time. All data lives in a local SQLite database
-(drift); cloud sync is a later phase. Besides gym workouts you can log other sports as simple activities
+(drift); optional cloud backup (see below) is available. Besides gym workouts you can log other sports as simple activities
 (see below).
 
 ## The progression rule
@@ -86,6 +86,18 @@ Enable install from unknown sources on the phone, copy the APK to it and open it
 adb install -r build/app/outputs/flutter-apk/app-release.apk
 ```
 
+## Cloud backup (optional)
+
+Sign in with Google (Settings) to back up your history to your own Supabase account and restore it on a new
+phone; two phones on one account stay in step (last change wins, deletions win). Backup runs in the background
+and never blocks logging, also offline.
+
+- **Privacy:** nothing leaves the phone until you sign in. Raw GPS points never leave the phone; saved routes go
+  only to your own account. Settings can sign out, remove your data from the phone, or delete your account.
+- **Enable:** set `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `GOOGLE_WEB_CLIENT_ID` in `env/dev.json` and follow
+  [docs/sync-setup.md](docs/sync-setup.md).
+- **Backend tests** (PGlite, no Docker): `npm ci && node tool/db_test.mjs`. App sync tests: `flutter test test/data/sync`.
+
 ## Workout templates
 
 Templates are reusable exercise lists you start in one tap from the Train tab. Only user-created templates exist; there are no built-in ones.
@@ -159,6 +171,7 @@ lib/
   data/
     db/                app_database.dart, tables.dart, seed_library.dart (+ generated *.g.dart)
     repositories/      WorkoutRepository, ExerciseRepository, SettingsRepository, TemplateRepository (template_repository.dart), ActivityRepository (activity_repository.dart), plan_store.dart (PlanStore: validated plan reads/writes), live_session_store.dart (device-local live workout record)
+    sync/              cloud backup: sync service, push/pull, device binding, account actions (see docs/ARCHITECTURE.md)
     models.dart        plain data/read models
     providers.dart     Riverpod providers
     watch.dart         watchQuery: stream that re-runs a loader on table updates
@@ -173,6 +186,7 @@ lib/
     templates/         template editor screen (create/edit/reorder/delete)
     settings/          settings screen
   widgets/             shared UI kit (buttons, cards, charts, guard.dart, ...)
+supabase/              migrations, SQL tests, Edge Function delete-account
 drift_schemas/         drift schema dumps (v1 to v4)
 test/                  unit, data, widget, drift/ (migration tests), and e2e/ (end-to-end widget test)
 integration_test/      key end-to-end flows (device/emulator)
@@ -212,11 +226,10 @@ at ~60 % of the screen height on any screen shape.
 
 ## Known limitations / not yet done
 
-- Phase 2 sync (M7) has not been started.
+- Cloud backup (M7, feature 013) is built; the real two-phone Google sign-in check is manual (see `specs/013-cloud-sync/quickstart.md`).
 
 ## Roadmap
 
-- Sign-in with cloud backup and restore
 - "Repeat last workout"
 - Snowboarding tracking, Health Connect/HealthKit import, GPX export, miles, offline map tiles
 - Drop and failure set types

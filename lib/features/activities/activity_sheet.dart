@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:fitapp/app/router.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/core/haptics.dart';
@@ -8,16 +11,21 @@ import 'package:fitapp/features/activities/activity_icons.dart';
 import 'package:fitapp/widgets/guard.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Opens the log / edit activity sheet.
-Future<void> showActivitySheet(BuildContext context, {ActivityRow? existing}) =>
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (_) => _ActivitySheet(existing: existing),
-    );
+Future<void> showActivitySheet(
+  BuildContext context, {
+  ActivityRow? existing,
+  String? initialTypeId,
+}) => showModalBottomSheet<void>(
+  context: context,
+  isScrollControlled: true,
+  showDragHandle: true,
+  builder: (_) =>
+      _ActivitySheet(existing: existing, initialTypeId: initialTypeId),
+);
 
 /// "45 min" / "1 h 30 min" / "2 h".
 String formatActivityMinutes(int minutes) {
@@ -31,9 +39,12 @@ String formatActivityMinutes(int minutes) {
 DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);
 
 class _ActivitySheet extends ConsumerStatefulWidget {
-  const new({required this.existing});
+  const new({required this.existing, this.initialTypeId});
 
   final ActivityRow? existing;
+
+  /// Preselected type for a new entry.
+  final String? initialTypeId;
 
   @override
   ConsumerState<_ActivitySheet> createState() => _ActivitySheetState();
@@ -41,7 +52,7 @@ class _ActivitySheet extends ConsumerStatefulWidget {
 
 class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
   late final _note = TextEditingController(text: widget.existing?.notes);
-  late String? _typeId = widget.existing?.typeId;
+  late String? _typeId = widget.existing?.typeId ?? widget.initialTypeId;
   late DateTime _date = _day(
     (widget.existing?.startedAt ?? ref.read(clockProvider)()).toLocal(),
   );
@@ -153,6 +164,43 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
     }
   }
 
+  /// Whether "Start live" is offered: new entries of live-tracking types.
+  bool get _canStartLive =>
+      !_isEdit &&
+      _typeId != null &&
+      (activityTypeById(_typeId!)?.hasLiveTracking ?? false);
+
+  Future<void> _startLive() async {
+    final typeId = _typeId;
+    if (typeId == null) return;
+    final router = GoRouter.of(context);
+    final tracking = await ref.read(trackingRepositoryProvider).session();
+    final workout = await ref.read(workoutRepositoryProvider).activeWorkout();
+    if (!mounted) return;
+    if (tracking != null || workout != null) {
+      final messenger = ScaffoldMessenger.of(context);
+      final label = tracking != null
+          ? '${activityLabel(tracking.typeId)} in progress'
+          : 'Workout in progress';
+      final target = tracking != null ? Routes.trackLive : Routes.workout;
+      Navigator.of(context).pop();
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('$label. Finish it first.'),
+            action: SnackBarAction(
+              label: 'Open',
+              onPressed: () => router.push(target),
+            ),
+          ),
+        );
+      return;
+    }
+    Navigator.of(context).pop();
+    unawaited(router.push(Routes.newTrack(typeId)));
+  }
+
   Future<void> _delete() async {
     final ok = await confirmDestructive(
       context,
@@ -204,6 +252,21 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
                   ),
               ],
             ),
+            if (_canStartLive) ...[
+              const SizedBox(height: Space.m),
+              AppButton(
+                label: 'Start live',
+                icon: Icons.my_location,
+                expand: true,
+                onPressed: _startLive,
+              ),
+              const SizedBox(height: Space.xs),
+              Text(
+                'or log it manually below',
+                textAlign: TextAlign.center,
+                style: text.bodySmall?.copyWith(color: AppColors.textSecondary),
+              ),
+            ],
             const SizedBox(height: Space.m),
             Group(
               children: [

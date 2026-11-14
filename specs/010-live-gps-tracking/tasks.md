@@ -34,13 +34,13 @@ description: "Task list for live GPS tracking (running, cycling)"
 
 - [x] T014 Controller tests with FakeLocationSource: Acquiring → Live, batching flush every 5 s / 20 points, pause/resume, finish summary, discard, recovery after recreating the container — test/features/tracking/tracking_controller_test.dart
 - [x] T015 Implement lib/features/tracking/tracking_controller.dart
-- [ ] T016 Activity sheet: Start live for live-tracking types; one-live-session message — lib/features/activities/activity_sheet.dart
-- [ ] T017 Setup screen (permission rationale, accuracy chip, Start / Start anyway, denied → settings or manual) — lib/features/tracking/track_setup_screen.dart
-- [ ] T018 `RouteMap` widget (flutter_map + MapTiler dark when key present; CustomPainter fallback) — lib/features/tracking/widgets/route_map.dart
-- [ ] T019 Live screen (hero + tiles per type, live route, fixed footer Pause/Resume · Lock · hold-to-Finish) — lib/features/tracking/live_track_screen.dart
-- [ ] T020 Finish sheet (fitted map, metrics, note, Save / Discard with confirm; short-session confirm)
-- [ ] T021 Routes `/track/new`, `/track/live`; launch-time recovery redirect; Train "in progress" banner
-- [ ] T022 Widget tests for T016–T021 (map tiles disabled) — test/features/tracking/
+- [x] T016 Activity sheet: Start live for live-tracking types; one-live-session message — lib/features/activities/activity_sheet.dart
+- [x] T017 Setup screen (permission rationale, accuracy chip, Start / Start anyway, denied → settings or manual) — lib/features/tracking/track_setup_screen.dart
+- [x] T018 `RouteMap` widget (flutter_map + MapTiler dark when key present; CustomPainter fallback) — lib/features/tracking/widgets/route_map.dart
+- [x] T019 Live screen (hero + tiles per type, live route, fixed footer Pause/Resume · Lock · hold-to-Finish) — lib/features/tracking/live_track_screen.dart
+- [x] T020 Finish sheet (fitted map, metrics, note, Save / Discard with confirm; short-session confirm)
+- [x] T021 Routes `/track/new`, `/track/live`; launch-time recovery redirect; Train "in progress" banner
+- [x] T022 Widget tests for T016–T021 (map tiles disabled) — test/features/tracking/
 
 ## Phase 5: User Story 3 + 4 — review (P2)
 

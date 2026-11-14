@@ -5,10 +5,12 @@ import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/tracking_repository.dart';
 import 'package:fitapp/data/tracking/location_source.dart';
 import 'package:fitapp/domain/activity_types.dart';
+import 'package:fitapp/domain/tracking/geo.dart';
 import 'package:fitapp/domain/tracking/track_profile.dart';
 import 'package:fitapp/domain/tracking/track_reducer.dart' as reducer;
 import 'package:fitapp/domain/tracking/track_sample.dart';
 import 'package:fitapp/domain/tracking/track_state.dart';
+import 'package:fitapp/domain/tracking/track_summary.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// How often buffered fixes are written to the database.
@@ -56,11 +58,15 @@ class TrackingLive extends TrackingUiState {
     required this.sessionId,
     required this.typeId,
     required this.state,
+    this.points = const [],
   });
 
   final String sessionId;
   final String typeId;
   final TrackState state;
+
+  /// The accepted fixes drawn as the route so far. A fresh list per change.
+  final List<GeoPoint> points;
 }
 
 /// The session was saved as activity [activityId].
@@ -80,6 +86,10 @@ class TrackingController extends Notifier<TrackingUiState> {
   String? _typeId;
   TrackProfile? _profile;
   TrackState? _track;
+
+  /// Fixes the reducer accepted, and the same as an immutable route snapshot.
+  final List<TrackSample> _accepted = [];
+  List<GeoPoint> _route = const [];
 
   @override
   TrackingUiState build() {
@@ -132,7 +142,7 @@ class TrackingController extends Notifier<TrackingUiState> {
     final now = _now();
     final id = await _repo.start(typeId: s.typeId, startedAt: now);
     if (!ref.mounted) return;
-    _begin(id, s.typeId, reducer.start(now));
+    _begin(id, s.typeId, reducer.start(now), const []);
   }
 
   /// Resumes a session left behind by a killed app: rebuilds the metrics
@@ -144,15 +154,35 @@ class TrackingController extends Notifier<TrackingUiState> {
     final points = await _repo.loadPoints(row.id);
     if (!ref.mounted) return;
     await _cancelListening();
-    _begin(row.id, row.typeId, TrackingRepository.replayState(row, points));
+    final profile = TrackProfile.forType(row.typeId);
+    _begin(
+      row.id,
+      row.typeId,
+      TrackingRepository.replayState(row, points),
+      reducer.acceptedSamples(
+        row.startedAt.toUtc(),
+        points,
+        profile,
+        pauses: TrackingRepository.pausesOf(row, points),
+      ),
+    );
   }
 
-  void _begin(String sessionId, String typeId, TrackState track) {
+  void _begin(
+    String sessionId,
+    String typeId,
+    TrackState track,
+    List<TrackSample> accepted,
+  ) {
     _sessionId = sessionId;
     _typeId = typeId;
     _profile = TrackProfile.forType(typeId);
     _track = track;
-    state = TrackingLive(sessionId: sessionId, typeId: typeId, state: track);
+    _accepted
+      ..clear()
+      ..addAll(accepted);
+    _route = _routeOf(_accepted);
+    _publish();
     _flushTimer?.cancel();
     _flushTimer = Timer.periodic(
       ref.read(trackingFlushIntervalProvider),
@@ -181,16 +211,38 @@ class TrackingController extends Notifier<TrackingUiState> {
     await _repo.setPaused(id, paused: false, at: now);
   }
 
+  /// What [finish] would store right now (for the finish sheet), or null
+  /// without a session.
+  TrackSummary? previewSummary() {
+    final track = _track;
+    if (track == null) return null;
+    return summarize(track, _accepted, endedAt: _now());
+  }
+
   /// Saves the session as an activity and returns its id.
   Future<String> finish({String? notes}) async {
     final id = _sessionId;
     if (id == null) throw StateError('No tracking session');
     await _cancelListening();
-    await _flush();
-    final activityId = await _repo.finish(id, endedAt: _now(), notes: notes);
+    final String activityId;
+    try {
+      await _flush();
+      activityId = await _repo.finish(id, endedAt: _now(), notes: notes);
+    } catch (_) {
+      // Saving failed: keep recording so nothing is lost; the UI shows the
+      // error and the user can retry.
+      if (ref.mounted) _listen();
+      rethrow;
+    }
     _clear();
     if (ref.mounted) state = TrackingFinished(activityId);
     return activityId;
+  }
+
+  /// Stops listening when the setup screen closes without starting.
+  Future<void> cancelAcquiring() async {
+    if (!ref.mounted || state is! TrackingAcquiring) return;
+    await discard();
   }
 
   /// Throws the session away (or stops acquiring).
@@ -235,7 +287,12 @@ class TrackingController extends Notifier<TrackingUiState> {
       return;
     }
     final sample = fix.withPaused(paused: track.manualPaused);
-    _setTrack(reducer.accumulate(track, sample, profile));
+    final next = reducer.accumulate(track, sample, profile);
+    if (identical(next.lastAccepted, sample)) {
+      _accepted.add(sample);
+      _route = _routeOf(_accepted);
+    }
+    _setTrack(next);
     _buffer.add(sample);
     if (_buffer.length >= ref.read(trackingFlushCountProvider)) {
       unawaited(_flush());
@@ -244,12 +301,18 @@ class TrackingController extends Notifier<TrackingUiState> {
 
   void _setTrack(TrackState track) {
     _track = track;
-    state = TrackingLive(
-      sessionId: _sessionId!,
-      typeId: _typeId!,
-      state: track,
-    );
+    _publish();
   }
+
+  void _publish() => state = TrackingLive(
+    sessionId: _sessionId!,
+    typeId: _typeId!,
+    state: _track!,
+    points: _route,
+  );
+
+  static List<GeoPoint> _routeOf(List<TrackSample> samples) =>
+      List.unmodifiable([for (final s in samples) (lat: s.lat, lon: s.lon)]);
 
   /// Writes buffered fixes; writes are serialised so order is kept.
   Future<void> _flush() {
@@ -281,6 +344,8 @@ class TrackingController extends Notifier<TrackingUiState> {
     _sessionId = null;
     _track = null;
     _profile = null;
+    _accepted.clear();
+    _route = const [];
     _buffer.clear();
   }
 

@@ -193,6 +193,15 @@ void main() {
     expect(await h.db.select(h.db.trackingSessions).get(), isEmpty);
   });
 
+  test('a failed save keeps recording', () async {
+    await goLive();
+    source.emit(_fix(1));
+    await h.db.delete(h.db.trackingSessions).go();
+    await expectLater(ctl().finish(), throwsA(anything));
+    expect(ui(), isA<TrackingLive>());
+    expect(source.listening, isTrue);
+  });
+
   test('discard removes everything and goes idle', () async {
     await goLive();
     source.emit(_fix(1));
@@ -233,5 +242,21 @@ void main() {
   test('recover without a session does nothing', () async {
     await ctl().recover();
     expect(ui(), isA<TrackingIdle>());
+  });
+
+  test('live state carries the route; previewSummary matches it', () async {
+    await goLive();
+    for (var i = 1; i <= 10; i++) {
+      now = fixtureStart.add(Duration(seconds: i));
+      source.emit(_fix(i));
+    }
+    final live = ui() as TrackingLive;
+    expect(live.points, hasLength(10));
+    expect(ctl().previewSummary()!.distanceMeters, greaterThan(20));
+    await settle();
+    c.dispose();
+    c = makeContainer();
+    await ctl().recover();
+    expect((ui() as TrackingLive).points, hasLength(10));
   });
 }

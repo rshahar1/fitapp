@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fitapp/app/backdrop.dart';
 import 'package:fitapp/app/router.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/features/tracking/launch_recovery.dart';
 import 'package:fitapp/features/workout/rest_timer_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -20,6 +21,12 @@ class _FitAppState extends ConsumerState<FitApp> {
   @override
   void initState() {
     super.initState();
+    // Reopen a tracking session left behind by a killed app.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        unawaited(recoverTrackingOnLaunch(ProviderScope.containerOf(context)));
+      }
+    });
     _lifecycle = AppLifecycleListener(
       onHide: _background,
       onPause: _background,

@@ -112,4 +112,53 @@ void main() {
       older,
     ]);
   });
+
+  test('create and update store distance; update can clear it', () async {
+    final id = await activities.create(
+      typeId: 'running',
+      startedAt: h.now,
+      durationMinutes: 28,
+      distanceMeters: 5200,
+    );
+    expect((await activities.activity(id))!.distanceMeters, 5200);
+    await activities.update(
+      id,
+      typeId: 'cycling',
+      startedAt: h.now,
+      distanceMeters: 36750,
+    );
+    expect((await activities.activity(id))!.distanceMeters, 36750);
+    await activities.update(id, typeId: 'cycling', startedAt: h.now);
+    expect((await activities.activity(id))!.distanceMeters, isNull);
+  });
+
+  test('distance is rejected for types without distance', () async {
+    expect(
+      () => activities.create(
+        typeId: 'snowboarding',
+        startedAt: h.now,
+        distanceMeters: 1000,
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => activities.create(
+        typeId: 'running',
+        startedAt: h.now,
+        distanceMeters: 0,
+      ),
+      throwsArgumentError,
+    );
+    final id = await activities.create(typeId: 'running', startedAt: h.now);
+    expect(
+      () => activities.update(
+        id,
+        typeId: 'pilates',
+        startedAt: h.now,
+        distanceMeters: 1000,
+      ),
+      throwsArgumentError,
+    );
+    expect(await activities.list(), hasLength(1));
+  });
 }

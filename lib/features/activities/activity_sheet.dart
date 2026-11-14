@@ -47,13 +47,42 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
   );
   late bool _hasDuration = widget.existing?.durationMinutes != null;
   late int _minutes = widget.existing?.durationMinutes ?? 30;
+  late bool _hasDistance = widget.existing?.distanceMeters != null;
+  late final _distance = TextEditingController(
+    text: switch (widget.existing?.distanceMeters) {
+      final m? => distanceKmText(m),
+      _ => '',
+    },
+  );
   bool _saving = false;
 
   bool get _isEdit => widget.existing != null;
 
+  /// Whether the selected type can carry a distance.
+  bool get _showDistance =>
+      _typeId != null && (activityTypeById(_typeId!)?.hasDistance ?? false);
+
+  /// Typed distance in metres; null when empty or invalid.
+  int? get _parsedDistance => parseDistanceKm(_distance.text);
+
+  bool get _distanceInvalid =>
+      _showDistance && _hasDistance && _parsedDistance == null;
+
+  /// Distance to store: typed value for distance types, the stored value
+  /// kept for retired (unknown) types, otherwise none.
+  int? get _distanceToSave {
+    if (_showDistance) return _hasDistance ? _parsedDistance : null;
+    final id = _typeId;
+    if (id != null && activityTypeById(id) == null) {
+      return widget.existing?.distanceMeters;
+    }
+    return null;
+  }
+
   @override
   void dispose() {
     _note.dispose();
+    _distance.dispose();
     super.dispose();
   }
 
@@ -94,6 +123,7 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
     }
     final repo = ref.read(activityRepositoryProvider);
     final duration = _hasDuration ? _minutes : null;
+    final distance = _distanceToSave;
     final notes = _note.text;
     setState(() => _saving = true);
     final ok = await guard(
@@ -103,6 +133,7 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
               typeId: typeId,
               startedAt: startedAt,
               durationMinutes: duration,
+              distanceMeters: distance,
               notes: notes,
             )
           : repo.update(
@@ -110,6 +141,7 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
               typeId: typeId,
               startedAt: startedAt,
               durationMinutes: duration,
+              distanceMeters: distance,
               notes: notes,
             ),
     );
@@ -207,6 +239,37 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
                 onChanged: (v) => setState(() => _minutes = v.toInt()),
               ),
             ],
+            if (_showDistance) ...[
+              const SizedBox(height: Space.m),
+              Text('DISTANCE', style: text.labelSmall),
+              const SizedBox(height: Space.s),
+              ChipSelector<bool>(
+                options: const [false, true],
+                selected: _hasDistance,
+                labelOf: (v) => v ? 'Set' : 'None',
+                onSelected: (v) => setState(() => _hasDistance = v),
+              ),
+              if (_hasDistance) ...[
+                const SizedBox(height: Space.m),
+                Semantics(
+                  label: 'Distance in kilometres',
+                  child: TextField(
+                    controller: _distance,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    onChanged: (_) => setState(() {}),
+                    decoration: InputDecoration(
+                      labelText: 'Distance',
+                      suffixText: 'km',
+                      errorText: _distanceInvalid && _distance.text.isNotEmpty
+                          ? 'Enter a distance up to 1000 km'
+                          : null,
+                    ),
+                  ),
+                ),
+              ],
+            ],
             const SizedBox(height: Space.m),
             TextField(
               controller: _note,
@@ -220,7 +283,9 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
             AppButton(
               label: 'Save',
               expand: true,
-              onPressed: _typeId == null || _saving ? null : _save,
+              onPressed: _typeId == null || _saving || _distanceInvalid
+                  ? null
+                  : _save,
             ),
             if (_isEdit)
               TextButton(

@@ -166,6 +166,7 @@ class Activities extends Table with SyncColumns {
   TextColumn get typeId => text()();
   DateTimeColumn get startedAt => dateTime()();
   IntColumn get durationMinutes => integer().nullable()();
+  IntColumn get distanceMeters => integer().nullable()();
   TextColumn get notes => text().nullable()();
 
   @override

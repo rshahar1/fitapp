@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.4, 13 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.5, 14 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -21,8 +21,8 @@
 A minimalist, fast, offline-first gym workout logger built around one idea: **automatic progressive overload**.
 The user logs sets between exercises with large tap targets and almost no typing. The app pre-fills every set
 from the user's plan and last session, and moves the working weight up automatically when they earn it.
-Other sports (functional training, cycling, snowboarding, running) can be logged as lightweight activities
-that count toward consistency, without any sport-specific metrics.
+Other sports (functional training, cycling, snowboarding, running, Pilates) can be logged as lightweight
+activities that count toward consistency; running and cycling can carry a manually entered distance.
 
 ### 1.1 Goals
 1. Log a full set in **one tap** when the user did what was planned.
@@ -31,7 +31,7 @@ that count toward consistency, without any sport-specific metrics.
 3. Show progress clearly: charts per exercise, personal records, and "compared to last session" deltas.
 4. Work **fully offline**. A gym with no signal must never block logging.
 5. Clean, safe, well-tested codebase that follows Flutter and Dart best practices.
-6. Log other sport activities (date, optional duration and note) so the weekly stats reflect all training.
+6. Log other sport activities (date, optional duration, optional distance for running and cycling, and note) so the weekly stats reflect all training.
 
 ### 1.2 Non-goals (explicitly out of scope)
 - **Social features, friends, feed and leaderboards were dropped by the owner.** Do not build friend tables,
@@ -134,8 +134,8 @@ Numbers use tabular figures.
 | **Overload set** | Set N (the last set), prescribed at `baseWeight + increment`, **always**. It is a stretch target only: it never affects the result. |
 | **Session** | One exercise inside one finished workout. |
 | **Volume** | Σ weight × reps (× 2 if per hand). |
-| **Activity** | A logged non-gym sport session: type, date, optional duration and note. No sport-specific metrics. Counts toward This week, Week streak and the weekly bars; never toward volume, exercise stats or progression. |
-| **Activity type** | One entry of the code-level registry (`id`, `label`): `functional`, `cycling`, `snowboarding`, `running`. |
+| **Activity** | A logged non-gym sport session: type, date, optional duration and note. Optional distance (whole metres, 1 to 1,000,000) only for running and cycling; no other sport-specific metrics. Counts toward This week, Week streak and the weekly bars; never toward volume, exercise stats or progression. |
+| **Activity type** | One entry of the code-level registry (`id`, `label`): `functional`, `cycling`, `snowboarding`, `running`, `pilates`. Running and cycling have `hasDistance`. |
 | **Est. 1RM** | Epley formula: `w × (1 + reps / 30)`, rounded to 0.1. 1 rep gives `w`, 0 reps gives 0. |
 
 ---
@@ -268,8 +268,8 @@ back to the exercise plan.
 ### 5.4 History
 - Finished workouts and logged activities in one list, newest first, grouped by month. Each row has an icon:
   a dumbbell for gym workouts, the sport's own icon for activities. Workout rows show the date, exercise names,
-  total **volume** (metric-volume color), set count and duration; activity rows show the type, date, duration
-  and note.
+  total **volume** (metric-volume color), set count and duration; activity rows show the type, date, distance, duration, pace (running) or speed (cycling) when both distance and
+  duration are set, and note.
 - Tapping a workout row opens it in **edit mode** (same screen as live logging): "changes save automatically",
   and footer buttons **Done**, **Resume** (only if allowed) and **Delete**.
 - **Resume** works for any finished workout while none is live, also from the finish summary; a resumed workout
@@ -283,7 +283,8 @@ back to the exercise plan.
 - Date kicker, title, a hero card with **Start workout** or **Continue workout**, and stat tiles: *This week*,
   *Week streak*, *Total workouts*. Below them, the 3 most recent workouts (gym workouts only).
 - **Log activity** button opens a sheet: activity type, date (default today, never in the future), optional
-  duration in minutes (1 to 1440) and optional note (max 200 chars). Types come from the registry
+  duration in minutes (1 to 1440), for running and cycling an optional **distance** (None/Set, typed in km with
+  `.` or `,`, rounded to 10 m, 0.01 to 1000 km; stored as whole metres) and optional note (max 200 chars). Types come from the registry
   (`lib/domain/activity_types.dart`); adding a sport is one registry entry plus one icon.
 - *This week* and *Week streak* count gym workouts **and** activities. *Total workouts* counts gym workouts only.
 - **Weekly streak:** consecutive ISO weeks (Monday start) with at least 1 workout, ending this week or last week.
@@ -359,12 +360,12 @@ workout_exercises  id PK, workout_id → workouts (cascade), exercise_id → exe
 sets               id PK, workout_exercise_id → workout_exercises (cascade), set_no, weight, reps,
                    is_overload, completed_at, updated_at, dirty,
                    UNIQUE(workout_exercise_id, set_no)
-activities         id PK, type_id, started_at, duration_minutes?, notes?, updated_at, dirty,
+activities         id PK, type_id, started_at, duration_minutes?, distance_meters?, notes?, updated_at, dirty,
                    index on started_at                              -- non-gym sport activities
 pending_deletes    table_name, row_id, PK(table_name, row_id)      -- delete queue for future sync
 settings           key PK, value                                   -- local-only in v1, e.g. default_rest_seconds = 60
 ```
-- Schema version is 4 (v2 templates, v3 template plans and `template_exercise_id`, v4 `activities`). Use real schema **migrations** with a version number (drift `stepByStep`). Never drop user data on upgrade.
+- Schema version is 5 (v2 templates, v3 template plans and `template_exercise_id`, v4 `activities`, v5 `activities.distance_meters`). Use real schema **migrations** with a version number (drift `stepByStep`). Never drop user data on upgrade.
 - Foreign keys **ON**. Writes that touch several rows (finish, resume, recalculate, delete) run in **one
   transaction**.
 
@@ -564,7 +565,7 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 ## 14. Roadmap (after v1, not in scope now)
 - Sign-in with cloud backup and restore (M7)
 - Template folders and "repeat last workout" (templates themselves exist since feature 003)
-- Sport-specific tracking (distance, pace, route, ...) for activities
+- Live tracking for activities (GPS, routes, maps, sensors) and miles; manual distance exists since feature 009
 - Drop and failure set types (warm-up sets are intentionally not planned)
 - Rest-timer notifications when the app is in the background, if not done in M3
 - kg / lb setting
@@ -627,3 +628,8 @@ resolved on 12 Nov 2026; see the decisions log.
   - Resume any finished workout (also from the finish summary), keeping earlier duration; Discard workout; Date row to backdate sessions.
   - Exercises library screen with create/edit custom exercises and a category selector; History List/Calendar switch.
   - Finishing rewrites a plan's base only for the newest session of that plan. No schema change (v4), no new packages.
+- **2.5 (14 Nov 2026):** feature 009, Pilates and manual distance (owner request of 14 Nov 2026).
+  - New activity type Pilates (`pilates`). Running and cycling get an optional manual distance (`hasDistance`),
+    typed in km, stored as whole metres in `activities.distance_meters` (schema v5, `from4To5`).
+  - History rows show distance and, when a duration is set too, pace (running) or speed (cycling).
+  - Live GPS tracking, routes, maps, sensors and miles stay LATER. Constitution 1.3.0.

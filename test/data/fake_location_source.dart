@@ -18,6 +18,8 @@ class FakeLocationSource implements LocationSource {
   bool service;
   int appSettingsOpened = 0;
   int locationSettingsOpened = 0;
+  bool? lastBackground;
+  bool? lastRawGps;
   String? lastNotificationTitle;
   String? lastNotificationText;
 
@@ -88,7 +90,11 @@ class FakeLocationSource implements LocationSource {
   Stream<TrackSample> positions({
     required String notificationTitle,
     required String notificationText,
+    bool background = true,
+    bool rawGps = false,
   }) {
+    lastBackground = background;
+    lastRawGps = rawGps;
     lastNotificationTitle = notificationTitle;
     lastNotificationText = notificationText;
     positionsCalls++;

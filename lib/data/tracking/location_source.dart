@@ -28,8 +28,15 @@ abstract interface class LocationSource {
   /// A stream of fixes (UTC timestamps). Cancelling the subscription stops
   /// location updates and the foreground notification. The notification text
   /// is shown while tracking runs in the background.
+  ///
+  /// [background] keeps updates running with the screen off (Android
+  /// foreground service); false while the app is only waiting for a fix.
+  /// [rawGps] asks the platform GPS provider directly instead of the fused
+  /// provider (fallback when the fused provider sends nothing).
   Stream<TrackSample> positions({
     required String notificationTitle,
     required String notificationText,
+    bool background = true,
+    bool rawGps = false,
   });
 }

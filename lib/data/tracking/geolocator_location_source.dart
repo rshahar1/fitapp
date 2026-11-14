@@ -52,18 +52,23 @@ class GeolocatorLocationSource implements LocationSource {
   Stream<TrackSample> positions({
     required String notificationTitle,
     required String notificationText,
+    bool background = true,
+    bool rawGps = false,
   }) {
     final LocationSettings settings;
     if (defaultTargetPlatform == TargetPlatform.android) {
       settings = AndroidSettings(
         accuracy: LocationAccuracy.high,
         intervalDuration: const Duration(seconds: 1),
-        foregroundNotificationConfig: ForegroundNotificationConfig(
-          notificationTitle: notificationTitle,
-          notificationText: notificationText,
-          enableWakeLock: true,
-          setOngoing: true,
-        ),
+        forceLocationManager: rawGps,
+        foregroundNotificationConfig: background
+            ? ForegroundNotificationConfig(
+                notificationTitle: notificationTitle,
+                notificationText: notificationText,
+                enableWakeLock: true,
+                setOngoing: true,
+              )
+            : null,
       );
     } else {
       settings = AppleSettings(

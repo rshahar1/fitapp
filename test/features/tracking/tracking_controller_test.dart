@@ -27,6 +27,7 @@ void main() {
   ProviderContainer makeContainer({
     Duration flush = const Duration(milliseconds: 40),
     int count = 20,
+    Duration noFix = const Duration(seconds: 15),
   }) {
     final container = ProviderContainer(
       overrides: [
@@ -35,6 +36,7 @@ void main() {
         clockProvider.overrideWithValue(() => now),
         trackingFlushIntervalProvider.overrideWithValue(flush),
         trackingFlushCountProvider.overrideWithValue(count),
+        trackingNoFixTimeoutProvider.overrideWithValue(noFix),
         trackingRetryDelayProvider.overrideWithValue(
           const Duration(milliseconds: 30),
         ),
@@ -298,6 +300,37 @@ void main() {
       expect(source.listening, isFalse);
     });
 
+    test(
+      'waits for a fix without background mode; recording uses it',
+      () async {
+        await ctl().prepare('running');
+        expect(source.lastBackground, isFalse);
+        source.emit(_fix(0));
+        await ctl().startSession();
+        expect(source.positionsCalls, 2);
+        expect(source.lastBackground, isTrue);
+        expect(source.listening, isTrue);
+        source.emit(_fix(1));
+        expect((ui() as TrackingLive).state.lastAccepted, isNotNull);
+      },
+    );
+
+    test('no fix in time reopens the stream with the other provider', () async {
+      c.dispose();
+      c = makeContainer(noFix: const Duration(milliseconds: 60));
+      await ctl().prepare('running');
+      expect(source.lastRawGps, isFalse);
+      await settle();
+      expect(source.positionsCalls, greaterThanOrEqualTo(2));
+      expect(
+        (ui() as TrackingAcquiring).error,
+        contains('No location updates'),
+      );
+      source.emit(_fix(0, accuracy: 6));
+      expect((ui() as TrackingAcquiring).error, isNull);
+      expect((ui() as TrackingAcquiring).hasGoodFix, isTrue);
+    });
+
     test('a stream error is retried after the backoff', () async {
       await ctl().prepare('running');
       expect(source.positionsCalls, 1);
@@ -314,9 +347,10 @@ void main() {
 
     test('a closed stream is retried while live', () async {
       await goLive();
+      expect(source.positionsCalls, 2); // waiting + recording
       source.closeStream();
       await settle();
-      expect(source.positionsCalls, 2);
+      expect(source.positionsCalls, 3);
       source.emit(_fix(1));
       expect(ui(), isA<TrackingLive>());
     });

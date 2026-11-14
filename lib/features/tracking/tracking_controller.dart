@@ -26,6 +26,12 @@ final trackingRetryDelayProvider = Provider<Duration>(
   (ref) => const Duration(seconds: 2),
 );
 
+/// How long without any fix before the position stream is reopened with the
+/// other Android location provider.
+final trackingNoFixTimeoutProvider = Provider<Duration>(
+  (ref) => const Duration(seconds: 15),
+);
+
 /// UI state of live GPS tracking (feature 010).
 sealed class TrackingUiState {
   const new();
@@ -106,6 +112,9 @@ class TrackingController extends Notifier<TrackingUiState> {
   StreamSubscription<TrackSample>? _sub;
   StreamSubscription<bool>? _serviceSub;
   Timer? _retryTimer;
+  Timer? _watchdog;
+  bool _subBackground = false;
+  bool _rawGps = false;
   bool _serviceOn = true;
   GeoPoint? _fix;
   Timer? _flushTimer;
@@ -232,6 +241,12 @@ class TrackingController extends Notifier<TrackingUiState> {
       (_) => unawaited(_flush()),
     );
     _watchService();
+    final waiting = _sub;
+    if (waiting != null && !_subBackground) {
+      // Reopen in background mode so recording survives the screen off.
+      _sub = null;
+      unawaited(waiting.cancel());
+    }
     if (_sub == null) _listen();
   }
 
@@ -310,10 +325,16 @@ class TrackingController extends Notifier<TrackingUiState> {
   void _listen() {
     final type = _typeId;
     if (type == null || _sub != null) return;
+    // The background (foreground-service) mode is only needed once a
+    // session records; while waiting for a fix the screen is visible.
+    _subBackground = _sessionId != null;
+    _armWatchdog();
     _sub = _source
         .positions(
           notificationTitle: '${activityLabel(type)} in progress',
           notificationText: 'Tracking time and distance',
+          background: _subBackground,
+          rawGps: _rawGps,
         )
         .listen(
           _onFix,
@@ -356,6 +377,8 @@ class TrackingController extends Notifier<TrackingUiState> {
   }
 
   Future<void> _dropStream() async {
+    _watchdog?.cancel();
+    _watchdog = null;
     _retryTimer?.cancel();
     _retryTimer = null;
     final sub = _sub;
@@ -367,6 +390,8 @@ class TrackingController extends Notifier<TrackingUiState> {
   /// after a short pause, unless permission or the service is missing.
   void _scheduleRetry() {
     if (!ref.mounted) return;
+    _watchdog?.cancel();
+    _watchdog = null;
     final dead = _sub;
     _sub = null;
     if (dead != null) unawaited(dead.cancel());
@@ -418,6 +443,7 @@ class TrackingController extends Notifier<TrackingUiState> {
   );
 
   void _onFix(TrackSample fix) {
+    _armWatchdog();
     final track = _track;
     final profile = _profile;
     if (track == null || profile == null) {
@@ -483,10 +509,36 @@ class TrackingController extends Notifier<TrackingUiState> {
     });
   }
 
+  /// Restarts the watchdog: when no fix arrives in time the stream is
+  /// reopened with the other Android provider (fused ↔ raw GPS).
+  void _armWatchdog() {
+    _watchdog?.cancel();
+    _watchdog = Timer(ref.read(trackingNoFixTimeoutProvider), _onNoFix);
+  }
+
+  void _onNoFix() {
+    _watchdog = null;
+    if (!ref.mounted || _sub == null) return;
+    _rawGps = !_rawGps;
+    final s = state;
+    if (s is TrackingAcquiring) {
+      state = _acquiring(
+        s,
+        error: 'No location updates yet. Trying another GPS provider…',
+      );
+    }
+    final old = _sub;
+    _sub = null;
+    unawaited(old?.cancel());
+    _listen();
+  }
+
   void _logError(Object e, StackTrace st) =>
       developer.log('tracking error', error: e, stackTrace: st);
 
   Future<void> _cancelListening() async {
+    _watchdog?.cancel();
+    _watchdog = null;
     _flushTimer?.cancel();
     _flushTimer = null;
     _retryTimer?.cancel();
@@ -511,6 +563,8 @@ class TrackingController extends Notifier<TrackingUiState> {
   }
 
   void _stop() {
+    _watchdog?.cancel();
+    _watchdog = null;
     _flushTimer?.cancel();
     _retryTimer?.cancel();
     unawaited(_sub?.cancel());

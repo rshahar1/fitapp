@@ -69,6 +69,10 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
 
   bool get _isEdit => widget.existing != null;
 
+  /// A GPS-tracked activity: duration and distance come from the recording
+  /// and are not editable; only type (among live types), date and note are.
+  bool get _isGps => widget.existing?.source == 'gps';
+
   /// Whether the selected type can carry a distance.
   bool get _showDistance =>
       _typeId != null && (activityTypeById(_typeId!)?.hasDistance ?? false);
@@ -77,7 +81,7 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
   int? get _parsedDistance => parseDistanceKm(_distance.text);
 
   bool get _distanceInvalid =>
-      _showDistance && _hasDistance && _parsedDistance == null;
+      !_isGps && _showDistance && _hasDistance && _parsedDistance == null;
 
   /// Distance to store: typed value for distance types, the stored value
   /// kept for retired (unknown) types, otherwise none.
@@ -133,8 +137,10 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
       );
     }
     final repo = ref.read(activityRepositoryProvider);
-    final duration = _hasDuration ? _minutes : null;
-    final distance = _distanceToSave;
+    final duration = _isGps
+        ? existing?.durationMinutes
+        : (_hasDuration ? _minutes : null);
+    final distance = _isGps ? existing?.distanceMeters : _distanceToSave;
     final notes = _note.text;
     setState(() => _saving = true);
     final ok = await guard(
@@ -219,7 +225,8 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
     final text = Theme.of(context).textTheme;
     final now = ref.watch(clockProvider)();
     final options = [
-      ...activityTypes,
+      for (final t in activityTypes)
+        if (!_isGps || t.hasLiveTracking) t,
       if (widget.existing != null &&
           activityTypeById(widget.existing!.typeId) == null)
         ActivityType(widget.existing!.typeId, 'Activity'),
@@ -282,15 +289,22 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
               ],
             ),
             const SizedBox(height: Space.m),
-            Text('DURATION', style: text.labelSmall),
-            const SizedBox(height: Space.s),
-            ChipSelector<bool>(
-              options: const [false, true],
-              selected: _hasDuration,
-              labelOf: (v) => v ? 'Set' : 'None',
-              onSelected: (v) => setState(() => _hasDuration = v),
-            ),
-            if (_hasDuration) ...[
+            if (_isGps)
+              Text(
+                'Duration and distance come from the GPS recording.',
+                style: text.bodySmall?.copyWith(color: AppColors.textSecondary),
+              )
+            else ...[
+              Text('DURATION', style: text.labelSmall),
+              const SizedBox(height: Space.s),
+              ChipSelector<bool>(
+                options: const [false, true],
+                selected: _hasDuration,
+                labelOf: (v) => v ? 'Set' : 'None',
+                onSelected: (v) => setState(() => _hasDuration = v),
+              ),
+            ],
+            if (!_isGps && _hasDuration) ...[
               const SizedBox(height: Space.m),
               AppStepper(
                 label: 'Duration',
@@ -302,7 +316,7 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
                 onChanged: (v) => setState(() => _minutes = v.toInt()),
               ),
             ],
-            if (_showDistance) ...[
+            if (!_isGps && _showDistance) ...[
               const SizedBox(height: Space.m),
               Text('DISTANCE', style: text.labelSmall),
               const SizedBox(height: Space.s),

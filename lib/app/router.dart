@@ -1,3 +1,4 @@
+import 'package:fitapp/features/activities/activity_detail_screen.dart';
 import 'package:fitapp/features/exercises/exercise_library_screen.dart';
 import 'package:fitapp/features/exercises/exercise_picker_screen.dart';
 import 'package:fitapp/features/history/history_screen.dart';
@@ -30,6 +31,7 @@ abstract final class Routes {
   /// Exercise library (feature 007), reachable without a workout.
   static const exercises = '/exercises';
   static String finishedWorkout(String id) => '/workout/$id';
+  static String activity(String id) => '/activity/$id';
   static String exercise(String id) => '/exercise/$id';
   static const newTemplate = '/template/new';
   static String template(String id) => '/template/$id';
@@ -94,6 +96,12 @@ GoRouter buildRouter() => GoRouter(
       parentNavigatorKey: _rootKey,
       path: Routes.trackLive,
       builder: (_, _) => const LiveTrackScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootKey,
+      path: '/activity/:id',
+      builder: (_, state) =>
+          ActivityDetailScreen(activityId: state.pathParameters['id']!),
     ),
     GoRoute(
       parentNavigatorKey: _rootKey,

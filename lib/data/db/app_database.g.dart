@@ -4782,12 +4782,12 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
   final int? distanceMeters;
   final String? notes;
 
-  /// 'manual' (typed in) or 'tracked' (recorded by live GPS tracking).
+  /// 'manual' (typed in) or 'gps' (recorded by live GPS tracking).
   final String source;
   final int? movingSeconds;
   final int? elevationGainMeters;
 
-  /// Encoded route (JSON) for tracked activities.
+  /// Simplified route as an encoded polyline (precision 5), tracked activities only.
   final String? route;
 
   /// Encoded per-km splits (JSON) for tracked activities.

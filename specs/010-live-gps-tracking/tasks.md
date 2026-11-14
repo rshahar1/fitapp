@@ -44,13 +44,13 @@ description: "Task list for live GPS tracking (running, cycling)"
 
 ## Phase 5: User Story 3 + 4 — review (P2)
 
-- [ ] T023 `RouteThumbnail` + History row for GPS activities — lib/features/history/history_rows.dart
-- [ ] T024 Activity detail screen `/activity/:id` (interactive map, start/finish + km markers, metrics, splits; Edit type/date/note; Delete confirm)
-- [ ] T025 Widget tests for T023–T024
-- [ ] T026 Integration test: replay the 5 km fixture end-to-end to History — integration_test/
+- [x] T023 `RouteThumbnail` + History row for GPS activities — lib/features/history/history_rows.dart
+- [x] T024 Activity detail screen `/activity/:id` (interactive map, start/finish + km markers, metrics, splits; Edit type/date/note; Delete confirm)
+- [x] T025 Widget tests for T023–T024
+- [x] T026 Integration test: replay the 5 km fixture end-to-end to History — integration_test/
 
 ## Phase 6: Polish
 
-- [ ] T027 Constitution 1.4.0 (VII amendment), PRD v2.6, README, docs/ARCHITECTURE.md, CLAUDE.md active feature; mark proposal phase A as approved/implemented
-- [ ] T028 Gates: format, analyze, `flutter test -j 1`, `flutter build apk --debug`
+- [x] T027 Constitution 1.4.0 (VII amendment), PRD v2.6, README, docs/ARCHITECTURE.md, CLAUDE.md active feature; mark proposal phase A as approved/implemented
+- [x] T028 Gates: format, analyze, `flutter test -j 1`, `flutter build apk --debug`
 - [ ] T029 (owner) On-phone validation: 30-minute run with screen locked, a forced kill mid-run, a ride, airplane-mode run

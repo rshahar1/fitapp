@@ -99,4 +99,34 @@ void main() {
       expect(out.last, pts.last);
     });
   });
+
+  group('pointsAtEveryKm', () {
+    // 0.001 degrees of latitude is about 111.2 m.
+    List<GeoPoint> line(int n) => [
+      for (var i = 0; i <= n; i++) (lat: i * 0.001, lon: 0.0),
+    ];
+
+    test('empty for short or tiny routes', () {
+      expect(pointsAtEveryKm(const []), isEmpty);
+      expect(pointsAtEveryKm([(lat: 1.0, lon: 1.0)]), isEmpty);
+      expect(pointsAtEveryKm(line(5)), isEmpty);
+    });
+
+    test('one point per full kilometre, at the right distance', () {
+      final route = line(45); // about 5.0 km
+      final pts = pointsAtEveryKm(route);
+      expect(pts, hasLength(5));
+      for (var k = 0; k < pts.length; k++) {
+        expect(
+          haversineMeters(0, 0, pts[k].lat, pts[k].lon),
+          closeTo((k + 1) * 1000, 1),
+        );
+      }
+    });
+
+    test('several marks inside one long segment', () {
+      final pts = pointsAtEveryKm([(lat: 0.0, lon: 0.0), (lat: 0.0, lon: 0.1)]);
+      expect(pts, hasLength(11)); // 11.1 km
+    });
+  });
 }

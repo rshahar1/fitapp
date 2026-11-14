@@ -126,3 +126,29 @@ List<GeoPoint> simplify(List<GeoPoint> points, double toleranceMeters) {
       if (keep[i]) points[i],
   ];
 }
+
+/// The points where [route] crosses each full kilometre of cumulative
+/// (haversine) distance, linearly interpolated within the segment. Element
+/// `i` is the point at kilometre `i + 1`. Empty for fewer than two points or
+/// a route shorter than 1 km.
+List<GeoPoint> pointsAtEveryKm(List<GeoPoint> route) {
+  final out = <GeoPoint>[];
+  if (route.length < 2) return out;
+  var travelled = 0.0;
+  var nextMark = 1000.0;
+  for (var i = 1; i < route.length; i++) {
+    final a = route[i - 1];
+    final b = route[i];
+    final seg = haversineMeters(a.lat, a.lon, b.lat, b.lon);
+    while (seg > 0 && travelled + seg >= nextMark) {
+      final f = (nextMark - travelled) / seg;
+      out.add((
+        lat: a.lat + (b.lat - a.lat) * f,
+        lon: a.lon + (b.lon - a.lon) * f,
+      ));
+      nextMark += 1000;
+    }
+    travelled += seg;
+  }
+  return out;
+}

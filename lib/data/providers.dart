@@ -100,6 +100,11 @@ final activityRepositoryProvider = Provider<ActivityRepository>(
   (ref) => ActivityRepository(ref.watch(databaseProvider)),
 );
 
+/// One activity by id (feature 010 detail screen); null when deleted.
+final activityProvider = StreamProvider.family<ActivityRow?, String>(
+  (ref, id) => ref.watch(activityRepositoryProvider).watchActivity(id),
+);
+
 /// Workouts and activities together, newest first (feature 006).
 final historyEntriesProvider = StreamProvider<List<HistoryEntry>>(
   (ref) => ref.watch(workoutRepositoryProvider).watchHistoryEntries(),

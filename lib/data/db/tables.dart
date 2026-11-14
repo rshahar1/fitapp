@@ -169,7 +169,7 @@ class Activities extends Table with SyncColumns {
   IntColumn get distanceMeters => integer().nullable()();
   TextColumn get notes => text().nullable()();
 
-  /// 'manual' (typed in) or 'tracked' (recorded by live GPS tracking).
+  /// 'manual' (typed in) or 'gps' (recorded by live GPS tracking).
   TextColumn get source => text().withDefault(const Constant('manual'))();
   IntColumn get movingSeconds => integer().nullable()();
   IntColumn get elevationGainMeters => integer().nullable()();

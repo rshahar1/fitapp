@@ -14,12 +14,12 @@ description: "Task list for the Start/Log hub (Option C, slice 1)"
 
 ## Phase 2: Foundational — domain and data (tests first)
 
-- [ ] T002 Tests: `sessionInProgress` (none, gym, tracking, both → tracking), labels (`Workout`, sport label, unknown → `Activity`), `continueLabel`, `blockedMessage`, equality — test/domain/start_guard_test.dart
-- [ ] T003 Implement lib/domain/start_guard.dart (pure Dart) until T002 passes
-- [ ] T004 Test: `TemplateRepository.startWorkout` throws while a tracking session exists — test/data/template_repository_test.dart
-- [ ] T005 Add the tracking check to lib/data/repositories/template_repository.dart until T004 passes
-- [ ] T006 Start service: `startActionsProvider`, `sessionInProgressProvider`, `current()`, `startGym({templateId})`, `startTracking(typeId)`, `open(session)`, blocked snackbar with Open — lib/features/start/start_actions.dart
-- [ ] T007 Milestone gate: format, analyze, test; commit
+- [x] T002 Tests: `sessionInProgress` (none, gym, tracking, both → tracking), labels (`Workout`, sport label, unknown → `Activity`), `continueLabel`, `blockedMessage`, equality — test/domain/start_guard_test.dart
+- [x] T003 Implement lib/domain/start_guard.dart (pure Dart) until T002 passes
+- [x] T004 Test: `TemplateRepository.startWorkout` throws while a tracking session exists — test/data/template_repository_test.dart
+- [x] T005 Add the tracking check to lib/data/repositories/template_repository.dart until T004 passes
+- [x] T006 Start service: `startActionsProvider`, `sessionInProgressProvider`, `current()`, `startGym({templateId})`, `startTracking(typeId)`, `open(session)`, blocked snackbar with Open — lib/features/start/start_actions.dart
+- [x] T007 Milestone gate: format, analyze, test; commit
 
 ## Phase 3: User Stories 1, 3, 4, 5 — hub (P1/P2)
 

@@ -3,6 +3,7 @@ import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/db/seed_library.dart';
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/repositories/plan_store.dart';
+import 'package:fitapp/data/repositories/template_repository.dart';
 import 'package:fitapp/data/watch.dart';
 import 'package:fitapp/domain/progression.dart';
 import 'package:uuid/uuid.dart';
@@ -17,6 +18,18 @@ class DuplicateExerciseName implements Exception {
   String toString() => 'An exercise named "$name" already exists';
 }
 
+/// A template that contains an exercise about to be deleted.
+class TemplateUsage {
+  const new({required this.id, required this.name, required this.wouldBeEmpty});
+
+  final String id;
+  final String name;
+
+  /// The exercise is the template's only one: deleting it deletes the
+  /// template too.
+  final bool wouldBeEmpty;
+}
+
 /// Exercise library and plans.
 class ExerciseRepository {
   new(this._db);
@@ -24,10 +37,11 @@ class ExerciseRepository {
   final AppDatabase _db;
   static const _uuid = Uuid();
 
-  /// All exercises (optionally filtered by a case-insensitive [query]),
-  /// ordered by name.
+  /// All active (not deleted) exercises, optionally filtered by a
+  /// case-insensitive [query], ordered by name.
   Stream<List<ExerciseRow>> watchExercises({String? query}) {
     final q = _db.select(_db.exercises)
+      ..where((e) => e.deletedAt.isNull())
       ..orderBy([(e) => OrderingTerm.asc(e.name.lower())]);
     final text = query?.trim().toLowerCase() ?? '';
     if (text.isNotEmpty) q.where((e) => e.name.lower().contains(text));
@@ -44,6 +58,8 @@ class ExerciseRepository {
 
   /// Creates a custom exercise. Names are unique, case-insensitive.
   /// [muscleGroup] must be one of [muscleGroups]; null means "Custom".
+  /// A deleted exercise with the same name is restored instead (feature
+  /// 012); a custom one takes the given settings, a built-in keeps its own.
   Future<ExerciseRow> createCustom({
     required String name,
     required bool perHand,
@@ -58,7 +74,29 @@ class ExerciseRepository {
         await (_db.select(_db.exercises)
               ..where((e) => e.name.lower().equals(trimmed.toLowerCase())))
             .getSingleOrNull();
-    if (existing != null) throw DuplicateExerciseName(existing.name);
+    if (existing != null && existing.deletedAt == null) {
+      throw DuplicateExerciseName(existing.name);
+    }
+    if (existing != null) {
+      await (_db.update(
+        _db.exercises,
+      )..where((e) => e.id.equals(existing.id))).write(
+        ExercisesCompanion(
+          deletedAt: const Value(null),
+          updatedAt: Value(_db.now()),
+          dirty: const Value(true),
+          name: existing.isCustom ? Value(trimmed) : const Value.absent(),
+          muscleGroup: existing.isCustom
+              ? Value(muscleGroup)
+              : const Value.absent(),
+          isPerHand: existing.isCustom ? Value(perHand) : const Value.absent(),
+          defaultIncrement: existing.isCustom
+              ? Value(roundWeight(increment))
+              : const Value.absent(),
+        ),
+      );
+      return (await exercise(existing.id))!;
+    }
     return await _db
         .into(_db.exercises)
         .insertReturning(
@@ -91,7 +129,9 @@ class ExerciseRepository {
     required double increment,
   }) => _db.transaction(() async {
     final current = await exercise(id);
-    if (current == null) throw StateError('Exercise not found: $id');
+    if (current == null || current.deletedAt != null) {
+      throw StateError('Exercise not found: $id');
+    }
     if (!current.isCustom) {
       throw StateError('Built-in exercises cannot be edited');
     }
@@ -118,6 +158,53 @@ class ExerciseRepository {
       ),
     );
     return (await exercise(id))!;
+  });
+
+  /// Templates containing [id], by name, for the delete confirmation.
+  Future<List<TemplateUsage>> templatesUsing(String id) async {
+    final te = _db.templateExercises;
+    final t = _db.templates;
+    final rows =
+        await (_db.select(t).join([
+                innerJoin(te, te.templateId.equalsExp(t.id)),
+              ])
+              ..where(te.exerciseId.equals(id))
+              ..orderBy([OrderingTerm.asc(t.name.lower())]))
+            .get();
+    final result = <TemplateUsage>[];
+    for (final r in rows) {
+      final template = r.readTable(t);
+      final count = await (_db.select(
+        te,
+      )..where((x) => x.templateId.equals(template.id))).get();
+      result.add(
+        TemplateUsage(
+          id: template.id,
+          name: template.name,
+          wouldBeEmpty: count.length == 1,
+        ),
+      );
+    }
+    return result;
+  }
+
+  /// Soft-deletes exercise [id], custom or built-in (feature 012): hidden
+  /// from the library, picker and Progress; finished workouts, sets and its
+  /// plan are kept. It is removed from every template, and templates left
+  /// without exercises are deleted. Throws [StateError] if [id] is unknown.
+  Future<void> delete(String id) => _db.transaction(() async {
+    final current = await exercise(id);
+    if (current == null) throw StateError('Exercise not found: $id');
+    if (current.deletedAt != null) return;
+    await TemplateRepository(_db).removeExercise(id);
+    final now = _db.now();
+    await (_db.update(_db.exercises)..where((e) => e.id.equals(id))).write(
+      ExercisesCompanion(
+        deletedAt: Value(now),
+        updatedAt: Value(now),
+        dirty: const Value(true),
+      ),
+    );
   });
 
   Future<PlanRow?> plan(String exerciseId) => (_db.select(
@@ -155,7 +242,7 @@ class ExerciseRepository {
   Stream<List<TrainedExercise>> watchTrainedExercises() =>
       watchQuery(_db, trainedExercises);
 
-  /// Exercises with at least one finished session, most recent first.
+  /// Active exercises with at least one finished session, most recent first.
   Future<List<TrainedExercise>> trainedExercises() async {
     final w = _db.workouts;
     final we = _db.workoutExercises;
@@ -167,7 +254,7 @@ class ExerciseRepository {
         innerJoin(w, w.id.equalsExp(we.workoutId)),
         innerJoin(e, e.id.equalsExp(we.exerciseId)),
       ])
-      ..where(w.endedAt.isNotNull())
+      ..where(w.endedAt.isNotNull() & e.deletedAt.isNull())
       ..groupBy([we.exerciseId]);
     final rows = await q.get();
     final result = <TrainedExercise>[];

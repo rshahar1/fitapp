@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:fitapp/app/theme/tokens.dart';
-import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/domain/activity_types.dart';
 import 'package:fitapp/domain/start_guard.dart';
 import 'package:fitapp/features/activities/activity_icons.dart';
@@ -21,12 +20,6 @@ sealed class HubChoice {
 final class ContinueChoice extends HubChoice {
   const new(this.session);
   final SessionInProgress session;
-}
-
-/// Start an empty gym workout, or one from [templateId].
-final class GymChoice extends HubChoice {
-  const new({this.templateId});
-  final String? templateId;
 }
 
 /// Open the GPS setup for [typeId].
@@ -54,8 +47,6 @@ Future<void> showStartHub(BuildContext context) async {
   switch (choice) {
     case ContinueChoice(:final session):
       actions.open(context, session);
-    case GymChoice(:final templateId):
-      await actions.startGym(context, templateId: templateId);
     case TrackChoice(:final typeId):
       await actions.startTracking(context, typeId);
     case LogPastChoice(:final typeId):
@@ -64,23 +55,14 @@ Future<void> showStartHub(BuildContext context) async {
 }
 
 /// The hub's content: "Start now" and "Earlier".
-class StartHubSheet extends ConsumerStatefulWidget {
+class StartHubSheet extends ConsumerWidget {
   const new({super.key});
 
   @override
-  ConsumerState<StartHubSheet> createState() => _StartHubSheetState();
-}
-
-class _StartHubSheetState extends ConsumerState<StartHubSheet> {
-  bool _moreOpen = false;
-
-  void _pick(HubChoice choice) => Navigator.of(context).pop(choice);
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    void pick(HubChoice choice) => Navigator.of(context).pop(choice);
     final text = Theme.of(context).textTheme;
     final session = ref.watch(sessionInProgressProvider);
-    final templates = ref.watch(templatesProvider).value ?? const [];
     final live = [
       for (final t in activityTypes)
         if (t.hasLiveTracking) t,
@@ -110,46 +92,21 @@ class _StartHubSheetState extends ConsumerState<StartHubSheet> {
                       accent: true,
                     ),
                     showChevron: true,
-                    onTap: () => _pick(ContinueChoice(session)),
+                    onTap: () => pick(ContinueChoice(session)),
                   ),
-                GroupRow(
-                  title: 'Gym workout',
-                  leading: _icon(gymWorkoutIcon),
-                  onTap: () => _pick(const GymChoice()),
-                ),
                 for (final t in live)
                   GroupRow(
                     title: t.label,
                     subtitle: 'Live GPS',
                     leading: _icon(activityIcon(t.id)),
-                    onTap: () => _pick(TrackChoice(t.id)),
+                    onTap: () => pick(TrackChoice(t.id)),
                   ),
-                Semantics(
-                  expanded: _moreOpen,
-                  child: GroupRow(
-                    title: 'More sports',
-                    leading: _icon(Icons.more_horiz),
-                    trailing: Icon(
-                      _moreOpen ? Icons.expand_less : Icons.expand_more,
-                      color: AppColors.textSecondary,
-                    ),
-                    onTap: () => setState(() => _moreOpen = !_moreOpen),
-                  ),
-                ),
-                if (_moreOpen)
-                  for (final t in other)
-                    GroupRow(
-                      title: t.label,
-                      subtitle: 'Log for today',
-                      leading: _icon(activityIcon(t.id)),
-                      onTap: () => _pick(LogPastChoice(typeId: t.id)),
-                    ),
-                for (final t in templates)
+                for (final t in other)
                   GroupRow(
-                    title: t.name,
-                    subtitle: t.exercises.map((e) => e.name).join(' · '),
-                    leading: _icon(Icons.playlist_play),
-                    onTap: () => _pick(GymChoice(templateId: t.id)),
+                    title: t.label,
+                    subtitle: 'Log for today',
+                    leading: _icon(activityIcon(t.id)),
+                    onTap: () => pick(LogPastChoice(typeId: t.id)),
                   ),
               ],
             ),
@@ -160,7 +117,7 @@ class _StartHubSheetState extends ConsumerState<StartHubSheet> {
                   title: 'Log a past session',
                   leading: _icon(Icons.history),
                   showChevron: true,
-                  onTap: () => _pick(const LogPastChoice()),
+                  onTap: () => pick(const LogPastChoice()),
                 ),
               ],
             ),

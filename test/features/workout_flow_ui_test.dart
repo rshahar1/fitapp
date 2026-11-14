@@ -174,15 +174,15 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('You tab has the Exercise library', (tester) async {
+  testWidgets('You tab has the Gym Exercise Library', (tester) async {
     tester0 = tester;
     await pumpApp(tester);
     await tester.tap(find.text('You'));
     await tester.pumpAndSettle();
-    expect(find.text('Exercise library'), findsOneWidget);
-    await tester.tap(find.text('Exercise library'));
+    expect(find.text('Gym Exercise Library'), findsOneWidget);
+    await tester.tap(find.text('Gym Exercise Library'));
     await tester.pumpAndSettle();
-    expect(find.text('Exercises'), findsWidgets);
+    expect(find.text('Gym Exercise Library'), findsWidgets);
     await unmount(tester);
   });
 }

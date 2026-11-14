@@ -32,7 +32,7 @@ class AppDatabase extends _$AppDatabase {
   DateTime now() => _clock().toUtc();
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -68,6 +68,13 @@ class AppDatabase extends _$AppDatabase {
         from3To4: (m, schema) async {
           // Feature 006: sport activities.
           await m.createTable(schema.activities);
+        },
+        from4To5: (m, schema) async {
+          // Feature 009: manual distance for running / cycling.
+          await m.addColumn(
+            schema.activities,
+            schema.activities.distanceMeters,
+          );
         },
       )(m, from, to);
       await _createIndexes(version: to);

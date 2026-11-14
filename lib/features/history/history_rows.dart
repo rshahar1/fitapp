@@ -64,10 +64,18 @@ class HistoryActivityRow extends StatelessWidget {
     final date = formatDateShort(activity.startedAt.toLocal());
     final label = activityLabel(activity.typeId);
     final minutes = activity.durationMinutes;
+    final meters = activity.distanceMeters;
     final note = activity.notes;
     final subtitle = [
       label,
+      if (meters != null) formatDistanceKm(meters),
       if (minutes != null) formatActivityMinutes(minutes),
+      if (meters != null && minutes != null)
+        ?switch (activity.typeId) {
+          'running' => formatPace(meters, minutes),
+          'cycling' => formatSpeed(meters, minutes),
+          _ => null,
+        },
       ?note,
     ].join(' · ');
     return Semantics(

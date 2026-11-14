@@ -1,5 +1,13 @@
 <!--
 Sync Impact Report
+- Version change: 1.2.1 → 1.3.0 (feature 009, Pilates and manual distance)
+- Modified principles: VII (manual distance entry for running and cycling is now in scope, owner
+  request 2026-11-14; live GPS tracking, routes, maps and sensors remain out of scope until the
+  owner requests them)
+- Added sections: none | Removed sections: none
+- Deferred TODOs: none
+
+Previous report (1.2.1)
 - Version change: 1.2.0 → 1.2.1 (feature 007, workout flow and exercise library)
 - Modified principles: II (finishing a workout rewrites a plan's base only when it is the newest
   session for that plan; backdated or resumed older sessions never do) — PATCH clarification
@@ -126,7 +134,8 @@ Rationale: a personal health log is private data; leaked keys are irreversible.
   `visibility` or friendship columns, no warm-up sets, no set-type column or W/D/F badges, no light
   theme, no videos, no AI workouts, no ads or paid features.
 - Lightweight logging of sport activities besides gym workouts (feature 006, owner request) is in
-  scope. Sport-specific metrics and tracking modules (distance, pace, routes, ...) remain out of
+  scope. Manual distance entry for running and cycling, with derived pace or speed (feature 009,
+  owner request 2026-11-14), is in scope. Live GPS tracking, routes, maps and sensors remain out of
   scope until the owner requests them.
 - Phase 2 is designed for (UUIDs, `dirty`, `pending_deletes`) but not built.
 
@@ -161,4 +170,4 @@ Rationale: the owner explicitly dropped these; speculative code is maintenance d
   version (MAJOR: principle removed/redefined; MINOR: principle/section added; PATCH: wording).
 - Reviews verify compliance with principles II, III and VI on every milestone.
 
-**Version**: 1.2.1 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-13
+**Version**: 1.3.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-14

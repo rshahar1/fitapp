@@ -91,8 +91,10 @@ Templates are reusable exercise lists you start in one tap from the Train tab. O
 
 ## Other sport activities
 
-The Train tab has a **Log activity** button for Functional training, Cycling, Snowboarding and Running: pick
-the type and date (today by default, never in the future) and optionally a duration and a note. **History**
+The Train tab has a **Log activity** button for Functional training, Cycling, Snowboarding, Running and Pilates: pick
+the type and date (today by default, never in the future) and optionally a duration and a note. Running and
+cycling also take an optional distance in km (typed with `.` or `,`); History then shows the distance and, with a
+duration, the pace (running) or speed (cycling). **History**
 lists workouts and activities together by month, with a dumbbell icon for gym workouts and a sport icon for
 activities; tap an activity to edit or delete it. Activities count toward **This week**, **Week streak** and
 the Progress weekly bars; **Total workouts** counts gym workouts only, and activities never affect volume,
@@ -117,7 +119,7 @@ No schema change (still v4) and no new packages.
 
 ## Database schema and migrations
 
-The schema is at version 4 (v2 adds `templates` and `template_exercises`; v3 adds the plan columns on `template_exercises` and `workout_exercises.template_exercise_id`; v4 adds `activities`). Migrations use drift's generated `stepByStep` helper (`lib/data/db/app_database.steps.dart`). Schema dumps live in `drift_schemas/` and the migration tests in `test/drift/` (plus `test/data/migration_test.dart`). After any schema change, regenerate the dumps and test helpers with:
+The schema is at version 5 (v2 adds `templates` and `template_exercises`; v3 adds the plan columns on `template_exercises` and `workout_exercises.template_exercise_id`; v4 adds `activities`; v5 adds `activities.distance_meters`). Migrations use drift's generated `stepByStep` helper (`lib/data/db/app_database.steps.dart`). Schema dumps live in `drift_schemas/` and the migration tests in `test/drift/` (plus `test/data/migration_test.dart`). After any schema change, regenerate the dumps and test helpers with:
 
 ```sh
 dart run drift_dev make-migrations

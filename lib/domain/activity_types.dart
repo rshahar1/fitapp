@@ -11,21 +11,25 @@ import 'package:meta/meta.dart';
 /// One kind of activity. [id] is stored in the database and never changes.
 @immutable
 class ActivityType {
-  const new(this.id, this.label);
+  const new(this.id, this.label, {this.hasDistance = false});
 
   /// Stable id stored with each activity.
   final String id;
 
   /// Display name.
   final String label;
+
+  /// Whether a distance can be logged for this type (feature 009).
+  final bool hasDistance;
 }
 
 /// All activity types, in display order.
 const activityTypes = [
   ActivityType('functional', 'Functional training'),
-  ActivityType('cycling', 'Cycling'),
+  ActivityType('cycling', 'Cycling', hasDistance: true),
   ActivityType('snowboarding', 'Snowboarding'),
-  ActivityType('running', 'Running'),
+  ActivityType('running', 'Running', hasDistance: true),
+  ActivityType('pilates', 'Pilates'),
 ];
 
 /// The type with [id], or null if unknown (e.g. from a newer app version).
@@ -43,6 +47,9 @@ String activityLabel(String typeId) =>
 /// Longest duration that can be logged (one day), in minutes.
 const maxActivityMinutes = 1440;
 
+/// Longest distance that can be logged, in metres (1000 km).
+const maxActivityDistanceMeters = 1000000;
+
 /// Longest note, in characters.
 const maxActivityNoteLength = 200;
 
@@ -53,12 +60,16 @@ class ValidActivity {
     required this.typeId,
     required this.startedAt,
     this.durationMinutes,
+    this.distanceMeters,
     this.notes,
   });
 
   final String typeId;
   final DateTime startedAt;
   final int? durationMinutes;
+
+  /// Whole metres; only for types with a distance.
+  final int? distanceMeters;
 
   /// Trimmed; null when empty.
   final String? notes;
@@ -67,12 +78,15 @@ class ValidActivity {
 /// Validates an activity. Throws [ArgumentError] when the type is unknown
 /// (unless [allowUnknownType], used when editing an entry of a retired
 /// type), the local day of [startedAt] is after the local day of [now], the
-/// duration is outside 1..[maxActivityMinutes], or the note is too long.
+/// duration is outside 1..[maxActivityMinutes], the distance is outside
+/// 1..[maxActivityDistanceMeters] or given for a known type without
+/// distance, or the note is too long.
 ValidActivity validateActivity({
   required String typeId,
   required DateTime startedAt,
   required DateTime now,
   int? durationMinutes,
+  int? distanceMeters,
   String? notes,
   bool allowUnknownType = false,
 }) {
@@ -87,6 +101,24 @@ ValidActivity validateActivity({
   if (d != null && (d < 1 || d > maxActivityMinutes)) {
     throw ArgumentError.value(d, 'durationMinutes', '1..$maxActivityMinutes');
   }
+  final m = distanceMeters;
+  if (m != null) {
+    if (m < 1 || m > maxActivityDistanceMeters) {
+      throw ArgumentError.value(
+        m,
+        'distanceMeters',
+        '1..$maxActivityDistanceMeters',
+      );
+    }
+    final type = activityTypeById(typeId);
+    if (type != null && !type.hasDistance) {
+      throw ArgumentError.value(
+        typeId,
+        'distanceMeters',
+        'this activity type has no distance',
+      );
+    }
+  }
   final clean = notes?.trim();
   if (clean != null && clean.length > maxActivityNoteLength) {
     throw ArgumentError.value(
@@ -99,8 +131,47 @@ ValidActivity validateActivity({
     typeId: typeId,
     startedAt: startedAt,
     durationMinutes: d,
+    distanceMeters: m,
     notes: clean == null || clean.isEmpty ? null : clean,
   );
 }
+
+/// Parses a distance typed in kilometres ("5.2" or "5,2") into whole metres,
+/// rounded to the nearest 10 m. Null for empty, non-numeric, non-positive
+/// (after rounding) or above [maxActivityDistanceMeters].
+int? parseDistanceKm(String input) {
+  final t = input.trim().replaceAll(',', '.');
+  if (t.isEmpty) return null;
+  final km = double.tryParse(t);
+  if (km == null || !km.isFinite) return null;
+  final meters = (km * 100).round() * 10;
+  if (meters <= 0 || meters > maxActivityDistanceMeters) return null;
+  return meters;
+}
+
+/// "5.2 km", "36.75 km", "10 km": up to two decimals, trailing zeros dropped.
+String formatDistanceKm(int meters) => '${_kmText(meters)} km';
+
+/// Kilometres as text without trailing zeros (also used to pre-fill input).
+String distanceKmText(int meters) => _kmText(meters);
+
+String _kmText(int meters) {
+  var s = (meters / 1000).toStringAsFixed(2);
+  if (s.contains('.')) {
+    s = s.replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+  }
+  return s;
+}
+
+/// Average pace, "5:23 /km".
+String formatPace(int meters, int minutes) {
+  final secPerKm = (minutes * 60 * 1000 / meters).round();
+  final s = (secPerKm % 60).toString().padLeft(2, '0');
+  return '${secPerKm ~/ 60}:$s /km';
+}
+
+/// Average speed, "24.5 km/h".
+String formatSpeed(int meters, int minutes) =>
+    '${(meters / 1000 / (minutes / 60)).toStringAsFixed(1)} km/h';
 
 DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);

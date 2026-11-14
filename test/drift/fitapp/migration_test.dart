@@ -10,6 +10,7 @@ import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
 import 'generated/schema_v4.dart' as v4;
+import 'generated/schema_v5.dart' as v5;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -317,6 +318,37 @@ void main() {
         expect(we.templateExerciseId, 'te1');
         expect(await newDb.select(newDb.workouts).get(), hasLength(1));
         expect(await newDb.select(newDb.activities).get(), isEmpty);
+      },
+    );
+  });
+
+  test('migration from v4 to v5 keeps activities with null distance', () async {
+    const ts = '2026-11-14T18:00:00.000Z';
+    await verifier.testWithDataIntegrity(
+      oldVersion: 4,
+      newVersion: 5,
+      createOld: v4.DatabaseAtV4.new,
+      createNew: v5.DatabaseAtV5.new,
+      openTestedDatabase: AppDatabase.new,
+      createItems: (batch, oldDb) {
+        batch.insertAll(oldDb.activities, [
+          const v4.ActivitiesData(
+            updatedAt: ts,
+            dirty: 1,
+            id: 'a1',
+            typeId: 'running',
+            startedAt: ts,
+            durationMinutes: 30,
+            notes: 'easy',
+          ),
+        ]);
+      },
+      validateItems: (newDb) async {
+        final a = await newDb.select(newDb.activities).getSingle();
+        expect(a.typeId, 'running');
+        expect(a.durationMinutes, 30);
+        expect(a.notes, 'easy');
+        expect(a.distanceMeters, isNull);
       },
     );
   });

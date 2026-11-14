@@ -4510,6 +4510,17 @@ class $ActivitiesTable extends Activities
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _distanceMetersMeta = const VerificationMeta(
+    'distanceMeters',
+  );
+  @override
+  late final GeneratedColumn<int> distanceMeters = GeneratedColumn<int>(
+    'distance_meters',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -4527,6 +4538,7 @@ class $ActivitiesTable extends Activities
     typeId,
     startedAt,
     durationMinutes,
+    distanceMeters,
     notes,
   ];
   @override
@@ -4585,6 +4597,15 @@ class $ActivitiesTable extends Activities
         ),
       );
     }
+    if (data.containsKey('distance_meters')) {
+      context.handle(
+        _distanceMetersMeta,
+        distanceMeters.isAcceptableOrUnknown(
+          data['distance_meters']!,
+          _distanceMetersMeta,
+        ),
+      );
+    }
     if (data.containsKey('notes')) {
       context.handle(
         _notesMeta,
@@ -4624,6 +4645,10 @@ class $ActivitiesTable extends Activities
         DriftSqlType.int,
         data['${effectivePrefix}duration_minutes'],
       ),
+      distanceMeters: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}distance_meters'],
+      ),
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
@@ -4644,6 +4669,7 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
   final String typeId;
   final DateTime startedAt;
   final int? durationMinutes;
+  final int? distanceMeters;
   final String? notes;
   const ActivityRow({
     required this.updatedAt,
@@ -4652,6 +4678,7 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
     required this.typeId,
     required this.startedAt,
     this.durationMinutes,
+    this.distanceMeters,
     this.notes,
   });
   @override
@@ -4664,6 +4691,9 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
     map['started_at'] = Variable<DateTime>(startedAt);
     if (!nullToAbsent || durationMinutes != null) {
       map['duration_minutes'] = Variable<int>(durationMinutes);
+    }
+    if (!nullToAbsent || distanceMeters != null) {
+      map['distance_meters'] = Variable<int>(distanceMeters);
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
@@ -4681,6 +4711,9 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
       durationMinutes: durationMinutes == null && nullToAbsent
           ? const Value.absent()
           : Value(durationMinutes),
+      distanceMeters: distanceMeters == null && nullToAbsent
+          ? const Value.absent()
+          : Value(distanceMeters),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
@@ -4699,6 +4732,7 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
       typeId: serializer.fromJson<String>(json['typeId']),
       startedAt: serializer.fromJson<DateTime>(json['startedAt']),
       durationMinutes: serializer.fromJson<int?>(json['durationMinutes']),
+      distanceMeters: serializer.fromJson<int?>(json['distanceMeters']),
       notes: serializer.fromJson<String?>(json['notes']),
     );
   }
@@ -4712,6 +4746,7 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
       'typeId': serializer.toJson<String>(typeId),
       'startedAt': serializer.toJson<DateTime>(startedAt),
       'durationMinutes': serializer.toJson<int?>(durationMinutes),
+      'distanceMeters': serializer.toJson<int?>(distanceMeters),
       'notes': serializer.toJson<String?>(notes),
     };
   }
@@ -4723,6 +4758,7 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
     String? typeId,
     DateTime? startedAt,
     Value<int?> durationMinutes = const Value.absent(),
+    Value<int?> distanceMeters = const Value.absent(),
     Value<String?> notes = const Value.absent(),
   }) => ActivityRow(
     updatedAt: updatedAt ?? this.updatedAt,
@@ -4733,6 +4769,9 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
     durationMinutes: durationMinutes.present
         ? durationMinutes.value
         : this.durationMinutes,
+    distanceMeters: distanceMeters.present
+        ? distanceMeters.value
+        : this.distanceMeters,
     notes: notes.present ? notes.value : this.notes,
   );
   ActivityRow copyWithCompanion(ActivitiesCompanion data) {
@@ -4745,6 +4784,9 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
       durationMinutes: data.durationMinutes.present
           ? data.durationMinutes.value
           : this.durationMinutes,
+      distanceMeters: data.distanceMeters.present
+          ? data.distanceMeters.value
+          : this.distanceMeters,
       notes: data.notes.present ? data.notes.value : this.notes,
     );
   }
@@ -4758,6 +4800,7 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
           ..write('typeId: $typeId, ')
           ..write('startedAt: $startedAt, ')
           ..write('durationMinutes: $durationMinutes, ')
+          ..write('distanceMeters: $distanceMeters, ')
           ..write('notes: $notes')
           ..write(')'))
         .toString();
@@ -4771,6 +4814,7 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
     typeId,
     startedAt,
     durationMinutes,
+    distanceMeters,
     notes,
   );
   @override
@@ -4783,6 +4827,7 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
           other.typeId == this.typeId &&
           other.startedAt == this.startedAt &&
           other.durationMinutes == this.durationMinutes &&
+          other.distanceMeters == this.distanceMeters &&
           other.notes == this.notes);
 }
 
@@ -4793,6 +4838,7 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
   final Value<String> typeId;
   final Value<DateTime> startedAt;
   final Value<int?> durationMinutes;
+  final Value<int?> distanceMeters;
   final Value<String?> notes;
   final Value<int> rowid;
   const ActivitiesCompanion({
@@ -4802,6 +4848,7 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
     this.typeId = const Value.absent(),
     this.startedAt = const Value.absent(),
     this.durationMinutes = const Value.absent(),
+    this.distanceMeters = const Value.absent(),
     this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -4812,6 +4859,7 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
     required String typeId,
     required DateTime startedAt,
     this.durationMinutes = const Value.absent(),
+    this.distanceMeters = const Value.absent(),
     this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : updatedAt = Value(updatedAt),
@@ -4825,6 +4873,7 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
     Expression<String>? typeId,
     Expression<DateTime>? startedAt,
     Expression<int>? durationMinutes,
+    Expression<int>? distanceMeters,
     Expression<String>? notes,
     Expression<int>? rowid,
   }) {
@@ -4835,6 +4884,7 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
       if (typeId != null) 'type_id': typeId,
       if (startedAt != null) 'started_at': startedAt,
       if (durationMinutes != null) 'duration_minutes': durationMinutes,
+      if (distanceMeters != null) 'distance_meters': distanceMeters,
       if (notes != null) 'notes': notes,
       if (rowid != null) 'rowid': rowid,
     });
@@ -4847,6 +4897,7 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
     Value<String>? typeId,
     Value<DateTime>? startedAt,
     Value<int?>? durationMinutes,
+    Value<int?>? distanceMeters,
     Value<String?>? notes,
     Value<int>? rowid,
   }) {
@@ -4857,6 +4908,7 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
       typeId: typeId ?? this.typeId,
       startedAt: startedAt ?? this.startedAt,
       durationMinutes: durationMinutes ?? this.durationMinutes,
+      distanceMeters: distanceMeters ?? this.distanceMeters,
       notes: notes ?? this.notes,
       rowid: rowid ?? this.rowid,
     );
@@ -4883,6 +4935,9 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
     if (durationMinutes.present) {
       map['duration_minutes'] = Variable<int>(durationMinutes.value);
     }
+    if (distanceMeters.present) {
+      map['distance_meters'] = Variable<int>(distanceMeters.value);
+    }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
@@ -4901,6 +4956,7 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
           ..write('typeId: $typeId, ')
           ..write('startedAt: $startedAt, ')
           ..write('durationMinutes: $durationMinutes, ')
+          ..write('distanceMeters: $distanceMeters, ')
           ..write('notes: $notes, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -8484,6 +8540,7 @@ typedef $$ActivitiesTableCreateCompanionBuilder = ActivitiesCompanion Function({
   required String typeId,
   required DateTime startedAt,
   Value<int?> durationMinutes,
+  Value<int?> distanceMeters,
   Value<String?> notes,
   Value<int> rowid,
 });
@@ -8494,6 +8551,7 @@ typedef $$ActivitiesTableUpdateCompanionBuilder = ActivitiesCompanion Function({
   Value<String> typeId,
   Value<DateTime> startedAt,
   Value<int?> durationMinutes,
+  Value<int?> distanceMeters,
   Value<String?> notes,
   Value<int> rowid,
 });
@@ -8534,6 +8592,11 @@ class $$ActivitiesTableFilterComposer
 
   ColumnFilters<int> get durationMinutes => $composableBuilder(
     column: $table.durationMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get distanceMeters => $composableBuilder(
+    column: $table.distanceMeters,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8582,6 +8645,11 @@ class $$ActivitiesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get distanceMeters => $composableBuilder(
+    column: $table.distanceMeters,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get notes => $composableBuilder(
     column: $table.notes,
     builder: (column) => ColumnOrderings(column),
@@ -8614,6 +8682,11 @@ class $$ActivitiesTableAnnotationComposer
 
   GeneratedColumn<int> get durationMinutes => $composableBuilder(
     column: $table.durationMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get distanceMeters => $composableBuilder(
+    column: $table.distanceMeters,
     builder: (column) => column,
   );
 
@@ -8658,6 +8731,7 @@ class $$ActivitiesTableTableManager
                 Value<String> typeId = const Value.absent(),
                 Value<DateTime> startedAt = const Value.absent(),
                 Value<int?> durationMinutes = const Value.absent(),
+                Value<int?> distanceMeters = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ActivitiesCompanion(
@@ -8667,6 +8741,7 @@ class $$ActivitiesTableTableManager
                 typeId: typeId,
                 startedAt: startedAt,
                 durationMinutes: durationMinutes,
+                distanceMeters: distanceMeters,
                 notes: notes,
                 rowid: rowid,
               ),
@@ -8678,6 +8753,7 @@ class $$ActivitiesTableTableManager
                 required String typeId,
                 required DateTime startedAt,
                 Value<int?> durationMinutes = const Value.absent(),
+                Value<int?> distanceMeters = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ActivitiesCompanion.insert(
@@ -8687,6 +8763,7 @@ class $$ActivitiesTableTableManager
                 typeId: typeId,
                 startedAt: startedAt,
                 durationMinutes: durationMinutes,
+                distanceMeters: distanceMeters,
                 notes: notes,
                 rowid: rowid,
               ),

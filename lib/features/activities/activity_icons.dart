@@ -9,5 +9,6 @@ IconData activityIcon(String typeId) => switch (typeId) {
   'cycling' => Icons.directions_bike,
   'snowboarding' => Icons.snowboarding,
   'running' => Icons.directions_run,
+  'pilates' => Icons.self_improvement,
   _ => Icons.sports,
 };

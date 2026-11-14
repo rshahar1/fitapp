@@ -16,6 +16,7 @@ class ActivityRepository {
     required String typeId,
     required DateTime startedAt,
     int? durationMinutes,
+    int? distanceMeters,
     String? notes,
   }) async {
     final now = _db.now();
@@ -24,6 +25,7 @@ class ActivityRepository {
       startedAt: startedAt,
       now: now,
       durationMinutes: durationMinutes,
+      distanceMeters: distanceMeters,
       notes: notes,
     );
     final id = _uuid.v4();
@@ -35,6 +37,7 @@ class ActivityRepository {
             typeId: v.typeId,
             startedAt: v.startedAt.toUtc(),
             durationMinutes: Value(v.durationMinutes),
+            distanceMeters: Value(v.distanceMeters),
             notes: Value(v.notes),
             updatedAt: now,
           ),
@@ -49,6 +52,7 @@ class ActivityRepository {
     required String typeId,
     required DateTime startedAt,
     int? durationMinutes,
+    int? distanceMeters,
     String? notes,
   }) => _db.transaction(() async {
     final existing = await activity(id);
@@ -59,6 +63,7 @@ class ActivityRepository {
       startedAt: startedAt,
       now: now,
       durationMinutes: durationMinutes,
+      distanceMeters: distanceMeters,
       notes: notes,
       allowUnknownType: typeId == existing.typeId,
     );
@@ -67,6 +72,7 @@ class ActivityRepository {
         typeId: Value(v.typeId),
         startedAt: Value(v.startedAt.toUtc()),
         durationMinutes: Value(v.durationMinutes),
+        distanceMeters: Value(v.distanceMeters),
         notes: Value(v.notes),
         updatedAt: Value(now),
         dirty: const Value(true),

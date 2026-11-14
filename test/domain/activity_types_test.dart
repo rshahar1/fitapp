@@ -8,17 +8,19 @@ void main() {
       'cycling',
       'snowboarding',
       'running',
+      'pilates',
     ]);
     expect(activityTypes.map((t) => t.label), [
       'Functional training',
       'Cycling',
       'Snowboarding',
       'Running',
+      'Pilates',
     ]);
   });
 
   test('ids are unique', () {
-    expect(activityTypes.map((t) => t.id).toSet(), hasLength(4));
+    expect(activityTypes.map((t) => t.id).toSet(), hasLength(5));
   });
 
   test('lookup by id; unknown -> null', () {
@@ -123,5 +125,70 @@ void main() {
         throwsArgumentError,
       );
     });
+  });
+
+  test('hasDistance only for running and cycling', () {
+    expect(activityTypes.where((t) => t.hasDistance).map((t) => t.id), [
+      'cycling',
+      'running',
+    ]);
+  });
+
+  group('distance validation', () {
+    final today = DateTime(2026, 11, 13, 9);
+    ValidActivity v(String type, int? m, {bool unknown = false}) =>
+        validateActivity(
+          typeId: type,
+          startedAt: today,
+          now: today,
+          distanceMeters: m,
+          allowUnknownType: unknown,
+        );
+
+    test('1..1,000,000 for distance types', () {
+      expect(v('running', 1).distanceMeters, 1);
+      expect(v('cycling', 1000000).distanceMeters, 1000000);
+      expect(v('running', null).distanceMeters, isNull);
+      for (final bad in [0, -1, 1000001]) {
+        expect(() => v('running', bad), throwsArgumentError);
+      }
+    });
+
+    test('rejected on known types without distance', () {
+      expect(() => v('snowboarding', 5000), throwsArgumentError);
+      expect(() => v('pilates', 5000), throwsArgumentError);
+    });
+
+    test('unknown types may keep a distance', () {
+      expect(v('retired', 5000, unknown: true).distanceMeters, 5000);
+    });
+  });
+
+  test('parseDistanceKm', () {
+    expect(parseDistanceKm('5.2'), 5200);
+    expect(parseDistanceKm(' 5,2 '), 5200);
+    expect(parseDistanceKm('10'), 10000);
+    expect(parseDistanceKm('5.234'), 5230);
+    expect(parseDistanceKm('0.005'), 10);
+    expect(parseDistanceKm('0.004'), isNull);
+    expect(parseDistanceKm('0'), isNull);
+    expect(parseDistanceKm(''), isNull);
+    expect(parseDistanceKm('abc'), isNull);
+    expect(parseDistanceKm('-3'), isNull);
+    expect(parseDistanceKm('1000'), 1000000);
+    expect(parseDistanceKm('1000.01'), isNull);
+  });
+
+  test('formatDistanceKm', () {
+    expect(formatDistanceKm(5200), '5.2 km');
+    expect(formatDistanceKm(36750), '36.75 km');
+    expect(formatDistanceKm(10000), '10 km');
+    expect(formatDistanceKm(10), '0.01 km');
+  });
+
+  test('formatPace and formatSpeed', () {
+    expect(formatPace(5200, 28), '5:23 /km');
+    expect(formatPace(10000, 50), '5:00 /km');
+    expect(formatSpeed(36750, 90), '24.5 km/h');
   });
 }

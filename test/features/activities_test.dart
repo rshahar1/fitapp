@@ -145,6 +145,107 @@ void main() {
     await unmount(tester);
   });
 
+  testWidgets('Pilates chip is offered and has no distance', (tester) async {
+    await pump(tester, const TrainScreen());
+    await openSheet(tester);
+    expect(find.text('Pilates'), findsOneWidget);
+    await tester.tap(find.text('Pilates'));
+    await tester.pump();
+    expect(find.text('DISTANCE'), findsNothing);
+    await save(tester);
+    expect((await activities(tester)).single.typeId, 'pilates');
+    await unmount(tester);
+  });
+
+  testWidgets('Distance section only for running and cycling', (tester) async {
+    await pump(tester, const TrainScreen());
+    await openSheet(tester);
+    expect(find.text('DISTANCE'), findsNothing);
+    await tester.tap(find.text('Snowboarding'));
+    await tester.pump();
+    expect(find.text('DISTANCE'), findsNothing);
+    await tester.tap(find.text('Running'));
+    await tester.pump();
+    expect(find.text('DISTANCE'), findsOneWidget);
+    await unmount(tester);
+  });
+
+  testWidgets('distance typed in km is stored in metres', (tester) async {
+    await pump(tester, const TrainScreen());
+    await openSheet(tester);
+    await tester.tap(find.text('Running'));
+    await tester.pump();
+    // The second "Set" belongs to Distance (Duration is first).
+    await tester.tap(find.text('Set').last);
+    await tester.pump();
+    await tester.enterText(find.byType(TextField).first, '5,2');
+    await tester.pump();
+    await save(tester);
+    expect((await activities(tester)).single.distanceMeters, 5200);
+    await unmount(tester);
+  });
+
+  testWidgets('invalid distance disables Save', (tester) async {
+    await pump(tester, const TrainScreen());
+    await openSheet(tester);
+    await tester.tap(find.text('Cycling'));
+    await tester.pump();
+    await tester.tap(find.text('Set').last);
+    await tester.pump();
+    expect(saveEnabled(tester), isFalse);
+    await tester.enterText(find.byType(TextField).first, 'abc');
+    await tester.pump();
+    expect(saveEnabled(tester), isFalse);
+    expect(find.text('Enter a distance up to 1000 km'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).first, '12.5');
+    await tester.pump();
+    expect(saveEnabled(tester), isTrue);
+    await unmount(tester);
+  });
+
+  testWidgets('edit pre-fills distance; switching to Pilates drops it', (
+    tester,
+  ) async {
+    await tester.runAsync(
+      () => ActivityRepository(db).create(
+        typeId: 'running',
+        startedAt: DateTime.now(),
+        durationMinutes: 28,
+        distanceMeters: 5200,
+      ),
+    );
+    await pump(tester, const HistoryScreen());
+    expect(find.text('Running · 5.2 km · 28 min · 5:23 /km'), findsOneWidget);
+    await tester.tap(find.text('Running · 5.2 km · 28 min · 5:23 /km'));
+    await tester.pumpAndSettle();
+    expect(find.text('5.2'), findsOneWidget);
+    await tester.tap(find.text('Pilates'));
+    await tester.pump();
+    await save(tester);
+    final a = (await activities(tester)).single;
+    expect(a.typeId, 'pilates');
+    expect(a.distanceMeters, isNull);
+    await unmount(tester);
+  });
+
+  testWidgets('History shows cycling speed', (tester) async {
+    await tester.runAsync(
+      () => ActivityRepository(db).create(
+        typeId: 'cycling',
+        startedAt: DateTime.now(),
+        durationMinutes: 90,
+        distanceMeters: 36750,
+        notes: 'hills',
+      ),
+    );
+    await pump(tester, const HistoryScreen());
+    expect(
+      find.text('Cycling · 36.75 km · 1 h 30 min · 24.5 km/h · hills'),
+      findsOneWidget,
+    );
+    await unmount(tester);
+  });
+
   Future<void> seedHistory(WidgetTester tester) => tester.runAsync(() async {
     final repo = WorkoutRepository(db);
     final w = await repo.startWorkout();

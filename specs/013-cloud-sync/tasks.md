@@ -35,13 +35,13 @@ description: "Task list for cloud backup and sync"
 ### Sync engine (tests first)
 
 - [x] T015 Pure rules + tests first — `lib/domain/sync_rules.dart`: `resolveIncoming` (data-model §6 table), `suffixName`, `pickSetSurvivor`; test/domain/sync_rules_test.dart
-- [ ] T016 Table registry `lib/data/sync/sync_table.dart`: local↔server mapping, FK order, row (de)serialisers (incl. exercises split into custom/overrides, `deleted_at`→`archived_at`, settings)
-- [ ] T017 `SyncRemote` interface + `PushBatch`/`PushResult` — lib/data/sync/sync_remote.dart; `FakeSyncRemote` in test/data/sync/fake_sync_remote.dart mirroring server rules
-- [ ] T018 Tests then `PushCollector` (pages ≤ 500, FK order, deletes first, clear-if-unchanged, rejected stay dirty) — lib/data/sync/push_collector.dart
-- [ ] T019 Tests then `PullApplier` (apply rules, collisions, tombstones, cursors with overlap, page transaction) — lib/data/sync/pull_applier.dart
-- [ ] T020 Tests then `SyncService` (pull→push cycle, single-flight, debounce, status stream, never throws) — lib/data/sync/sync_service.dart
-- [ ] T021 Two-device convergence tests (create/edit/conflict/delete/offline) — test/data/sync/two_device_test.dart (SC-007)
-- [ ] T022 Milestone gate: format, analyze, test, db tests; commit
+- [x] T016 Table registry `lib/data/sync/sync_table.dart`: local↔server mapping, FK order, row (de)serialisers (incl. exercises split into custom/overrides, `deleted_at`→`archived_at`, settings)
+- [x] T017 `SyncRemote` interface + `PushBatch`/`PushResult` — lib/data/sync/sync_remote.dart; `FakeSyncRemote` in test/data/sync/fake_sync_remote.dart mirroring server rules
+- [x] T018 Tests then `PushCollector` (pages ≤ 500, FK order, deletes first, clear-if-unchanged, rejected stay dirty) — lib/data/sync/push_collector.dart
+- [x] T019 Tests then `PullApplier` (apply rules, collisions, tombstones, cursors with overlap, page transaction) — lib/data/sync/pull_applier.dart
+- [x] T020 Tests then `SyncService` (pull→push cycle, single-flight, debounce, status stream, never throws) — lib/data/sync/sync_service.dart
+- [x] T021 Two-device convergence tests (create/edit/conflict/delete/offline) — test/data/sync/two_device_test.dart (SC-007)
+- [x] T022 Milestone gate: format, analyze, test, db tests; commit
 
 ## Phase 3: US1 — Turn on backup with Google (P1) 🎯 MVP
 

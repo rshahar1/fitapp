@@ -54,3 +54,13 @@ description: "Task list for live GPS tracking (running, cycling)"
 - [x] T027 Constitution 1.4.0 (VII amendment), PRD v2.6, README, docs/ARCHITECTURE.md, CLAUDE.md active feature; mark proposal phase A as approved/implemented
 - [x] T028 Gates: format, analyze, `flutter test -j 1`, `flutter build apk --debug`
 - [ ] T029 (owner) On-phone validation: 30-minute run with screen locked, a forced kill mid-run, a ride, airplane-mode run
+
+## Phase 7: Owner validation fixes (2026-11-14)
+
+Owner report: (a) no map visible when starting without GPS; (b) after enabling GPS the setup screen stays on "Wait for a good GPS signal…".
+
+- [x] T030 `LocationSource.serviceStatus()` stream + `lastKnownPosition()`; controller re-listens when location is switched on (quick settings, no app resume) and marks the service off when switched off
+- [x] T031 Controller retries the position stream after an error (2 s backoff) while acquiring or live, instead of going silent
+- [x] T032 Setup screen shows the map centred on the latest fix or the last known position (world view + "Finding your location" only when neither exists); after 20 s without a good fix the hint explains indoor GPS and promotes "Start anyway"
+- [x] T033 `RouteMap` moves the camera to the first known point when it started without one (setup and live screens); live screen passes the current position
+- [x] T034 Tests for T030–T033; gates (release APK rebuild with `env/dev.json` left to the owner)

@@ -8,7 +8,9 @@ import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/tracking/location_source.dart';
 import 'package:fitapp/domain/activity_types.dart';
 import 'package:fitapp/features/activities/activity_sheet.dart';
+import 'package:fitapp/features/tracking/live_track_screen.dart' show toLatLng;
 import 'package:fitapp/features/tracking/tracking_controller.dart';
+import 'package:fitapp/features/tracking/widgets/route_map.dart';
 import 'package:fitapp/widgets/guard.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,6 +36,10 @@ class _TrackSetupScreenState extends ConsumerState<TrackSetupScreen>
   bool _checking = true;
   bool _started = false;
   bool _busy = false;
+  Timer? _tick;
+
+  /// How long without a good fix before the indoor hint appears.
+  static const _lowSignalAfter = Duration(seconds: 20);
 
   String? get _typeId {
     final id = widget.typeId;
@@ -48,6 +54,9 @@ class _TrackSetupScreenState extends ConsumerState<TrackSetupScreen>
     WidgetsBinding.instance.addObserver(this);
     _controller = ref.read(trackingControllerProvider.notifier);
     unawaited(_init());
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
   }
 
   Future<void> _init() async {
@@ -91,6 +100,7 @@ class _TrackSetupScreenState extends ConsumerState<TrackSetupScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _tick?.cancel();
     if (!_started) unawaited(_controller.cancelAcquiring());
     super.dispose();
   }
@@ -136,6 +146,10 @@ class _TrackSetupScreenState extends ConsumerState<TrackSetupScreen>
     } else if (state is TrackingAcquiring) {
       body = _Acquiring(
         state: state,
+        lowSignal:
+            !state.hasGoodFix &&
+            ref.read(clockProvider)().toUtc().difference(state.since) >=
+                _lowSignalAfter,
         busy: _busy,
         onStart: () => _start(anyway: false),
         onStartAnyway: () => _start(anyway: true),
@@ -205,6 +219,7 @@ class _Rationale extends StatelessWidget {
 class _Acquiring extends StatelessWidget {
   const new({
     required this.state,
+    required this.lowSignal,
     required this.busy,
     required this.onStart,
     required this.onStartAnyway,
@@ -214,6 +229,9 @@ class _Acquiring extends StatelessWidget {
   });
 
   final TrackingAcquiring state;
+
+  /// No good fix for a while: explain and promote "Start anyway".
+  final bool lowSignal;
   final bool busy;
   final VoidCallback onStart;
   final VoidCallback onStartAnyway;
@@ -287,7 +305,17 @@ class _Acquiring extends StatelessWidget {
               ],
             ),
           ),
-          const Spacer(),
+          const SizedBox(height: Space.m),
+          Expanded(
+            child: RouteMap(
+              route: const [],
+              current: state.position == null
+                  ? null
+                  : toLatLng(state.position!),
+              followCurrent: true,
+            ),
+          ),
+          const SizedBox(height: Space.m),
           AppButton(
             label: 'Turn on location',
             expand: true,
@@ -303,31 +331,73 @@ class _Acquiring extends StatelessWidget {
         ],
       );
     }
+    final position = state.position;
+    final hint = state.hasGoodFix
+        ? 'Ready when you are.'
+        : lowSignal
+        ? 'GPS accuracy is low here (indoors?). Head outside, or tap Start '
+              'anyway — the first inaccurate points are skipped.'
+        : 'Wait for a good GPS signal, ideally outdoors with a clear sky.';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: Space.l),
+        Expanded(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: Sizes.mapMin),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                RouteMap(
+                  route: const [],
+                  current: position == null ? null : toLatLng(position),
+                  followCurrent: true,
+                ),
+                if (position == null)
+                  Center(
+                    child: Text(
+                      'Finding your location…',
+                      style: text.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: Space.m),
         Center(child: _AccuracyChip(accuracy: state.accuracy)),
         const SizedBox(height: Space.m),
         Text(
-          state.hasGoodFix ? 'Ready when you are.' : 'Wait for a good GPS signal, ideally outdoors with a clear sky.',
+          hint,
           textAlign: TextAlign.center,
           style: text.bodyMedium?.copyWith(color: AppColors.textSecondary),
         ),
-        const Spacer(),
+        const SizedBox(height: Space.m),
         AppButton(
           label: 'Start',
           icon: Icons.play_arrow,
           expand: true,
           onPressed: state.hasGoodFix && !busy ? onStart : null,
         ),
-        TextButton(
-          onPressed: busy ? null : onStartAnyway,
-          style: TextButton.styleFrom(
-            minimumSize: const Size.fromHeight(Sizes.tap),
+        if (lowSignal && !state.hasGoodFix)
+          Padding(
+            padding: const EdgeInsets.only(top: Space.s),
+            child: AppButton(
+              label: 'Start anyway',
+              expand: true,
+              variant: AppButtonVariant.secondary,
+              onPressed: busy ? null : onStartAnyway,
+            ),
+          )
+        else
+          TextButton(
+            onPressed: busy ? null : onStartAnyway,
+            style: TextButton.styleFrom(
+              minimumSize: const Size.fromHeight(Sizes.tap),
+            ),
+            child: const Text('Start anyway'),
           ),
-          child: const Text('Start anyway'),
-        ),
       ],
     );
   }

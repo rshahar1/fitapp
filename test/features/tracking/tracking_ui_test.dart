@@ -248,6 +248,7 @@ void main() {
       unawaited(router.push(Routes.newTrack('cycling')));
       await settle(tester);
       expect(find.text('Location is turned off'), findsOneWidget);
+      expect(find.byType(RouteMap), findsOneWidget);
       await tester.tap(find.text('TURN ON LOCATION'));
       await tester.pump();
       expect(source.locationSettingsOpened, 1);
@@ -273,6 +274,48 @@ void main() {
       source.emit(fix(1, accuracy: 6));
       await tester.pump();
       expect(find.text('GPS ready (±6 m)'), findsOneWidget);
+      await unmount(tester);
+    });
+
+    testWidgets('shows the map and Finding your location without a fix', (
+      tester,
+    ) async {
+      await pumpApp(tester);
+      unawaited(router.push(Routes.newTrack('running')));
+      await settle(tester);
+      expect(find.bySemanticsLabel('Route map'), findsOneWidget);
+      expect(find.text('Finding your location…'), findsOneWidget);
+      source.emit(fix(0, accuracy: 30));
+      await tester.pump();
+      expect(find.text('Finding your location…'), findsNothing);
+      await unmount(tester);
+    });
+
+    testWidgets('last known position hides Finding your location', (
+      tester,
+    ) async {
+      source.lastKnown = fix(0, accuracy: 500);
+      await pumpApp(tester);
+      unawaited(router.push(Routes.newTrack('running')));
+      await settle(tester);
+      expect(find.bySemanticsLabel('Route map'), findsOneWidget);
+      expect(find.text('Finding your location…'), findsNothing);
+      expect(find.text('Searching for GPS'), findsOneWidget);
+      await unmount(tester);
+    });
+
+    testWidgets('after 20 s without a good fix the hint changes', (
+      tester,
+    ) async {
+      await pumpApp(tester);
+      unawaited(router.push(Routes.newTrack('running')));
+      await settle(tester);
+      expect(find.textContaining('GPS accuracy is low'), findsNothing);
+      expect(find.text('Start anyway'), findsOneWidget);
+      now = now.add(const Duration(seconds: 21));
+      await tester.pump(const Duration(seconds: 2));
+      expect(find.textContaining('GPS accuracy is low here'), findsOneWidget);
+      expect(find.text('START ANYWAY'), findsOneWidget);
       await unmount(tester);
     });
 

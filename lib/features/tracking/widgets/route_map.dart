@@ -111,6 +111,9 @@ class _TileMapState extends State<_TileMap> {
   final _controller = MapController();
   bool _ready = false;
 
+  /// Whether the camera sits on a real point (not the empty world view).
+  late bool _placed = _firstPoint != null;
+
   static const _padding = EdgeInsets.all(Space.l);
   static const _fallbackZoom = 16.0;
 
@@ -118,6 +121,8 @@ class _TileMapState extends State<_TileMap> {
     ...widget.route,
     if (widget.current != null) widget.current!,
   ];
+
+  LatLng? get _firstPoint => widget.current ?? widget.route.lastOrNull;
 
   CameraFit? _fit() {
     final all = _all;
@@ -129,6 +134,7 @@ class _TileMapState extends State<_TileMap> {
   void didUpdateWidget(_TileMap old) {
     super.didUpdateWidget(old);
     if (!_ready) return;
+    _placeCamera();
     final current = widget.current;
     if (widget.followCurrent && current != null && current != old.current) {
       _controller.move(current, _controller.camera.zoom);
@@ -137,8 +143,21 @@ class _TileMapState extends State<_TileMap> {
         (widget.route.length != old.route.length ||
             widget.current != old.current)) {
       final fit = _fit();
-      if (fit != null) _controller.fitCamera(fit);
+      if (fit != null) {
+        _controller.fitCamera(fit);
+      } else if (_firstPoint case final p?) {
+        _controller.move(p, _fallbackZoom);
+      }
     }
+  }
+
+  /// Leaves the empty world view once the first real point exists.
+  void _placeCamera() {
+    if (_placed) return;
+    final p = _firstPoint;
+    if (p == null) return;
+    _placed = true;
+    _controller.move(p, _fallbackZoom);
   }
 
   @override
@@ -158,7 +177,14 @@ class _TileMapState extends State<_TileMap> {
         initialZoom: centre == null ? 2 : _fallbackZoom,
         initialCameraFit: fit,
         backgroundColor: AppColors.surface,
-        onMapReady: () => _ready = true,
+        onMapReady: () {
+          _ready = true;
+          if (!_placed) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) _placeCamera();
+            });
+          }
+        },
         interactionOptions: InteractionOptions(
           flags: widget.interactive
               ? InteractiveFlag.all & ~InteractiveFlag.rotate

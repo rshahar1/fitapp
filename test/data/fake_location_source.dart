@@ -21,6 +21,14 @@ class FakeLocationSource implements LocationSource {
   String? lastNotificationTitle;
   String? lastNotificationText;
 
+  /// What [lastKnownPosition] yields.
+  TrackSample? lastKnown;
+
+  /// How many times [positions] was subscribed to.
+  int positionsCalls = 0;
+
+  final _serviceController = StreamController<bool>.broadcast(sync: true);
+
   StreamController<TrackSample>? _controller;
 
   /// Whether someone is currently listening to [positions].
@@ -31,6 +39,24 @@ class FakeLocationSource implements LocationSource {
     final c = _controller;
     if (c != null && c.hasListener) c.add(sample);
   }
+
+  /// Fails the current position stream with [error] (no-op without listener).
+  void emitError(Object error) {
+    final c = _controller;
+    if (c != null && c.hasListener) c.addError(error);
+  }
+
+  /// Ends the current position stream.
+  void closeStream() => unawaited(_controller?.close());
+
+  /// Switches the location service and notifies [serviceStatus] listeners.
+  void setService(bool enabled) {
+    service = enabled;
+    _serviceController.add(enabled);
+  }
+
+  /// Whether someone listens to [serviceStatus].
+  bool get watchingService => _serviceController.hasListener;
 
   /// Emits every sample of [samples] in order.
   void replay(Iterable<TrackSample> samples) => samples.forEach(emit);
@@ -47,6 +73,12 @@ class FakeLocationSource implements LocationSource {
   Future<bool> serviceEnabled() async => service;
 
   @override
+  Stream<bool> serviceStatus() => _serviceController.stream;
+
+  @override
+  Future<TrackSample?> lastKnownPosition() async => lastKnown;
+
+  @override
   Future<void> openAppSettings() async => appSettingsOpened++;
 
   @override
@@ -59,6 +91,7 @@ class FakeLocationSource implements LocationSource {
   }) {
     lastNotificationTitle = notificationTitle;
     lastNotificationText = notificationText;
+    positionsCalls++;
     final c = StreamController<TrackSample>(sync: true);
     _controller = c;
     return c.stream;

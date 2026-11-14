@@ -35,6 +35,9 @@ void main() {
         clockProvider.overrideWithValue(() => now),
         trackingFlushIntervalProvider.overrideWithValue(flush),
         trackingFlushCountProvider.overrideWithValue(count),
+        trackingRetryDelayProvider.overrideWithValue(
+          const Duration(milliseconds: 30),
+        ),
       ],
     );
     return container..listen(trackingControllerProvider, (_, _) {});
@@ -258,5 +261,104 @@ void main() {
     c = makeContainer();
     await ctl().recover();
     expect((ui() as TrackingLive).points, hasLength(10));
+  });
+
+  group('location service and retry', () {
+    test('switching location on while acquiring starts listening', () async {
+      source.service = false;
+      await ctl().prepare('running');
+      var s = ui() as TrackingAcquiring;
+      expect(s.serviceEnabled, isFalse);
+      expect(source.listening, isFalse);
+
+      source.setService(true);
+      s = ui() as TrackingAcquiring;
+      expect(s.serviceEnabled, isTrue);
+      expect(source.listening, isTrue);
+      source.emit(_fix(0, accuracy: 8));
+      expect((ui() as TrackingAcquiring).hasGoodFix, isTrue);
+    });
+
+    test('switching location off while acquiring is reflected', () async {
+      await ctl().prepare('running');
+      expect(source.listening, isTrue);
+      source.setService(false);
+      expect((ui() as TrackingAcquiring).serviceEnabled, isFalse);
+      expect(source.listening, isFalse);
+      source.setService(true);
+      expect(source.listening, isTrue);
+    });
+
+    test('no listening without permission when the service comes on', () async {
+      source
+        ..permission = LocationPermissionState.deniedForever
+        ..service = false;
+      await ctl().prepare('running');
+      source.setService(true);
+      expect(source.listening, isFalse);
+    });
+
+    test('a stream error is retried after the backoff', () async {
+      await ctl().prepare('running');
+      expect(source.positionsCalls, 1);
+      source.emitError(Exception('platform'));
+      expect(source.listening, isFalse);
+      await settle();
+      expect(source.positionsCalls, 2);
+      expect(source.listening, isTrue);
+      source.emit(_fix(0, accuracy: 7));
+      expect((ui() as TrackingAcquiring).accuracy, 7);
+    });
+
+    test('a closed stream is retried while live', () async {
+      await goLive();
+      source.closeStream();
+      await settle();
+      expect(source.positionsCalls, 2);
+      source.emit(_fix(1));
+      expect(ui(), isA<TrackingLive>());
+    });
+
+    test('no retry spin without permission', () async {
+      await ctl().prepare('running');
+      source
+        ..permission = LocationPermissionState.deniedForever
+        ..emitError(Exception('denied'));
+      await settle();
+      expect(source.positionsCalls, 1);
+      final s = ui() as TrackingAcquiring;
+      expect(s.permission, LocationPermissionState.deniedForever);
+    });
+
+    test('last known position seeds position, not accuracy', () async {
+      source.lastKnown = _fix(0, accuracy: 4);
+      await ctl().prepare('running');
+      final s = ui() as TrackingAcquiring;
+      expect(s.position, isNotNull);
+      expect(s.position!.lat, closeTo(32.08, 1e-9));
+      expect(s.accuracy, isNull);
+      expect(s.hasGoodFix, isFalse);
+      expect(ctl().startSession(), throwsStateError);
+      source.emit(_fix(1, accuracy: 5));
+      expect((ui() as TrackingAcquiring).hasGoodFix, isTrue);
+    });
+
+    test('live: location off sets the flag; position follows fixes', () async {
+      await goLive();
+      expect((ui() as TrackingLive).serviceEnabled, isTrue);
+      source.setService(false);
+      expect((ui() as TrackingLive).serviceEnabled, isFalse);
+      source.setService(true);
+      expect((ui() as TrackingLive).serviceEnabled, isTrue);
+      source.emit(_fix(3, accuracy: 90));
+      expect((ui() as TrackingLive).position, isNotNull);
+    });
+
+    test('service subscription is cancelled on discard', () async {
+      await ctl().prepare('running');
+      expect(source.watchingService, isTrue);
+      await ctl().cancelAcquiring();
+      expect(source.watchingService, isFalse);
+    });
   });
 }

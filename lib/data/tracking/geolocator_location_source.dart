@@ -28,6 +28,21 @@ class GeolocatorLocationSource implements LocationSource {
   Future<bool> serviceEnabled() => Geolocator.isLocationServiceEnabled();
 
   @override
+  Stream<bool> serviceStatus() => Geolocator.getServiceStatusStream().map(
+    (status) => status == ServiceStatus.enabled,
+  );
+
+  @override
+  Future<TrackSample?> lastKnownPosition() async {
+    try {
+      final p = await Geolocator.getLastKnownPosition();
+      return p == null ? null : _toSample(p);
+    } on Object {
+      return null;
+    }
+  }
+
+  @override
   Future<void> openAppSettings() => Geolocator.openAppSettings();
 
   @override

@@ -13,6 +13,14 @@ abstract interface class LocationSource {
   /// Whether the device's location service is switched on.
   Future<bool> serviceEnabled();
 
+  /// Emits whether the location service is on, each time it is switched
+  /// (e.g. from the quick-settings shade, which does not resume the app).
+  Stream<bool> serviceStatus();
+
+  /// The last position the OS knows, or null when none or unsupported. May be
+  /// stale: use it to centre a map, never to judge accuracy.
+  Future<TrackSample?> lastKnownPosition();
+
   Future<void> openAppSettings();
 
   Future<void> openLocationSettings();

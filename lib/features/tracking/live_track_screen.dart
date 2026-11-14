@@ -100,7 +100,7 @@ class _LiveTrackScreenState extends ConsumerState<LiveTrackScreen> {
     final ctl = ref.read(trackingControllerProvider.notifier);
     final track = state.state;
     final paused = track.manualPaused;
-    final last = state.points.lastOrNull;
+    final here = state.position ?? state.points.lastOrNull;
     return PopScope(
       canPop: !_locked,
       child: Scaffold(
@@ -119,6 +119,7 @@ class _LiveTrackScreenState extends ConsumerState<LiveTrackScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _Hero(typeId: state.typeId, track: track),
+              if (!state.serviceEnabled) const _LocationOffBanner(),
               _StatusRow(track: track),
               _Tiles(typeId: state.typeId, track: track),
               const SizedBox(height: Space.m),
@@ -127,7 +128,7 @@ class _LiveTrackScreenState extends ConsumerState<LiveTrackScreen> {
                   constraints: const BoxConstraints(minHeight: Sizes.mapMin),
                   child: RouteMap(
                     route: [for (final p in state.points) toLatLng(p)],
-                    current: last == null ? null : toLatLng(last),
+                    current: here == null ? null : toLatLng(here),
                     followCurrent: true,
                   ),
                 ),
@@ -374,6 +375,45 @@ class _Tiles extends ConsumerWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Shown while the device's location service is off during a session.
+class _LocationOffBanner extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: 'Location is off',
+      excludeSemantics: true,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: Space.s),
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            color: AppColors.surfaceHigh,
+            borderRadius: BorderRadius.all(Radius.circular(Radii.card)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(Space.s),
+            child: Row(
+              children: [
+                const Icon(Icons.location_disabled, color: AppColors.danger),
+                const SizedBox(width: Space.s),
+                Expanded(
+                  child: Text(
+                    'Location is off. Turn it on to keep tracking.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

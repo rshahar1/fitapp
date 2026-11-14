@@ -332,7 +332,10 @@ class _Acquiring extends StatelessWidget {
       );
     }
     final position = state.position;
-    final hint = state.hasGoodFix
+    final error = state.error;
+    final hint = error != null
+        ? 'GPS error, retrying: $error'
+        : state.hasGoodFix
         ? 'Ready when you are.'
         : lowSignal
         ? 'GPS accuracy is low here (indoors?). Head outside, or tap Start '

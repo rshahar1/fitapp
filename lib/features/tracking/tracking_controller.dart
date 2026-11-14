@@ -45,9 +45,13 @@ class TrackingAcquiring extends TrackingUiState {
     required this.since,
     this.accuracy,
     this.position,
+    this.error,
   });
 
   final String typeId;
+
+  /// Last location error (shown so failures are visible), cleared by a fix.
+  final String? error;
 
   /// When acquiring started (for the "still no good signal" hint).
   final DateTime since;
@@ -315,6 +319,10 @@ class TrackingController extends Notifier<TrackingUiState> {
           _onFix,
           onError: (Object e, StackTrace st) {
             _logError(e, st);
+            final s = state;
+            if (s is TrackingAcquiring) {
+              state = _acquiring(s, error: e.toString());
+            }
             _scheduleRetry();
           },
           onDone: _scheduleRetry,
@@ -397,6 +405,8 @@ class TrackingController extends Notifier<TrackingUiState> {
     bool? serviceEnabled,
     double? accuracy,
     GeoPoint? position,
+    String? error,
+    bool clearError = false,
   }) => TrackingAcquiring(
     typeId: s.typeId,
     permission: permission ?? s.permission,
@@ -404,6 +414,7 @@ class TrackingController extends Notifier<TrackingUiState> {
     since: s.since,
     accuracy: accuracy ?? s.accuracy,
     position: position ?? s.position,
+    error: clearError ? null : error ?? s.error,
   );
 
   void _onFix(TrackSample fix) {
@@ -416,6 +427,7 @@ class TrackingController extends Notifier<TrackingUiState> {
           s,
           accuracy: fix.accuracy,
           position: (lat: fix.lat, lon: fix.lon),
+          clearError: true,
         );
       }
       return;

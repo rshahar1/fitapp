@@ -303,11 +303,13 @@ void main() {
       expect(source.positionsCalls, 1);
       source.emitError(Exception('platform'));
       expect(source.listening, isFalse);
+      expect((ui() as TrackingAcquiring).error, contains('platform'));
       await settle();
       expect(source.positionsCalls, 2);
       expect(source.listening, isTrue);
       source.emit(_fix(0, accuracy: 7));
       expect((ui() as TrackingAcquiring).accuracy, 7);
+      expect((ui() as TrackingAcquiring).error, isNull);
     });
 
     test('a closed stream is retried while live', () async {

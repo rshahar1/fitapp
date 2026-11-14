@@ -35,9 +35,15 @@ class WorkoutRepository {
             ..limit(1))
           .watchSingleOrNull();
 
+  Future<bool> _trackingActive() async =>
+      (await _db.select(_db.trackingSessions).get()).isNotEmpty;
+
   Future<WorkoutRow> startWorkout() => _db.transaction(() async {
     if (await activeWorkout() != null) {
       throw StateError('A workout is already in progress');
+    }
+    if (await _trackingActive()) {
+      throw StateError('A tracking session is in progress');
     }
     final now = _db.now();
     final row = WorkoutsCompanion.insert(
@@ -340,6 +346,7 @@ class WorkoutRepository {
   /// (feature 007; before, only the most recent one).
   Future<bool> canResume(String workoutId) async {
     if (await activeWorkout() != null) return false;
+    if (await _trackingActive()) return false;
     final workout = await (_db.select(
       _db.workouts,
     )..where((w) => w.id.equals(workoutId))).getSingleOrNull();

@@ -26,14 +26,14 @@ description: "Task list for live GPS tracking (running, cycling)"
 ## Phase 3: Foundational — data
 
 - [x] T010 Schema v6: `tracking_sessions`, `track_points`, activity columns (source, moving_seconds, elevation_gain_m, route, splits); `from5To6`; regenerate; make-migrations → drift_schema_v6.json; migration test v5→v6 (existing activities become `manual`)
-- [ ] T011 Repository tests: start (one session max, refuses while a gym workout is active), appendPoints batch, pause/resume, finish (activity row + points/session deleted in one transaction), discard, recover — test/data/tracking_repository_test.dart
-- [ ] T012 Implement lib/data/repositories/tracking_repository.dart + providers
-- [ ] T013 `LocationSource` interface, `FakeLocationSource` (test helper replaying fixtures), `GeolocatorLocationSource` with foreground notification config
+- [x] T011 Repository tests: start (one session max, refuses while a gym workout is active), appendPoints batch, pause/resume, finish (activity row + points/session deleted in one transaction), discard, recover — test/data/tracking_repository_test.dart
+- [x] T012 Implement lib/data/repositories/tracking_repository.dart + providers
+- [x] T013 `LocationSource` interface, `FakeLocationSource` (test helper replaying fixtures), `GeolocatorLocationSource` with foreground notification config
 
 ## Phase 4: User Story 1 + 2 — record and recover (P1)
 
-- [ ] T014 Controller tests with FakeLocationSource: Acquiring → Live, batching flush every 5 s / 20 points, pause/resume, finish summary, discard, recovery after recreating the container — test/features/tracking/tracking_controller_test.dart
-- [ ] T015 Implement lib/features/tracking/tracking_controller.dart
+- [x] T014 Controller tests with FakeLocationSource: Acquiring → Live, batching flush every 5 s / 20 points, pause/resume, finish summary, discard, recovery after recreating the container — test/features/tracking/tracking_controller_test.dart
+- [x] T015 Implement lib/features/tracking/tracking_controller.dart
 - [ ] T016 Activity sheet: Start live for live-tracking types; one-live-session message — lib/features/activities/activity_sheet.dart
 - [ ] T017 Setup screen (permission rationale, accuracy chip, Start / Start anyway, denied → settings or manual) — lib/features/tracking/track_setup_screen.dart
 - [ ] T018 `RouteMap` widget (flutter_map + MapTiler dark when key present; CustomPainter fallback) — lib/features/tracking/widgets/route_map.dart

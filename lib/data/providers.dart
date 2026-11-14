@@ -5,7 +5,10 @@ import 'package:fitapp/data/repositories/exercise_repository.dart';
 import 'package:fitapp/data/repositories/live_session_store.dart';
 import 'package:fitapp/data/repositories/settings_repository.dart';
 import 'package:fitapp/data/repositories/template_repository.dart';
+import 'package:fitapp/data/repositories/tracking_repository.dart';
 import 'package:fitapp/data/repositories/workout_repository.dart';
+import 'package:fitapp/data/tracking/geolocator_location_source.dart';
+import 'package:fitapp/data/tracking/location_source.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Wall clock, overridable in tests.
@@ -106,4 +109,18 @@ final historyEntriesProvider = StreamProvider<List<HistoryEntry>>(
 /// null. Check `workoutId` against the active workout before using it.
 final liveSessionProvider = StreamProvider<LiveSession?>(
   (ref) => ref.watch(workoutRepositoryProvider).watchLiveSession(),
+);
+
+final trackingRepositoryProvider = Provider<TrackingRepository>(
+  (ref) => TrackingRepository(ref.watch(databaseProvider)),
+);
+
+/// The in-progress GPS tracking session row, or null (feature 010).
+final activeTrackingProvider = StreamProvider<TrackingSessionRow?>(
+  (ref) => ref.watch(trackingRepositoryProvider).watchSession(),
+);
+
+/// GPS source; overridden with a fake in tests.
+final locationSourceProvider = Provider<LocationSource>(
+  (ref) => GeolocatorLocationSource(),
 );

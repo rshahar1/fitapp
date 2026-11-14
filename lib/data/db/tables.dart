@@ -174,7 +174,7 @@ class Activities extends Table with SyncColumns {
   IntColumn get movingSeconds => integer().nullable()();
   IntColumn get elevationGainMeters => integer().nullable()();
 
-  /// Encoded route (JSON) for tracked activities.
+  /// Simplified route as an encoded polyline (precision 5), tracked activities only.
   TextColumn get route => text().nullable()();
 
   /// Encoded per-km splits (JSON) for tracked activities.

@@ -139,23 +139,20 @@ void main() {
   }
 
   group('activity sheet', () {
-    testWidgets('Start live only for running and cycling new entries', (
-      tester,
-    ) async {
+    testWidgets('no Start live for any type on a new entry', (tester) async {
       await pumpApp(tester);
-      await tester.tap(find.text('LOG ACTIVITY'));
+      await tester.tap(find.byTooltip('Start or log a session'));
       await settle(tester);
-      expect(find.text('START LIVE'), findsNothing);
-      await tester.tap(find.text('Pilates'));
-      await tester.pump();
+      await tester.tap(find.text('Log a past session'));
+      await settle(tester);
       expect(find.text('START LIVE'), findsNothing);
       await tester.tap(find.text('Running'));
       await tester.pump();
-      expect(find.text('START LIVE'), findsOneWidget);
-      expect(find.text('or log it manually below'), findsOneWidget);
+      expect(find.text('START LIVE'), findsNothing);
+      expect(find.text('or log it manually below'), findsNothing);
       await tester.tap(find.text('Cycling'));
       await tester.pump();
-      expect(find.text('START LIVE'), findsOneWidget);
+      expect(find.text('START LIVE'), findsNothing);
       await unmount(tester);
     });
 
@@ -180,30 +177,29 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('Start live opens the setup screen', (tester) async {
+    testWidgets('hub Running opens the setup screen', (tester) async {
       await pumpApp(tester);
-      await tester.tap(find.text('LOG ACTIVITY'));
+      await tester.tap(find.byTooltip('Start or log a session'));
       await settle(tester);
       await tester.tap(find.text('Running'));
-      await tester.pump();
-      await tester.tap(find.text('START LIVE'));
       await settle(tester);
       expect(find.text('Searching for GPS'), findsOneWidget);
       await unmount(tester);
     });
 
-    testWidgets('a workout in progress shows a message with Open', (
+    testWidgets('hub Running with a workout in progress shows a message', (
       tester,
     ) async {
       await tester.runAsync(() => WorkoutRepository(db).startWorkout());
       await pumpApp(tester);
-      await tester.tap(find.text('LOG ACTIVITY'));
+      await tester.tap(find.byTooltip('Start or log a session'));
       await settle(tester);
       await tester.tap(find.text('Running'));
-      await tester.pump();
-      await tester.tap(find.text('START LIVE'));
       await settle(tester);
-      expect(find.textContaining('Workout in progress.'), findsOneWidget);
+      expect(
+        find.text('Workout in progress. Finish it first.'),
+        findsOneWidget,
+      );
       expect(find.text('Open'), findsOneWidget);
       expect(find.text('Searching for GPS'), findsNothing);
       await unmount(tester);
@@ -237,8 +233,8 @@ void main() {
       expect(source.appSettingsOpened, 1);
       await tester.tap(find.text('LOG MANUALLY INSTEAD'));
       await settle(tester);
-      expect(find.text('Log activity'), findsOneWidget);
-      expect(find.text('START LIVE'), findsOneWidget);
+      expect(find.text('Log a past session'), findsOneWidget);
+      expect(find.text('START LIVE'), findsNothing);
       await unmount(tester);
     });
 
@@ -504,18 +500,16 @@ void main() {
   });
 
   group('Train and recovery', () {
-    testWidgets('banner shows the session in progress and opens it', (
+    testWidgets('hero shows the running session in progress and opens it', (
       tester,
     ) async {
       await goLive(tester);
       await emit(tester, 1, 30);
       await tester.tap(find.byTooltip('Back'));
       await settle(tester);
-      expect(
-        find.textContaining('Running in progress · 0:30 · 0.'),
-        findsOneWidget,
-      );
-      await tester.tap(find.textContaining('Running in progress'));
+      expect(find.text('Running in progress'), findsOneWidget);
+      expect(find.textContaining('0:30 · 0.'), findsOneWidget);
+      await tester.tap(find.text('CONTINUE RUNNING'));
       await settle(tester);
       expect(find.text('TIME'), findsOneWidget);
       await unmount(tester);

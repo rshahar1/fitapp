@@ -23,27 +23,27 @@ description: "Task list for the Start/Log hub (Option C, slice 1)"
 
 ## Phase 3: User Stories 1, 3, 4, 5 — hub (P1/P2)
 
-- [ ] T008 Hub sheet: `showStartHub`, `HubChoice`, sections START NOW / EARLIER, Continue row, Gym, live sports, More sports (expand), templates, Log a past session — lib/features/start/start_hub_sheet.dart
-- [ ] T009 [P] You screen (Exercise library, Settings rows) — lib/features/you/you_screen.dart
-- [ ] T010 Router: `/you` branch (4th) — lib/app/router.dart
-- [ ] T011 Shell: custom 5-slot bar with `[+]` action ("Start or log a session", 56 dp) — lib/features/shell/shell_scaffold.dart
-- [ ] T012 [P] Activity sheet: remove Start live and "or log it manually below"; new-entry title "Log a past session" — lib/features/activities/activity_sheet.dart
+- [x] T008 Hub sheet: `showStartHub`, `HubChoice`, sections START NOW / EARLIER, Continue row, Gym, live sports, More sports (expand), templates, Log a past session — lib/features/start/start_hub_sheet.dart
+- [x] T009 [P] You screen (Exercise library, Settings rows) — lib/features/you/you_screen.dart
+- [x] T010 Router: `/you` branch (4th) — lib/app/router.dart
+- [x] T011 Shell: custom 5-slot bar with `[+]` action ("Start or log a session", 56 dp) — lib/features/shell/shell_scaffold.dart
+- [x] T012 [P] Activity sheet: remove Start live and "or log it manually below"; new-entry title "Log a past session" — lib/features/activities/activity_sheet.dart
 
 ## Phase 4: User Stories 2, 3, 6 — Train (P1/P3)
 
-- [ ] T013 Train: header icons and Log activity removed; hero "Start gym workout" via start service; GPS state merged into hero (ticking time · km, Continue <sport>); template START via start service (dialog removed); `_TrackingBanner` removed — lib/features/train/train_screen.dart
+- [x] T013 Train: header icons and Log activity removed; hero "Start gym workout" via start service; GPS state merged into hero (ticking time · km, Continue <sport>); template START via start service (dialog removed); `_TrackingBanner` removed — lib/features/train/train_screen.dart
 
 ## Phase 5: Tests
 
-- [ ] T014 Widget tests with the real router — test/features/start_hub_test.dart: hub opens from every tab and keeps the tab selected; gym 1 tap from Train; template 1 tap from Train; + → Running routes to `/track/new?type=running`; + → Gym blocked while tracking (no workout created, message + Open); + → Running blocked while a gym workout is active; template START blocked while tracking; Continue row for gym and tracking; More sports → Pilates opens the form with Pilates; Log a past session form has no Start live; You → Settings / Exercise library
-- [ ] T015 Update existing tests for removed UI: train_screen_test, activities_test, templates_test, workout_flow_ui_test, tracking/tracking_ui_test (Start live tests → hub; banner → hero), e2e/gps_flow.dart, e2e/workout_flow.dart
-- [ ] T016 Milestone gate: format, analyze, test; commit
+- [x] T014 Widget tests with the real router — test/features/start_hub_test.dart: hub opens from every tab and keeps the tab selected; gym 1 tap from Train; template 1 tap from Train; + → Running routes to `/track/new?type=running`; + → Gym blocked while tracking (no workout created, message + Open); + → Running blocked while a gym workout is active; template START blocked while tracking; Continue row for gym and tracking; More sports → Pilates opens the form with Pilates; Log a past session form has no Start live; You → Settings / Exercise library
+- [x] T015 Update existing tests for removed UI: train_screen_test, activities_test, templates_test, workout_flow_ui_test, tracking/tracking_ui_test (Start live tests → hub; banner → hero), e2e/gps_flow.dart, e2e/workout_flow.dart
+- [x] T016 Milestone gate: format, analyze, test; commit
 
 ## Phase 6: Polish and docs
 
-- [ ] T017 [P] PRD: §6 navigation (5-slot bar, hub, You, `/you`), version 2.7 + changelog — docs/PRD-fitapp-flutter.md
-- [ ] T018 [P] Route contract: bottom bar, `/you`, hub, Train tab — specs/001-fitapp-v1/contracts/ui-routes.md
-- [ ] T019 Mark tasks done; final gate; commit
+- [x] T017 [P] PRD: §6 navigation (5-slot bar, hub, You, `/you`), version 2.7 + changelog — docs/PRD-fitapp-flutter.md
+- [x] T018 [P] Route contract: bottom bar, `/you`, hub, Train tab — specs/001-fitapp-v1/contracts/ui-routes.md
+- [x] T019 Mark tasks done; final gate; commit
 
 ## Dependencies
 

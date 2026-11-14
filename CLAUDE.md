@@ -3,7 +3,7 @@
 Flutter (Android-first) offline gym logger with automatic progressive overload.
 Developed with GitHub Spec Kit (spec-driven development).
 
-- Product requirements: `docs/PRD-fitapp-flutter.md` (v2.6, authoritative)
+- Product requirements: `docs/PRD-fitapp-flutter.md` (v2.7, authoritative)
 - Constitution: `.specify/memory/constitution.md`
 - Active feature: `specs/011-start-hub/` (spec, plan, tasks)
 

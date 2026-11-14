@@ -1,6 +1,3 @@
-import 'dart:async';
-
-import 'package:fitapp/app/router.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/core/haptics.dart';
@@ -11,10 +8,9 @@ import 'package:fitapp/features/activities/activity_icons.dart';
 import 'package:fitapp/widgets/guard.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Opens the log / edit activity sheet.
+/// Opens the past-session / edit activity form.
 Future<void> showActivitySheet(
   BuildContext context, {
   ActivityRow? existing,
@@ -170,43 +166,6 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
     }
   }
 
-  /// Whether "Start live" is offered: new entries of live-tracking types.
-  bool get _canStartLive =>
-      !_isEdit &&
-      _typeId != null &&
-      (activityTypeById(_typeId!)?.hasLiveTracking ?? false);
-
-  Future<void> _startLive() async {
-    final typeId = _typeId;
-    if (typeId == null) return;
-    final router = GoRouter.of(context);
-    final tracking = await ref.read(trackingRepositoryProvider).session();
-    final workout = await ref.read(workoutRepositoryProvider).activeWorkout();
-    if (!mounted) return;
-    if (tracking != null || workout != null) {
-      final messenger = ScaffoldMessenger.of(context);
-      final label = tracking != null
-          ? '${activityLabel(tracking.typeId)} in progress'
-          : 'Workout in progress';
-      final target = tracking != null ? Routes.trackLive : Routes.workout;
-      Navigator.of(context).pop();
-      messenger
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text('$label. Finish it first.'),
-            action: SnackBarAction(
-              label: 'Open',
-              onPressed: () => router.push(target),
-            ),
-          ),
-        );
-      return;
-    }
-    Navigator.of(context).pop();
-    unawaited(router.push(Routes.newTrack(typeId)));
-  }
-
   Future<void> _delete() async {
     final ok = await confirmDestructive(
       context,
@@ -243,7 +202,7 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              _isEdit ? 'Edit activity' : 'Log activity',
+              _isEdit ? 'Edit activity' : 'Log a past session',
               style: text.titleLarge,
             ),
             const SizedBox(height: Space.m),
@@ -259,21 +218,6 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
                   ),
               ],
             ),
-            if (_canStartLive) ...[
-              const SizedBox(height: Space.m),
-              AppButton(
-                label: 'Start live',
-                icon: Icons.my_location,
-                expand: true,
-                onPressed: _startLive,
-              ),
-              const SizedBox(height: Space.xs),
-              Text(
-                'or log it manually below',
-                textAlign: TextAlign.center,
-                style: text.bodySmall?.copyWith(color: AppColors.textSecondary),
-              ),
-            ],
             const SizedBox(height: Space.m),
             Group(
               children: [

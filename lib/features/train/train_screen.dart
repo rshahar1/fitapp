@@ -2,15 +2,13 @@ import 'package:fitapp/app/router.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
-import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/providers.dart';
-import 'package:fitapp/domain/activity_types.dart';
+import 'package:fitapp/domain/start_guard.dart';
 import 'package:fitapp/domain/tracking/track_reducer.dart' show elapsedAt;
-import 'package:fitapp/features/activities/activity_sheet.dart';
+import 'package:fitapp/features/start/start_actions.dart';
 import 'package:fitapp/features/tracking/tracking_controller.dart';
 import 'package:fitapp/features/workout/widgets/tick.dart';
-import 'package:fitapp/widgets/guard.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,54 +23,11 @@ class TrainScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final text = Theme.of(context).textTheme;
     final stats = ref.watch(homeStatsProvider).value;
-    final active = ref.watch(activeWorkoutProvider).value;
     final now = ref.watch(clockProvider)();
-    final tracking = ref.watch(activeTrackingProvider).value;
-    final liveSession = ref.watch(liveSessionProvider).value;
-    final session = liveSession?.workoutId == active?.id ? liveSession : null;
     final templates = ref.watch(templatesProvider).value ?? const [];
     final recent = stats?.recent.take(3).toList() ?? const [];
 
-    Future<void> start() async {
-      final repo = ref.read(workoutRepositoryProvider);
-      final haptics = ref.read(hapticsProvider);
-      final ok = await guard(context, repo.startWorkout);
-      if (!ok || !context.mounted) return;
-      haptics.success();
-      await context.push(Routes.workout);
-    }
-
-    Future<void> startTemplate(String id) async {
-      if (active != null) {
-        final cont = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Workout in progress'),
-            content: const Text(
-              'Finish or continue your current workout first.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Continue workout'),
-              ),
-            ],
-          ),
-        );
-        if (cont == true && context.mounted) await context.push(Routes.workout);
-        return;
-      }
-      final repo = ref.read(templateRepositoryProvider);
-      final haptics = ref.read(hapticsProvider);
-      final ok = await guard(context, () => repo.startWorkout(id));
-      if (!ok || !context.mounted) return;
-      haptics.success();
-      await context.push(Routes.workout);
-    }
+    final actions = ref.read(startActionsProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -83,72 +38,9 @@ class TrainScreen extends ConsumerWidget {
               DateFormat('EEEE, d MMMM').format(now.toLocal()).toUpperCase(),
               style: text.labelSmall,
             ),
-            Row(
-              children: [
-                Expanded(child: Text('Train', style: text.headlineLarge)),
-                SizedBox.square(
-                  dimension: Sizes.tap,
-                  child: IconButton(
-                    tooltip: 'Exercises',
-                    icon: const Icon(Icons.list_alt),
-                    onPressed: () => context.push(Routes.exercises),
-                  ),
-                ),
-                SizedBox.square(
-                  dimension: Sizes.tap,
-                  child: IconButton(
-                    tooltip: 'Settings',
-                    icon: const Icon(Icons.settings_outlined),
-                    onPressed: () => context.push(Routes.settings),
-                  ),
-                ),
-              ],
-            ),
+            Text('Train', style: text.headlineLarge),
             const SizedBox(height: Space.m),
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    active == null ? 'Ready to train?' : 'Workout in progress',
-                    style: text.titleLarge,
-                  ),
-                  if (active != null) ...[
-                    const SizedBox(height: Space.xs),
-                    Text(
-                      session != null && session.isResumed
-                          ? '${formatShortDuration(session.elapsed(now.toUtc()))} trained so far'
-                          : 'Started ${formatShortDuration(session?.elapsed(now.toUtc()) ?? now.difference(active.startedAt))} ago',
-                      style: text.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: Space.m),
-                  AppButton(
-                    label: active == null
-                        ? 'Start workout'
-                        : 'Continue workout',
-                    expand: true,
-                    onPressed: active == null
-                        ? start
-                        : () => context.push(Routes.workout),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: Space.s),
-            if (tracking != null) ...[
-              _TrackingBanner(typeId: tracking.typeId),
-              const SizedBox(height: Space.s),
-            ],
-            AppButton(
-              label: 'Log activity',
-              expand: true,
-              icon: Icons.add,
-              variant: AppButtonVariant.secondary,
-              onPressed: () => showActivitySheet(context),
-            ),
+            const _HeroCard(),
             SectionHeader(
               'Templates',
               trailing: TextButton(
@@ -172,7 +64,7 @@ class TrainScreen extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: Space.s),
                   child: _TemplateCard(
                     template: t,
-                    onStart: () => startTemplate(t.id),
+                    onStart: () => actions.startGym(context, templateId: t.id),
                   ),
                 ),
             const SizedBox(height: Space.m),
@@ -291,49 +183,79 @@ class _TemplateCard extends StatelessWidget {
   }
 }
 
-/// "Running in progress · 23:41 · 4.2 km": opens the live screen.
-class _TrackingBanner extends ConsumerWidget {
-  const new({required this.typeId});
-
-  final String typeId;
+/// The one "start or continue" surface on Train: one tap to a gym workout,
+/// or continue the gym workout or GPS session in progress (feature 011).
+class _HeroCard extends ConsumerWidget {
+  const new();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final text = Theme.of(context).textTheme;
-    final live = ref.watch(trackingControllerProvider);
-    final title = '${activityLabel(typeId)} in progress';
-    return Semantics(
-      button: true,
-      label: title,
-      excludeSemantics: true,
-      onTap: () => context.push(Routes.trackLive),
-      child: AppCard(
-        borderColor: AppColors.accent,
-        onTap: () => context.push(Routes.trackLive),
-        child: Row(
-          children: [
-            const Icon(Icons.my_location, color: AppColors.accent),
-            const SizedBox(width: Space.m),
-            Expanded(
-              child: live is TrackingLive
-                  ? Tick(
-                      builder: (_) {
-                        final elapsed = elapsedAt(
-                          live.state,
-                          ref.read(clockProvider)().toUtc(),
-                        );
-                        return Text(
-                          '$title · ${formatClock(elapsed)} · '
-                          '${(live.state.distanceMeters / 1000).toStringAsFixed(1)} km',
-                          style: text.titleMedium,
-                        );
-                      },
-                    )
-                  : Text(title, style: text.titleMedium),
-            ),
-            const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-          ],
-        ),
+    final secondary = text.bodyMedium?.copyWith(color: AppColors.textSecondary);
+    final now = ref.watch(clockProvider)();
+    final inProgress = ref.watch(sessionInProgressProvider);
+    final actions = ref.read(startActionsProvider);
+
+    final String title;
+    Widget? line;
+    switch (inProgress?.kind) {
+      case null:
+        title = 'Ready to train?';
+      case SessionKind.gym:
+        title = 'Workout in progress';
+        final active = ref.watch(activeWorkoutProvider).value;
+        final live = ref.watch(liveSessionProvider).value;
+        final session = live != null && live.workoutId == active?.id
+            ? live
+            : null;
+        final started = active?.startedAt ?? now;
+        line = Text(
+          session != null && session.isResumed
+              ? '${formatShortDuration(session.elapsed(now.toUtc()))} trained so far'
+              : 'Started ${formatShortDuration(session?.elapsed(now.toUtc()) ?? now.difference(started))} ago',
+          style: secondary,
+        );
+      case SessionKind.tracking:
+        title = '${inProgress!.label} in progress';
+        final live = ref.watch(trackingControllerProvider);
+        if (live is TrackingLive) {
+          line = Tick(
+            builder: (_) {
+              final elapsed = elapsedAt(
+                live.state,
+                ref.read(clockProvider)().toUtc(),
+              );
+              return Text(
+                '${formatClock(elapsed)} · '
+                '${(live.state.distanceMeters / 1000).toStringAsFixed(1)} km',
+                style: secondary,
+              );
+            },
+          );
+        }
+    }
+
+    return AppCard(
+      borderColor: inProgress?.kind == SessionKind.tracking
+          ? AppColors.accent
+          : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: text.titleLarge),
+          if (line != null) ...[const SizedBox(height: Space.xs), line],
+          const SizedBox(height: Space.m),
+          AppButton(
+            label: inProgress?.continueLabel ?? 'Start gym workout',
+            icon: inProgress?.kind == SessionKind.tracking
+                ? Icons.my_location
+                : null,
+            expand: true,
+            onPressed: inProgress == null
+                ? () => actions.startGym(context)
+                : () => actions.open(context, inProgress),
+          ),
+        ],
       ),
     );
   }

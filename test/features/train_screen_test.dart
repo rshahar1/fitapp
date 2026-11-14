@@ -55,7 +55,7 @@ void main() {
     await pump(tester);
     expect(find.text('Train'), findsOneWidget);
     expect(find.text('Ready to train?'), findsOneWidget);
-    expect(find.text('START WORKOUT'), findsOneWidget);
+    expect(find.text('START GYM WORKOUT'), findsOneWidget);
     expect(find.text('No workouts yet'), findsOneWidget);
     expect(find.text('0'), findsNWidgets(3));
     await unmount(tester);

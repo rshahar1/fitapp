@@ -4,16 +4,33 @@
 
 | Route | Screen | Notes |
 |---|---|---|
-| `/train` (tab 1, initial) | Train/home | gear icon → `/settings` |
+| `/train` (tab 1, initial) | Train/home | no header icons (feature 011) |
 | `/history` (tab 2) | History by month | row → `/workout/:id` |
 | `/progress` (tab 3) | Weekly bars + trained exercises | row → `/exercise/:id` |
+| `/you` (tab 4) | You: Exercise library, Settings | rows → `/exercises`, `/settings` |
 | `/workout` | Live workout | redirects to `/train` if no active workout |
 | `/workout/:id` | Finished workout, edit mode | footer: Done, Resume (if `canResume`), Delete |
 | `/exercise/:id` | Exercise detail, tabs Summary / History | |
 | `/add-exercise?workout=<id>` | Exercise picker (fullscreen dialog) | returns selected exercise |
-| `/settings` | Settings | default rest time, alert toggles |
+| `/activity/:id` | Activity detail | edit type, date, note; delete confirmed |
+| `/track/new?type=<id>` | Live tracking setup | from hub Running/Cycling |
+| `/track/live` | Live tracking screen | Pause / Lock / Finish |
+| `/exercises` | Exercise library | opened from You |
+| `/template/new`, `/template/:id` | Create / edit template | |
+| `/settings` | Settings | default rest time, alert toggles; opened from You |
+
+Tabs: Train=1, History=2, Progress=3, You=4; the `[+]` slot is an action, not a tab.
 
 Android back: pops bottom sheets first, then routes; on a tab root it exits the app.
+
+## Bottom bar and Start/Log hub (feature 011)
+
+Bottom bar: Train · History · **[+]** · Progress · You. `[+]` (accent circle, label "Start or log a
+session") opens the hub sheet from any tab and is never selected. Hub: START NOW (Continue row when a
+session is active, Gym workout, Running/Cycling → `/track/new?type=<id>`, More sports → past-session
+form prefilled, templates) and EARLIER (Log a past session). One start guard for gym and GPS starts;
+blocked → snackbar "<Workout|Running|Cycling> in progress. Finish it first." with Open. Full contract:
+[`specs/011-start-hub/contracts/start-hub.md`](../../011-start-hub/contracts/start-hub.md).
 
 ## Workout screen (live and edit share one widget, `mode: live | edit`)
 
@@ -43,8 +60,14 @@ Android back: pops bottom sheets first, then routes; on a tab root it exits the 
 
 ## Train tab
 
-Date kicker, title, hero card (Start workout / Continue workout), tiles This week · Week streak ·
-Total workouts, 3 recent workouts (tap → `/workout/:id`).
+Date kicker, title (no header icons), hero card, templates with START, tiles This week · Week streak ·
+Total workouts, 3 recent workouts (tap → `/workout/:id`). No "Log activity" button.
+
+- Hero idle: "Ready to train?" + **Start gym workout** (1 tap).
+- Gym active: "Workout in progress" + **Continue workout** → `/workout`.
+- GPS active: "<Sport> in progress", ticking `mm:ss · km`, **Continue <sport>** → `/track/live`
+  (no separate tracking banner).
+- Template START goes through the start guard (template workout or blocked snackbar).
 
 ## History tab
 

@@ -6,10 +6,13 @@ import 'package:fitapp/core/format.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/providers.dart';
+import 'package:fitapp/domain/milestones.dart';
 import 'package:fitapp/domain/progression.dart';
 import 'package:fitapp/domain/stats.dart';
 import 'package:fitapp/features/workout/rest_timer_controller.dart';
 import 'package:fitapp/features/workout/widgets/plan_form.dart';
+import 'package:fitapp/features/workout/widgets/reward/reward_burst.dart';
+import 'package:fitapp/features/workout/widgets/reward/target_hit_pill.dart';
 import 'package:fitapp/features/workout/widgets/set_sheet.dart';
 import 'package:fitapp/features/workout/widgets/set_table.dart';
 import 'package:fitapp/widgets/guard.dart';
@@ -58,6 +61,13 @@ List<SetLine> buildSetLines(WorkoutExerciseDetail d, {int extraRows = 0}) {
   return lines;
 }
 
+/// Whether sets 1 and 2 of [d] both met the plan's target reps (feature 008).
+bool firstTwoSetsHit(WorkoutExerciseDetail d) => firstTwoSetsHitTarget(
+  targetReps: d.effectivePlan?.targetReps,
+  set1Reps: d.setNo(1)?.reps,
+  set2Reps: d.setNo(2)?.reps,
+);
+
 /// Exercise card with the Hevy-style set table (PRD §5.3).
 class ExerciseCard extends ConsumerStatefulWidget {
   const new({required this.detail, required this.isLive, super.key});
@@ -74,7 +84,68 @@ class ExerciseCard extends ConsumerStatefulWidget {
 class _ExerciseCardState extends ConsumerState<ExerciseCard> {
   int _extraRows = 0;
 
+  /// Locates the set rows so the reward burst can centre on them.
+  final _tableKey = GlobalKey();
+  OverlayEntry? _burst;
+
+  /// The pill waits until the burst fades out.
+  bool _pillHeld = false;
+
   WorkoutExerciseDetail get d => widget.detail;
+
+  @override
+  void didUpdateWidget(ExerciseCard old) {
+    super.didUpdateWidget(old);
+    // Only a live log that newly meets the target earns the burst; opening
+    // a workout where it already holds, or editing history, does not.
+    if (widget.isLive && !firstTwoSetsHit(old.detail) && firstTwoSetsHit(d)) {
+      _playBurst();
+    }
+  }
+
+  void _playBurst() {
+    if (_burst != null || MediaQuery.disableAnimationsOf(context)) return;
+    final overlay = Overlay.maybeOf(context);
+    if (overlay == null) return;
+    late final OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (context) {
+        final table = _tableKey.currentContext?.findRenderObject();
+        final host = overlay.context.findRenderObject();
+        var center = Offset.zero;
+        if (table is RenderBox && host is RenderBox && table.attached) {
+          center = host.globalToLocal(
+            table.localToGlobal(table.size.center(Offset.zero)),
+          );
+        }
+        return RewardBurst(
+          center: center,
+          onExplode: () => ref.read(hapticsProvider).success(),
+          onReveal: () {
+            if (mounted) setState(() => _pillHeld = false);
+          },
+          onDone: () {
+            entry.remove();
+            if (_burst == entry) _burst = null;
+          },
+        );
+      },
+    );
+    _burst = entry;
+    _pillHeld = true;
+    // After this frame's layout, so the table position is known.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_burst == entry) overlay.insert(entry);
+    });
+  }
+
+  @override
+  void dispose() {
+    final burst = _burst;
+    _burst = null;
+    if (burst != null && burst.mounted) burst.remove();
+    super.dispose();
+  }
 
   Future<void> _log(SetLine line, double weight, int reps) async {
     final ok = await guard(
@@ -223,25 +294,42 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
             )
           else ...[
             const SetTableHeader(),
-            for (final line in lines)
-              SetRowView(
-                key: ValueKey('set-${d.row.id}-${line.setNo}'),
-                line: line,
-                onCheck: () => line.isLogged
-                    ? _edit(line)
-                    : _log(line, line.weight, line.reps),
-                onTap: () => _edit(line),
-              ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () {
-                  ref.read(hapticsProvider).tick();
-                  setState(() => _extraRows++);
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Add Set'),
-              ),
+            Column(
+              key: _tableKey,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final line in lines)
+                  SetRowView(
+                    key: ValueKey('set-${d.row.id}-${line.setNo}'),
+                    line: line,
+                    onCheck: () => line.isLogged
+                        ? _edit(line)
+                        : _log(line, line.weight, line.reps),
+                    onTap: () => _edit(line),
+                  ),
+              ],
+            ),
+            Row(
+              children: [
+                TextButton.icon(
+                  onPressed: () {
+                    ref.read(hapticsProvider).tick();
+                    setState(() => _extraRows++);
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Set'),
+                ),
+                if (firstTwoSetsHit(d)) ...[
+                  const SizedBox(width: Space.s),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: TargetHitPill(visible: !_pillHeld),
+                    ),
+                  ),
+                  const SizedBox(width: Space.s),
+                ],
+              ],
             ),
             _NotesField(detail: d),
             if (d.sets.isNotEmpty) ...[

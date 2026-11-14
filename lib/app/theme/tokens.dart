@@ -22,6 +22,16 @@ abstract final class AppColors {
 
   /// Backdrop bottom darkening: background at 65 % alpha.
   static const backdropBottomScrim = Color(0xA6000000);
+
+  /// Set-milestone reward (feature 008): brighter accent, mint highlight,
+  /// gold spark and the dark green fill of the small figure icon.
+  static const accentBright = Color(0xFF2BE07F);
+  static const mint = Color(0xFF7CF5B0);
+  static const gold = Color(0xFFFFD60A);
+  static const rewardIconFill = Color(0xFF14261C);
+
+  /// Reward scrim: background at 65 % alpha.
+  static const rewardScrim = Color(0xA6000000);
 }
 
 /// Spacing scale.

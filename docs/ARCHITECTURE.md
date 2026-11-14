@@ -54,6 +54,11 @@ Implementation in `WorkoutRepository`:
 - `canRewriteBase` stays per plan: finishing rewrites a plan's base only when the workout is the newest session for that plan, so backdated or older resumed sessions never do.
 - Screens: `/exercises` (`lib/features/exercises/exercise_library_screen.dart`, from the Train header and Progress "All exercises"; custom exercises are created and edited in `custom_exercise_sheet.dart` with a category); History has a List/Calendar switch (`history_calendar.dart`, `history_rows.dart`).
 
+## Set milestone reward
+
+- Rule: `firstTwoSetsHitTarget` in `lib/domain/milestones.dart` (pure). `ExerciseCard.didUpdateWidget` plays the burst only on a false→true change in a live workout, so opening a workout or editing history never replays it.
+- `RewardBurst` (`lib/features/workout/widgets/reward/reward_burst.dart`) runs in an `OverlayEntry` under `IgnorePointer`: one controller drives the whole 3.3 s timeline; sparks use closed-form drag/gravity motion so any frame can be drawn directly. `MuscleFigurePainter` draws the figure from the approved SVG paths; the pill (`target_hit_pill.dart`) reuses it as an icon and never shifts the row.
+
 ## Rest timer
 
 - `RestTimerController` (`lib/features/workout/rest_timer_controller.dart`) stores the start timestamp, target duration and exercise name in the settings table, so the timer survives app restarts.

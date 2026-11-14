@@ -58,6 +58,7 @@ dev_dependencies:
   flutter_native_splash: ^2.2.16
   flutter_test:
     sdk: flutter
+  http: ^1.6.0
   integration_test:
     sdk: flutter
   mocktail: ^1.0.5

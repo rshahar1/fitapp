@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fitapp/app/backdrop.dart';
 import 'package:fitapp/app/router.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/features/tracking/launch_recovery.dart';
 import 'package:fitapp/features/workout/rest_timer_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,6 +26,7 @@ class _FitAppState extends ConsumerState<FitApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         unawaited(recoverTrackingOnLaunch(ProviderScope.containerOf(context)));
+        requestSyncFrom(ref); // app start (FR-013)
       }
     });
     _lifecycle = AppLifecycleListener(
@@ -49,7 +51,10 @@ class _FitAppState extends ConsumerState<FitApp> {
 
   void _background() => ref.read(restTimerProvider.notifier).onBackground();
 
-  void _foreground() => ref.read(restTimerProvider.notifier).onForeground();
+  void _foreground() {
+    unawaited(ref.read(restTimerProvider.notifier).onForeground());
+    requestSyncFrom(ref); // back in the foreground (FR-013)
+  }
 
   @override
   void dispose() {

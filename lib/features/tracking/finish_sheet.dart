@@ -94,7 +94,10 @@ class _FinishSheetState extends ConsumerState<_FinishSheet> {
     final done = await guard(context, () => ctl.finish(notes: _note.text));
     if (!mounted) return;
     setState(() => _busy = false);
-    if (done) Navigator.of(context).pop(FinishResult.saved);
+    if (done) {
+      requestSyncFrom(ref); // back up the saved activity (FR-013)
+      Navigator.of(context).pop(FinishResult.saved);
+    }
   }
 
   Future<void> _discard() async {

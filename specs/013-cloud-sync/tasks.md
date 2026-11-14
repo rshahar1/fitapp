@@ -47,29 +47,29 @@ description: "Task list for cloud backup and sync"
 
 Independent test: sign in on a phone with history → all rows reach the backend; signed-out app sends nothing.
 
-- [ ] T023 [US1] `SupabaseSyncRemote` (rpc push, paged select, cloud-data probe) + unit tests on request/response mapping — lib/data/sync/supabase_sync_remote.dart
-- [ ] T024 [US1] `AuthRepository` (google_sign_in 7.x → `signInWithIdToken`, account stream, sign out, `isConfigured`) — lib/data/repositories/auth_repository.dart; tests with mocked auth seams
-- [ ] T025 [US1] `Supabase.initialize` only when configured; providers for client, auth, sync service — lib/main.dart, lib/data/providers.dart
+- [x] T023 [US1] `SupabaseSyncRemote` (rpc push, paged select, cloud-data probe) + unit tests on request/response mapping — lib/data/sync/supabase_sync_remote.dart
+- [x] T024 [US1] `AuthRepository` (google_sign_in 7.x → `signInWithIdToken`, account stream, sign out, `isConfigured`) — lib/data/repositories/auth_repository.dart; tests with mocked auth seams
+- [x] T025 [US1] `Supabase.initialize` only when configured; providers for client, auth, sync service — lib/main.dart, lib/data/providers.dart
 - [ ] T026 [US1] Settings "Account & backup" section (states per contracts/app-interfaces.md, Back up now, last backed up) + widget tests — lib/features/settings/
-- [ ] T027 [US1] Sync triggers: start, resume, after finish, after sign-in — lib/app/app.dart, workout finish call site
+- [x] T027 [US1] Sync triggers: start, resume, after finish, after sign-in — lib/app/app.dart, workout finish call site
 - [ ] T028 [US1] Milestone gate; commit
 
 ## Phase 4: US2 — Restore on a new phone (P1)
 
-- [ ] T029 [US2] `DeviceBinding.decide/bind` (+ tests for each branch of data-model §5) — lib/data/sync/device_binding.dart
-- [ ] T030 [US2] `SyncService.restore` with progress; resumable (cursors) + tests incl. interrupted restore
+- [x] T029 [US2] `DeviceBinding.decide/bind` (+ tests for each branch of data-model §5) — lib/data/sync/device_binding.dart
+- [x] T030 [US2] `SyncService.restore` with progress; resumable (cursors) + tests incl. interrupted restore
 - [ ] T031 [US2] Restore progress UI in the account section; restored plans drive next suggestion (test)
 - [ ] T032 [US2] Milestone gate; commit
 
 ## Phase 5: US3 — Two phones in step (P2)
 
-- [ ] T033 [US3] Extend two-device tests: delete-vs-offline-edit, plan conflict, template deleted while used, hidden built-in stays hidden
+- [x] T033 [US3] Extend two-device tests: delete-vs-offline-edit, plan conflict, template deleted while used, hidden built-in stays hidden
 - [ ] T034 [US3] Milestone gate; commit
 
 ## Phase 6: US4 — Sign-in on a phone with data (P2)
 
 - [ ] T035 [US4] Merge and Replace dialogs wired to `DeviceBinding` decisions + widget tests
-- [ ] T036 [US4] `wipeUserData` (keeps built-ins, clears queues/cursors) + tests; name-clash merge test
+- [x] T036 [US4] `wipeUserData` (keeps built-ins, clears queues/cursors) + tests; name-clash merge test
 - [ ] T037 [US4] Milestone gate; commit
 
 ## Phase 7: US5 — Sign out, remove data, delete account (P3)

@@ -142,6 +142,7 @@ class _WorkoutView extends ConsumerWidget {
       result = await repo.finishWorkout(detail.workout.id);
     });
     if (!ok) return;
+    requestSyncFrom(ref); // back up the finished workout (FR-013)
     await rest.dismiss();
     if (result!.outcomes.any((o) => o.toBase > o.fromBase)) haptics.success();
     var resume = false;

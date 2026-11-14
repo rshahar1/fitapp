@@ -32,6 +32,7 @@ class DeviceBinding {
   final AppDatabase _db;
 
   static const _kUserId = 'sync.user_id';
+  static const _kUserEmail = 'sync.user_email';
   static const _kLastSuccess = 'sync.last_success_at';
 
   /// Settings keys removed when the phone's data is wiped.
@@ -46,9 +47,31 @@ class DeviceBinding {
 
   Future<String?> boundUserId() => _get(_kUserId);
 
-  Future<void> bind(String userId) => _put(_kUserId, userId);
+  /// Email of the bound account, for messages (may be null).
+  Future<String?> boundEmail() => _get(_kUserEmail);
 
-  Future<void> unbind() => _remove(_kUserId);
+  Future<void> bind(String userId, {String? email}) async {
+    await _put(_kUserId, userId);
+    if (email == null) {
+      await _remove(_kUserEmail);
+    } else {
+      await _put(_kUserEmail, email);
+    }
+  }
+
+  Future<void> unbind() async {
+    await _remove(_kUserId);
+    await _remove(_kUserEmail);
+  }
+
+  Stream<String?> watchBoundEmail() => _db
+      .customSelect(
+        'SELECT value FROM settings WHERE key = ?',
+        variables: [const Variable<String>(_kUserEmail)],
+        readsFrom: {_db.settings},
+      )
+      .watchSingleOrNull()
+      .map((r) => r?.read<String>('value'));
 
   Future<DateTime?> lastSuccessAt() async {
     final v = await _get(_kLastSuccess);

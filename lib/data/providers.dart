@@ -2,6 +2,7 @@ import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/repositories/activity_repository.dart';
 import 'package:fitapp/data/repositories/exercise_repository.dart';
+import 'package:fitapp/data/repositories/live_session_store.dart';
 import 'package:fitapp/data/repositories/settings_repository.dart';
 import 'package:fitapp/data/repositories/template_repository.dart';
 import 'package:fitapp/data/repositories/workout_repository.dart';
@@ -99,4 +100,10 @@ final activityRepositoryProvider = Provider<ActivityRepository>(
 /// Workouts and activities together, newest first (feature 006).
 final historyEntriesProvider = StreamProvider<List<HistoryEntry>>(
   (ref) => ref.watch(workoutRepositoryProvider).watchHistoryEntries(),
+);
+
+/// The live-session record of the workout in progress (feature 007), or
+/// null. Check `workoutId` against the active workout before using it.
+final liveSessionProvider = StreamProvider<LiveSession?>(
+  (ref) => ref.watch(workoutRepositoryProvider).watchLiveSession(),
 );

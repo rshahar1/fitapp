@@ -46,7 +46,13 @@ class ProgressScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            const SectionHeader('Exercises'),
+            SectionHeader(
+              'Exercises',
+              trailing: TextButton(
+                onPressed: () => context.push(Routes.exercises),
+                child: const Text('All exercises'),
+              ),
+            ),
             trained.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (_, _) => const Text('Could not load exercises.'),

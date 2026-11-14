@@ -23,6 +23,8 @@ class TrainScreen extends ConsumerWidget {
     final stats = ref.watch(homeStatsProvider).value;
     final active = ref.watch(activeWorkoutProvider).value;
     final now = ref.watch(clockProvider)();
+    final liveSession = ref.watch(liveSessionProvider).value;
+    final session = liveSession?.workoutId == active?.id ? liveSession : null;
     final templates = ref.watch(templatesProvider).value ?? const [];
     final recent = stats?.recent.take(3).toList() ?? const [];
 
@@ -82,6 +84,14 @@ class TrainScreen extends ConsumerWidget {
                 SizedBox.square(
                   dimension: Sizes.tap,
                   child: IconButton(
+                    tooltip: 'Exercises',
+                    icon: const Icon(Icons.list_alt),
+                    onPressed: () => context.push(Routes.exercises),
+                  ),
+                ),
+                SizedBox.square(
+                  dimension: Sizes.tap,
+                  child: IconButton(
                     tooltip: 'Settings',
                     icon: const Icon(Icons.settings_outlined),
                     onPressed: () => context.push(Routes.settings),
@@ -101,7 +111,9 @@ class TrainScreen extends ConsumerWidget {
                   if (active != null) ...[
                     const SizedBox(height: Space.xs),
                     Text(
-                      'Started ${formatShortDuration(now.difference(active.startedAt))} ago',
+                      session != null && session.isResumed
+                          ? '${formatShortDuration(session.elapsed(now.toUtc()))} trained so far'
+                          : 'Started ${formatShortDuration(session?.elapsed(now.toUtc()) ?? now.difference(active.startedAt))} ago',
                       style: text.bodyMedium?.copyWith(
                         color: AppColors.textSecondary,
                       ),

@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/models.dart';
+import 'package:fitapp/data/repositories/live_session_store.dart';
 import 'package:fitapp/data/repositories/plan_store.dart';
 import 'package:fitapp/data/watch.dart';
 import 'package:uuid/uuid.dart';
@@ -153,6 +154,9 @@ class TemplateRepository {
             updatedAt: now,
           ),
         );
+    await _db.writeLiveSession(
+      LiveSession(workoutId: workoutId, liveSince: now),
+    );
     for (final (i, item) in items.indexed) {
       await _db
           .into(_db.workoutExercises)

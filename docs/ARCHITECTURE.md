@@ -47,6 +47,13 @@ Implementation in `WorkoutRepository`:
 - Merged history: `WorkoutRepository.historyEntries()` merges finished workouts and activities newest first as a sealed `HistoryEntry` (`WorkoutHistoryEntry` | `ActivityHistoryEntry`), exposed by `historyEntriesProvider`. History groups it by month; tapping an activity opens the sheet to edit or delete (delete confirmed).
 - Stats: week stats use the union of finished-workout dates and activity dates, so activities count toward This week, Week streak and the Progress weekly bars. Total workouts stays gym only, the Train Recent list stays workouts only, and activities never affect volume, exercise stats or progression.
 
+## Workout flow and exercise library
+
+- Live session: a device-local record in settings under the key `live_workout` (`lib/data/repositories/live_session_store.dart`, exposed as `liveSessionProvider`) holds the live workout id and the duration already accumulated, so any finished workout can be resumed (while none is live) and keeps its earlier duration. Start, finish, discard and delete clear it. No schema change (v4).
+- Pure helpers: `lib/domain/workout_dates.dart` (day moves keeping time of day and duration) and `lib/domain/calendar.dart` (month/week grids, navigation, day grouping). `WorkoutRepository.setLiveWorkoutDay` / `setWorkoutDay` apply a chosen day.
+- `canRewriteBase` stays per plan: finishing rewrites a plan's base only when the workout is the newest session for that plan, so backdated or older resumed sessions never do.
+- Screens: `/exercises` (`lib/features/exercises/exercise_library_screen.dart`, from the Train header and Progress "All exercises"; custom exercises are created and edited in `custom_exercise_sheet.dart` with a category); History has a List/Calendar switch (`history_calendar.dart`, `history_rows.dart`).
+
 ## Rest timer
 
 - `RestTimerController` (`lib/features/workout/rest_timer_controller.dart`) stores the start timestamp, target duration and exercise name in the settings table, so the timer survives app restarts.

@@ -1,3 +1,4 @@
+import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/repositories/exercise_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -90,6 +91,126 @@ void main() {
           increment: 1,
         ),
         throwsA(isA<DuplicateExerciseName>()),
+      );
+    });
+  });
+
+  group('createCustom muscleGroup', () {
+    test('stores the category; null means Custom', () async {
+      final a = await h.exercises.createCustom(
+        name: 'Cat A',
+        perHand: false,
+        increment: 2,
+        muscleGroup: 'Arms',
+      );
+      expect(a.muscleGroup, 'Arms');
+      final b = await h.exercises.createCustom(
+        name: 'Cat B',
+        perHand: false,
+        increment: 2,
+      );
+      expect(b.muscleGroup, isNull);
+    });
+
+    test('rejects an invalid category', () async {
+      await expectLater(
+        h.exercises.createCustom(
+          name: 'Cat C',
+          perHand: false,
+          increment: 2,
+          muscleGroup: 'Nope',
+        ),
+        throwsArgumentError,
+      );
+    });
+  });
+
+  group('updateCustom', () {
+    Future<ExerciseRow> make(String name) =>
+        h.exercises.createCustom(name: name, perHand: false, increment: 2);
+
+    test('updates fields and marks dirty', () async {
+      final e = await make('Old Name');
+      final u = await h.exercises.updateCustom(
+        e.id,
+        name: '  New Name ',
+        muscleGroup: 'Back',
+        perHand: true,
+        increment: 1.25,
+      );
+      expect(u.name, 'New Name');
+      expect(u.muscleGroup, 'Back');
+      expect(u.isPerHand, isTrue);
+      expect(u.defaultIncrement, 1.25);
+      expect(u.dirty, isTrue);
+      expect((await h.exercises.exercise(e.id))!.name, 'New Name');
+    });
+
+    test('validates input', () async {
+      final e = await make('Valid One');
+      Future<ExerciseRow> upd({
+        String name = 'X',
+        String? group,
+        double inc = 1,
+      }) => h.exercises.updateCustom(
+        e.id,
+        name: name,
+        muscleGroup: group,
+        perHand: false,
+        increment: inc,
+      );
+      await expectLater(upd(name: ' '), throwsArgumentError);
+      await expectLater(upd(inc: 0), throwsArgumentError);
+      await expectLater(upd(group: 'Nope'), throwsArgumentError);
+    });
+
+    test('rejects a duplicate name of another exercise', () async {
+      await make('Taken');
+      final e = await make('Other');
+      await expectLater(
+        h.exercises.updateCustom(
+          e.id,
+          name: ' taken ',
+          muscleGroup: null,
+          perHand: false,
+          increment: 2,
+        ),
+        throwsA(isA<DuplicateExerciseName>()),
+      );
+    });
+
+    test('allows a case-only rename of itself', () async {
+      final e = await make('Case Move');
+      final u = await h.exercises.updateCustom(
+        e.id,
+        name: 'CASE MOVE',
+        muscleGroup: null,
+        perHand: false,
+        increment: 2,
+      );
+      expect(u.name, 'CASE MOVE');
+    });
+
+    test('built-in and unknown ids throw StateError', () async {
+      await expectLater(
+        h.exercises.updateCustom(
+          inclineId,
+          name: 'Hacked',
+          muscleGroup: null,
+          perHand: false,
+          increment: 2,
+        ),
+        throwsStateError,
+      );
+      await expectLater(
+        h.exercises.updateCustom(
+          'missing',
+          name: 'Hacked',
+          muscleGroup: null,
+          perHand: false,
+          increment: 2,
+        ),
+        throwsStateError,
       );
     });
   });

@@ -119,8 +119,14 @@ class _LiveTrackScreenState extends ConsumerState<LiveTrackScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _Hero(typeId: state.typeId, track: track),
-              if (!state.serviceEnabled) const _LocationOffBanner(),
-              _StatusRow(track: track),
+              if (!state.serviceEnabled)
+                const _GpsBanner(
+                  'Location is off. Turn it on to keep tracking.',
+                  icon: Icons.location_disabled,
+                )
+              else if (state.gpsIssue != null)
+                _GpsBanner(state.gpsIssue!, icon: Icons.gps_not_fixed),
+              _StatusRow(track: track, accuracy: state.accuracy),
               _Tiles(typeId: state.typeId, track: track),
               const SizedBox(height: Space.m),
               Expanded(
@@ -253,46 +259,50 @@ class _Hero extends StatelessWidget {
 
 /// Fixed height so a pause indicator never shifts the layout.
 class _StatusRow extends StatelessWidget {
-  const new({required this.track});
+  const new({required this.track, this.accuracy});
 
   final TrackState track;
 
+  /// Accuracy of the latest fix in metres; null before the first fix.
+  final double? accuracy;
+
   @override
   Widget build(BuildContext context) {
+    final a = accuracy;
     final label = track.manualPaused
         ? 'Paused'
         : track.autoPaused
         ? 'Auto-paused'
-        : null;
+        : a == null
+        ? 'Waiting for GPS'
+        : 'GPS ±${a.round()} m';
     return SizedBox(
       height: Sizes.tap,
       child: Center(
-        child: label == null
-            ? null
-            : Semantics(
-                liveRegion: true,
-                label: label,
-                excludeSemantics: true,
-                child: DecoratedBox(
-                  decoration: const ShapeDecoration(
-                    color: AppColors.surfaceHigh,
-                    shape: StadiumBorder(),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: Space.m,
-                      vertical: Space.xs,
-                    ),
-                    child: Text(
-                      label,
-                      style: TextStyle(
-                        color: context.metrics.weight,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
+        child: Semantics(
+          liveRegion: true,
+          label: label,
+          excludeSemantics: true,
+          child: DecoratedBox(
+            decoration: const ShapeDecoration(
+              color: AppColors.surfaceHigh,
+              shape: StadiumBorder(),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: Space.m,
+                vertical: Space.xs,
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: context.metrics.weight,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -379,16 +389,19 @@ class _Tiles extends ConsumerWidget {
   }
 }
 
-/// Shown while the device's location service is off during a session.
-class _LocationOffBanner extends StatelessWidget {
-  const new();
+/// A GPS problem during a session (location off, errors, no updates).
+class _GpsBanner extends StatelessWidget {
+  const new(this.message, {required this.icon});
+
+  final String message;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       container: true,
       liveRegion: true,
-      label: 'Location is off',
+      label: message,
       excludeSemantics: true,
       child: Padding(
         padding: const EdgeInsets.only(bottom: Space.s),
@@ -401,11 +414,11 @@ class _LocationOffBanner extends StatelessWidget {
             padding: const EdgeInsets.all(Space.s),
             child: Row(
               children: [
-                const Icon(Icons.location_disabled, color: AppColors.danger),
+                Icon(icon, color: AppColors.danger),
                 const SizedBox(width: Space.s),
                 Expanded(
                   child: Text(
-                    'Location is off. Turn it on to keep tracking.',
+                    message,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ),

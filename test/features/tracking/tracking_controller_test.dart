@@ -315,6 +315,27 @@ void main() {
       },
     );
 
+    test('recording starts on raw GPS in background mode; watchdog falls '
+        'back to fused, then to foreground updates', () async {
+      c.dispose();
+      c = makeContainer(noFix: const Duration(milliseconds: 60));
+      await ctl().prepare('running');
+      source.emit(_fix(0));
+      await ctl().startSession();
+      expect(source.lastBackground, isTrue);
+      expect(source.lastRawGps, isTrue);
+      await Future<void>.delayed(const Duration(milliseconds: 90));
+      expect(source.lastBackground, isTrue);
+      expect(source.lastRawGps, isFalse);
+      expect((ui() as TrackingLive).gpsIssue, contains('No GPS updates'));
+      await Future<void>.delayed(const Duration(milliseconds: 70));
+      expect(source.lastBackground, isFalse);
+      source.emit(_fix(1, accuracy: 4));
+      final live = ui() as TrackingLive;
+      expect(live.gpsIssue, isNull);
+      expect(live.accuracy, 4);
+    });
+
     test('no fix in time reopens the stream with the other provider', () async {
       c.dispose();
       c = makeContainer(noFix: const Duration(milliseconds: 60));

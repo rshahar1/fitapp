@@ -85,6 +85,8 @@ class TrackingLive extends TrackingUiState {
     this.points = const [],
     this.position,
     this.serviceEnabled = true,
+    this.accuracy,
+    this.gpsIssue,
   });
 
   final String sessionId;
@@ -99,6 +101,12 @@ class TrackingLive extends TrackingUiState {
 
   /// False while the device's location service is switched off.
   final bool serviceEnabled;
+
+  /// Accuracy in metres of the latest fix received; null before the first.
+  final double? accuracy;
+
+  /// A GPS problem worth showing (errors, no updates); null when fine.
+  final String? gpsIssue;
 }
 
 /// The session was saved as activity [activityId].
@@ -114,7 +122,14 @@ class TrackingController extends Notifier<TrackingUiState> {
   Timer? _retryTimer;
   Timer? _watchdog;
   bool _subBackground = false;
-  bool _rawGps = false;
+
+  /// Stream strategy attempt, advanced by the no-fix watchdog. Recording
+  /// starts with Android's raw GPS provider in background mode (it needs no
+  /// activity and no location-settings check), then tries the fused
+  /// provider, then falls back to plain foreground updates.
+  int _attempt = 0;
+  double? _accuracy;
+  String? _gpsIssue;
   bool _serviceOn = true;
   GeoPoint? _fix;
   Timer? _flushTimer;
@@ -149,6 +164,7 @@ class TrackingController extends Notifier<TrackingUiState> {
     final previous = state;
     await _cancelListening();
     _typeId = typeId;
+    _attempt = 0;
     var permission = await _source.checkPermission();
     if (permission == LocationPermissionState.denied) {
       permission = await _source.requestPermission();
@@ -194,6 +210,13 @@ class TrackingController extends Notifier<TrackingUiState> {
     final id = await _repo.start(typeId: s.typeId, startedAt: now);
     if (!ref.mounted) return;
     _fix = s.position;
+    _accuracy = s.accuracy;
+    // Close the waiting stream fully before opening the recording one: the
+    // plugin caches its stream until the old subscription is cancelled.
+    await _dropStream();
+    await Future<void>.delayed(Duration.zero);
+    if (!ref.mounted) return;
+    _attempt = 0;
     _begin(id, s.typeId, reducer.start(now), const []);
   }
 
@@ -241,12 +264,6 @@ class TrackingController extends Notifier<TrackingUiState> {
       (_) => unawaited(_flush()),
     );
     _watchService();
-    final waiting = _sub;
-    if (waiting != null && !_subBackground) {
-      // Reopen in background mode so recording survives the screen off.
-      _sub = null;
-      unawaited(waiting.cancel());
-    }
     if (_sub == null) _listen();
   }
 
@@ -327,14 +344,16 @@ class TrackingController extends Notifier<TrackingUiState> {
     if (type == null || _sub != null) return;
     // The background (foreground-service) mode is only needed once a
     // session records; while waiting for a fix the screen is visible.
-    _subBackground = _sessionId != null;
+    final live = _sessionId != null;
+    _subBackground = live && _attempt < 2;
+    final rawGps = live ? _attempt.isEven : _attempt.isOdd;
     _armWatchdog();
     _sub = _source
         .positions(
           notificationTitle: '${activityLabel(type)} in progress',
           notificationText: 'Tracking time and distance',
           background: _subBackground,
-          rawGps: _rawGps,
+          rawGps: rawGps,
         )
         .listen(
           _onFix,
@@ -343,6 +362,9 @@ class TrackingController extends Notifier<TrackingUiState> {
             final s = state;
             if (s is TrackingAcquiring) {
               state = _acquiring(s, error: e.toString());
+            } else if (s is TrackingLive && _track != null) {
+              _gpsIssue = 'GPS error, retrying: $e';
+              _publish();
             }
             _scheduleRetry();
           },
@@ -459,6 +481,8 @@ class TrackingController extends Notifier<TrackingUiState> {
       return;
     }
     _fix = (lat: fix.lat, lon: fix.lon);
+    _accuracy = fix.accuracy;
+    _gpsIssue = null;
     final sample = fix.withPaused(paused: track.manualPaused);
     final next = reducer.accumulate(track, sample, profile);
     if (identical(next.lastAccepted, sample)) {
@@ -484,6 +508,8 @@ class TrackingController extends Notifier<TrackingUiState> {
     points: _route,
     position: _fix ?? _lastAcceptedPoint(),
     serviceEnabled: _serviceOn,
+    accuracy: _accuracy,
+    gpsIssue: _gpsIssue,
   );
 
   GeoPoint? _lastAcceptedPoint() {
@@ -519,13 +545,16 @@ class TrackingController extends Notifier<TrackingUiState> {
   void _onNoFix() {
     _watchdog = null;
     if (!ref.mounted || _sub == null) return;
-    _rawGps = !_rawGps;
+    _attempt++;
     final s = state;
     if (s is TrackingAcquiring) {
       state = _acquiring(
         s,
         error: 'No location updates yet. Trying another GPS provider…',
       );
+    } else if (s is TrackingLive && _track != null) {
+      _gpsIssue = 'No GPS updates. Trying another GPS provider…';
+      _publish();
     }
     final old = _sub;
     _sub = null;
@@ -552,6 +581,9 @@ class TrackingController extends Notifier<TrackingUiState> {
   }
 
   void _clear() {
+    _attempt = 0;
+    _accuracy = null;
+    _gpsIssue = null;
     _sessionId = null;
     _track = null;
     _profile = null;

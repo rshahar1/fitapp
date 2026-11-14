@@ -1,5 +1,19 @@
 <!--
 Sync Impact Report
+- Version change: 1.4.0 → 1.5.0 (feature 013, cloud backup and sync, owner approval 2026-11-14)
+- Modified principles: I (local DB stays the source of truth; sync is a background copy, never
+  required for any feature); IV (sync code lives in `data/sync/`, auth in `AuthRepository`; widgets
+  never call the backend); VI (opt-in by Google sign-in; owner-only access enforced by the backend;
+  saved activity routes may be backed up to the user's own account, raw GPS fixes never leave the
+  device; backend URL/anon key via `--dart-define-from-file`, service-role key never in the app);
+  VII (Phase 2 sync is in scope; Apple Sign-In, email magic link, live multi-device push and sharing
+  remain out of scope)
+- Added sections: none (Technology & Platform Constraints adds `supabase_flutter`, `google_sign_in`,
+  Supabase CLI migrations with pgTAP tests; Workflow moves M7 into scope)
+- Removed sections: none
+- Deferred TODOs: none
+
+Previous report (1.4.0)
 - Version change: 1.3.0 → 1.4.0 (feature 010, live GPS tracking for running and cycling)
 - Modified principles: IV (`TrackingRepository` added to the repositories that own business writes);
   VI (location data stays on device; only map tile requests leave it; the map key comes from
@@ -59,8 +73,9 @@ Previous report (1.0.0)
 
 ### I. Offline-First, Local Source of Truth
 
-- The on-device SQLite database (drift) is the single source of truth. 100% of v1 features
-  MUST work with no network connection.
+- The on-device SQLite database (drift) is the single source of truth. 100% of features MUST
+  work with no network connection, signed in or not. Cloud sync (feature 013) is a background copy
+  of the local data; no screen may read from or wait on the backend.
 - Every logged set MUST be persisted immediately; killing the app mid-workout MUST NOT lose data.
 - All ids MUST be client-generated UUID v4; timestamps MUST be ISO-8601 UTC; every syncable
   table carries `updated_at` and `dirty` so Phase 2 sync can be added without schema rewrites.
@@ -102,7 +117,9 @@ Rationale: correctness of history edits is subtle; only tests make refactoring s
 
 - Layout: `app/` (router, theme, backdrop), `core/`, `domain/` (pure), `data/` (db, repositories,
   sync), `features/<feature>/`, `widgets/` (shared UI kit); `test/` mirrors `lib/`.
-- Widgets MUST NOT touch the database; they reach repositories through Riverpod providers.
+- Widgets MUST NOT touch the database or the backend; they reach repositories (including
+  `AuthRepository`) and the sync service through Riverpod providers. Sync code lives in
+  `lib/data/sync/` behind an interface with an in-memory fake for tests.
   No business logic in widgets.
 - All business writes go through repositories (`WorkoutRepository`, `ExerciseRepository`, `TemplateRepository`, `ActivityRepository`, `TrackingRepository`).
 - Colors, spacing, radii and type MUST come from the theme (tokens + `ThemeExtension`); no
@@ -132,9 +149,15 @@ Rationale: the user is sweaty, distracted and between sets; mis-taps corrupt dat
   `env/example.json` (empty values) is committed. Keystores and `android/key.properties` are never
   committed.
 - `.gitignore` MUST cover every path listed in PRD section 9.3; no IDE folders or build output in git.
-- No analytics or trackers in v1; data stays on device until the user opts into Phase 2 sync.
-- Location data (GPS fixes, routes) stays on the device. The only network traffic live tracking adds
-  is map tile requests to the tile provider. The map key is read from `--dart-define-from-file`
+- No analytics or trackers. Data stays on device until the user opts into sync by signing in with
+  Google; there are no anonymous cloud accounts.
+- Synced data MUST be readable and writable only by its owner, enforced by backend row-level
+  security on every table (not only by the app) and covered by automated tests.
+- Backend URL and anon key come from `--dart-define-from-file` (`env/dev.json`, git-ignored); the
+  service-role key MUST never ship in the app or the repo.
+- Raw GPS fixes and in-progress tracking sessions never leave the device. A saved activity's
+  simplified route and splits are backed up only to the signed-in user's own account. Apart from
+  sync, the only network traffic live tracking adds is map tile requests to the tile provider. The map key is read from `--dart-define-from-file`
   (`MAP_TILES_KEY` in `env/dev.json`, git-ignored); without it the app still works and draws routes
   on a plain background.
 - The app MUST never crash on bad data: DB errors are caught, logged, and shown as a short message;
@@ -144,8 +167,8 @@ Rationale: a personal health log is private data; leaked keys are irreversible.
 
 ### VII. Scope Discipline (YAGNI)
 
-- Build only what the PRD marks MUST/SHOULD for v1. LATER items (Supabase sync, kg/lb,
-  drop/failure sets, plate calculator, deload) MUST NOT be implemented early.
+- Build only what the PRD marks MUST/SHOULD for v1. LATER items (kg/lb, drop/failure sets, plate
+  calculator, deload) MUST NOT be implemented early.
 - Explicit non-goals MUST NOT appear in code or schema: no social/friends/feed/leaderboards, no
   `visibility` or friendship columns, no warm-up sets, no set-type column or W/D/F badges, no light
   theme, no videos, no AI workouts, no ads or paid features.
@@ -155,7 +178,9 @@ Rationale: a personal health log is private data; leaked keys are irreversible.
   pace, route, splits) with an in-app map via a tile provider (feature 010, owner approval
   2026-11-14) is in scope. Snowboarding tracking, Health Connect/HealthKit import, GPX export, miles
   and offline tile download remain out of scope until the owner requests them.
-- Phase 2 is designed for (UUIDs, `dirty`, `pending_deletes`) but not built.
+- Phase 2 cloud backup and sync with Google sign-in (feature 013, owner approval 2026-11-14) is in
+  scope, Android only. Apple Sign-In, email magic link, live push between devices and any sharing
+  between users remain out of scope until the owner requests them.
 
 Rationale: the owner explicitly dropped these; speculative code is maintenance debt.
 
@@ -163,7 +188,10 @@ Rationale: the owner explicitly dropped these; speculative code is maintenance d
 
 - Flutter stable (latest) + Dart with sound null safety; Android first (APK), iOS later.
 - Packages: `flutter_riverpod`, `go_router`, `drift` (+ SQLite libs), `fl_chart` or `CustomPainter`,
-  `uuid`, `intl`, `geolocator` (location), `flutter_map` + `latlong2` (map); tests with `flutter_test`, `mocktail` if needed. `supabase_flutter` only in Phase 2.
+  `uuid`, `intl`, `geolocator` (location), `flutter_map` + `latlong2` (map), `supabase_flutter` +
+  `google_sign_in` (sync, auth); tests with `flutter_test`, `mocktail` if needed.
+- Backend schema, triggers and row-level security live as Supabase CLI migrations in
+  `supabase/migrations/`, tested with pgTAP (`supabase test db`) against the local stack.
 - Android application id `com.fitapp.app`; app name **FitApp**; kg only internally and in the UI.
 - Builds are local (`flutter build apk`); no third-party build cloud.
 - Generated code (`*.g.dart`) policy is chosen once (commit or generate in CI) and documented in
@@ -171,7 +199,7 @@ Rationale: the owner explicitly dropped these; speculative code is maintenance d
 
 ## Development Workflow & Quality Gates
 
-- Work proceeds milestone by milestone (M0 → M6) as defined in the PRD; M7 (sync) is LATER.
+- Work proceeds milestone by milestone (M0 → M7) as defined in the PRD; M7 (sync) is feature 013.
 - Each milestone: tests first, implementation, then format + analyze + test green, show results,
   and commit with a small, clear message using the owner's GitHub no-reply email.
 - The repository is a private GitHub repo named `fitapp`; no LICENSE file.
@@ -188,4 +216,4 @@ Rationale: the owner explicitly dropped these; speculative code is maintenance d
   version (MAJOR: principle removed/redefined; MINOR: principle/section added; PATCH: wording).
 - Reviews verify compliance with principles II, III and VI on every milestone.
 
-**Version**: 1.4.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-14
+**Version**: 1.5.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-14

@@ -66,6 +66,8 @@ class SettingsRepository {
   static const _kRestTarget = 'active_rest_target_seconds';
   static const _kRestExercise = 'active_rest_exercise';
   static const _kPermissionAsked = 'notif_permission_asked';
+  static const _kStepsEnabled = 'steps_enabled';
+  static const _kStepsIntroShown = 'steps_intro_shown';
   static const _kSyncUpdatedAt = 'sync.settings_updated_at';
   static const _kSyncDirty = 'sync.settings_dirty';
 
@@ -160,6 +162,21 @@ class SettingsRepository {
 
   /// Stores a free-form local flag (not synced).
   Future<void> writeFlag(String key, String value) => _put(key, value);
+
+  // ---- Daily steps (feature 014): device-local, never synced -------------
+
+  static bool _stepsEnabled(Map<String, String> m) =>
+      m[_kStepsEnabled] != 'false';
+
+  Stream<bool> watchStepsEnabled() => _watchAll().map(_stepsEnabled).distinct();
+
+  Future<void> setStepsEnabled(bool enabled) =>
+      _put(_kStepsEnabled, enabled.toString());
+
+  Future<bool> stepsIntroShown() async =>
+      (await _all())[_kStepsIntroShown] == 'true';
+
+  Future<void> markStepsIntroShown() => _put(_kStepsIntroShown, 'true');
 
   // ---- Cloud sync (feature 013): whitelisted settings --------------------
 

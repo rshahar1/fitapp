@@ -1,8 +1,10 @@
 import 'package:fitapp/app/app.dart';
 import 'package:fitapp/app/router.dart';
 import 'package:fitapp/core/env.dart';
+import 'package:fitapp/core/health_connect_step_source.dart';
 import 'package:fitapp/core/platform_rest_alerts.dart';
 import 'package:fitapp/core/rest_alerts.dart';
+import 'package:fitapp/core/step_source.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:flutter/services.dart';
@@ -21,6 +23,7 @@ Future<void> main() async {
     overrides: [
       databaseProvider.overrideWithValue(db),
       restAlertsProvider.overrideWithValue(alerts),
+      stepSourceProvider.overrideWithValue(HealthConnectStepSource()),
       supabaseClientProvider.overrideWithValue(supabase),
     ],
   );

@@ -13,12 +13,12 @@ description: "Task list for daily step count"
 
 ## Phase 2: Foundational — core, settings, providers, Android (tests first)
 
-- [ ] T003 Tests: `todayStart`; settings `steps_enabled` default true / toggle / not marking sync dirty; `steps_intro_shown`; providers (disabled → no source calls, `unavailable`; granted → count; error → null) — test/core/step_source_test.dart, test/data/settings_repository_test.dart, test/data/step_providers_test.dart
-- [ ] T004 `StepSource`, `StepAccess`, `NoopStepSource`, `todayStart` — lib/core/step_source.dart
-- [ ] T005 `HealthConnectStepSource` (configure, status mapping, timeouts, try/catch) — lib/core/health_connect_step_source.dart
-- [ ] T006 Settings keys + providers; `main.dart` override on Android — lib/data/repositories/settings_repository.dart, lib/data/providers.dart, lib/main.dart
-- [ ] T007 Android: manifest permission/queries/rationale filter/alias, `FlutterFragmentActivity` + `getInitialRoute`, minSdk 26
-- [ ] T008 Milestone gate: format, analyze, test; commit
+- [x] T003 Tests: `todayStart`; settings `steps_enabled` default true / toggle / not marking sync dirty; `steps_intro_shown`; providers (disabled → no source calls, `unavailable`; granted → count; error → null) — test/core/step_source_test.dart, test/data/settings_repository_test.dart, test/data/step_providers_test.dart
+- [x] T004 `StepSource`, `StepAccess`, `NoopStepSource`, `todayStart` — lib/core/step_source.dart
+- [x] T005 `HealthConnectStepSource` (configure, status mapping, timeouts, try/catch) — lib/core/health_connect_step_source.dart
+- [x] T006 Settings keys + providers; `main.dart` override on Android — lib/data/repositories/settings_repository.dart, lib/data/providers.dart, lib/main.dart
+- [x] T007 Android: manifest permission/queries/rationale filter/alias, `FlutterFragmentActivity` + `getInitialRoute`, minSdk 26
+- [x] T008 Milestone gate: format, analyze, test; commit
 
 ## Phase 3: UI
 

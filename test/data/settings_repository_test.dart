@@ -89,4 +89,28 @@ void main() {
       expect(await h.settings.readActiveRest(), isNull);
     });
   });
+
+  group('daily steps settings', () {
+    test('steps_enabled defaults to true and toggles', () async {
+      expect(await h.settings.watchStepsEnabled().first, isTrue);
+      await h.settings.setStepsEnabled(false);
+      expect(await h.settings.watchStepsEnabled().first, isFalse);
+      await h.settings.setStepsEnabled(true);
+      expect(await h.settings.watchStepsEnabled().first, isTrue);
+    });
+
+    test('steps_intro_shown defaults false then true', () async {
+      expect(await h.settings.stepsIntroShown(), isFalse);
+      await h.settings.markStepsIntroShown();
+      expect(await h.settings.stepsIntroShown(), isTrue);
+    });
+
+    test('step keys are device-local: not dirty, not synced', () async {
+      await h.settings.setStepsEnabled(false);
+      await h.settings.markStepsIntroShown();
+      expect(await h.settings.syncedSettingsDirty(), isFalse);
+      expect(await h.settings.syncedSettingsUpdatedAt(), isNull);
+      expect(await h.settings.syncedSettings(), isEmpty);
+    });
+  });
 }

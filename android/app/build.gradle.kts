@@ -51,12 +51,27 @@ android {
 
     buildTypes {
         release {
-            // Uses android/key.properties if present, else falls back to debug signing.
+            // Signed with the release key from android/key.properties (tool/make_release_keystore.sh).
+            // Without it, release builds fail unless FITAPP_ALLOW_DEBUG_SIGNING=1 is set, which is for
+            // local testing only: a debug-signed APK must never be shared (docs/release.md).
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")
             }
+        }
+    }
+}
+
+val allowDebugSigning = System.getenv("FITAPP_ALLOW_DEBUG_SIGNING") == "1"
+tasks.configureEach {
+    val releasePackaging = name == "packageRelease" || name == "signReleaseBundle"
+    if (releasePackaging && !keystorePropertiesFile.exists() && !allowDebugSigning) {
+        doFirst {
+            throw GradleException(
+                "No release key: android/key.properties is missing. Run tool/make_release_keystore.sh " +
+                    "(see docs/release.md), or set FITAPP_ALLOW_DEBUG_SIGNING=1 for a local test build.",
+            )
         }
     }
 }

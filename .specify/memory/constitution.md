@@ -1,5 +1,18 @@
 <!--
 Sync Impact Report
+- Version change: 1.5.0 → 1.6.0 (feature 014, daily step count, owner approval 2026-11-15)
+- Modified principles: VI (step counts are read on device from Health Connect, read-only and
+  steps only; they are not stored in the app database and never leave the device); VII (reading
+  today's step total from Android Health Connect is in scope, on by default with a Settings switch;
+  only data written from the moment access is granted, no historical import. The Google Fit APIs
+  are end-of-life at the end of 2026, so Google Fit data is read through Health Connect.
+  HealthKit, writing to Health Connect, other health data types, step goals and step history
+  remain out of scope)
+- Added sections: none (Technology & Platform Constraints adds `health`)
+- Removed sections: none
+- Deferred TODOs: none
+
+Previous report (1.5.0)
 - Version change: 1.4.0 → 1.5.0 (feature 013, cloud backup and sync, owner approval 2026-11-14)
 - Modified principles: I (local DB stays the source of truth; sync is a background copy, never
   required for any feature); IV (sync code lives in `data/sync/`, auth in `AuthRepository`; widgets
@@ -160,6 +173,9 @@ Rationale: the user is sweaty, distracted and between sets; mis-taps corrupt dat
   sync, the only network traffic live tracking adds is map tile requests to the tile provider. The map key is read from `--dart-define-from-file`
   (`MAP_TILES_KEY` in `env/dev.json`, git-ignored); without it the app still works and draws routes
   on a plain background.
+- Step counts (feature 014) are read on device from Health Connect with a read-only steps
+  permission. They are shown, never written to the app database, never synced and never sent
+  anywhere; the user can turn the feature off in Settings, after which nothing is read.
 - The app MUST never crash on bad data: DB errors are caught, logged, and shown as a short message;
   sync errors are silent and retried.
 
@@ -176,8 +192,11 @@ Rationale: a personal health log is private data; leaked keys are irreversible.
   scope. Manual distance entry for running and cycling, with derived pace or speed (feature 009,
   owner request 2026-11-14), is in scope. Live GPS tracking for running and cycling (distance,
   pace, route, splits) with an in-app map via a tile provider (feature 010, owner approval
-  2026-11-14) is in scope. Snowboarding tracking, Health Connect/HealthKit import, GPX export, miles
-  and offline tile download remain out of scope until the owner requests them.
+  2026-11-14) is in scope. Today's step total read from Android Health Connect (feature 014, owner
+  approval 2026-11-15; this is how Google Fit data reaches the app) is in scope, on by default
+  with a Settings switch, new data only. Snowboarding tracking, HealthKit, writing to Health
+  Connect, other health data types, step goals and history, GPX export, miles and offline tile
+  download remain out of scope until the owner requests them.
 - Phase 2 cloud backup and sync with Google sign-in (feature 013, owner approval 2026-11-14) is in
   scope, Android only. Apple Sign-In, email magic link, live push between devices and any sharing
   between users remain out of scope until the owner requests them.
@@ -189,7 +208,7 @@ Rationale: the owner explicitly dropped these; speculative code is maintenance d
 - Flutter stable (latest) + Dart with sound null safety; Android first (APK), iOS later.
 - Packages: `flutter_riverpod`, `go_router`, `drift` (+ SQLite libs), `fl_chart` or `CustomPainter`,
   `uuid`, `intl`, `geolocator` (location), `flutter_map` + `latlong2` (map), `supabase_flutter` +
-  `google_sign_in` (sync, auth); tests with `flutter_test`, `mocktail` if needed.
+  `google_sign_in` (sync, auth), `health` (Health Connect steps); tests with `flutter_test`, `mocktail` if needed.
 - Backend schema, triggers and row-level security live as Supabase CLI migrations in
   `supabase/migrations/`, tested by SQL tests on PGlite (`node tool/db_test.mjs`, also in CI).
 - Android application id `com.fitapp.app`; app name **FitApp**; kg only internally and in the UI.
@@ -216,4 +235,4 @@ Rationale: the owner explicitly dropped these; speculative code is maintenance d
   version (MAJOR: principle removed/redefined; MINOR: principle/section added; PATCH: wording).
 - Reviews verify compliance with principles II, III and VI on every milestone.
 
-**Version**: 1.5.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-14
+**Version**: 1.6.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-15

@@ -97,6 +97,17 @@ sign-in offered only Merge (re-uploading deleted items) or Cancel.
   lib/features/settings/account_section.dart, test/features/account_section_test.dart
 - [x] T048 Gate: format, analyze, test; commit
 
+## Phase 10: Hardening for public release (2026-11-15)
+
+- [x] T049 Server size and range limits (migration `20261115000001_sync_limits.sql`), tests first —
+  supabase/tests/limits_test.sql; limits sit above every app limit so real data is never rejected
+- [x] T050 Release builds refuse to sign with the debug key unless `FITAPP_ALLOW_DEBUG_SIGNING=1`;
+  `tool/make_release_keystore.sh` creates the release key outside the repo — android/app/build.gradle.kts
+- [x] T051 Skip lint "vital" release checks for third-party plugin modules (lint crashes on plugin sources) —
+  android/build.gradle.kts
+- [x] T052 Docs: docs/release.md (signing, what is public in the APK, pre-publish checklist), README, sync-setup
+- [x] T053 Verified: release APK (debug-signed, local test) runs on a Pixel 11 Pro, signed in, backs up
+
 ## Dependencies
 
 Setup → Foundational (backend T004–T010 ∥ local T011–T014, then engine T015–T021) → US1 → US2 → US3, US4 → US5 →

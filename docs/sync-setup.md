@@ -27,6 +27,9 @@ supabase functions deploy delete-account
    - Debug SHA-1: `keytool -list -v -alias androiddebugkey -keystore ~/.android/debug.keystore -storepass android`
    - Release SHA-1: from your release keystore (`keytool -list -v -keystore <path> -alias <alias>`).
 
+   Release builds need their own SHA-1 Android client, or Google sign-in fails; see
+   [release.md](release.md).
+
 ## 3. Supabase dashboard: Google provider
 
 Auth > Providers > Google:

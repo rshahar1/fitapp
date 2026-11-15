@@ -19,6 +19,15 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+// Release builds run lint's "vital" checks on every plugin module. Lint crashes on some plugin sources
+// (NoSuchMethodError in its JavaDoc parser, a lint toolchain bug), so skip them for third-party plugin
+// modules only; the app module (:app) keeps its release lint checks.
+subprojects {
+    if (name != "app") {
+        tasks.matching { it.name.startsWith("lintVital") }.configureEach { enabled = false }
+    }
+}
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }

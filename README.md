@@ -49,34 +49,15 @@ flutter test                      # unit, data, widget, and the end-to-end widge
 flutter test integration_test     # needs a device or emulator
 ```
 
-## Build APK
+## Release build
 
-Debug (personal use):
+Debug build (personal use): `flutter build apk --debug`.
 
-```sh
-flutter build apk --debug
-```
-
-Release, signed with your own keystore. Create it once (keep it outside git):
-
-```sh
-keytool -genkey -v -keystore ~/upload-keystore.jks -storetype JKS \
-  -keyalg RSA -keysize 2048 -validity 10000 -alias upload
-```
-
-Create `android/key.properties`:
-
-```properties
-storePassword=<your store password>
-keyPassword=<your key password>
-keyAlias=upload
-storeFile=/absolute/path/to/upload-keystore.jks
-```
-
-Then run `flutter build apk --release`; the APK is at `build/app/outputs/flutter-apk/app-release.apk`.
-It is signed with `android/key.properties` and the keystore when present, otherwise debug-signed. A
-debug-signed APK is fine for personal sideloading but NOT for the Play Store.
-Neither the keystore (`*.jks`, `*.keystore`) nor `android/key.properties` is ever committed.
+For sharing or the Play Store, build a signed release: create the keystore once with
+`tool/make_release_keystore.sh`, then `flutter build apk --release --dart-define-from-file=env/dev.json`
+(APK at `build/app/outputs/flutter-apk/app-release.apk`). A release build without
+`android/key.properties` fails unless `FITAPP_ALLOW_DEBUG_SIGNING=1` is set (local testing only).
+Keystore and `key.properties` are never committed. Full guide: [docs/release.md](docs/release.md).
 
 ## Install on your phone
 

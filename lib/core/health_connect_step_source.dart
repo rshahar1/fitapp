@@ -21,7 +21,12 @@ class HealthConnectStepSource implements StepSource {
   final bool _isAndroid;
   Future<void>? _configured;
 
-  Future<void> _configure() => _configured ??= _health.configure();
+  /// Configures once; a failed attempt is retried on the next call.
+  Future<void> _configure() =>
+      _configured ??= _health.configure().catchError((Object e, StackTrace s) {
+        _configured = null;
+        Error.throwWithStackTrace(e, s);
+      });
 
   void _log(String what, Object error, StackTrace stack) => developer.log(
     'StepSource.$what failed',

@@ -4,6 +4,7 @@ import 'package:fitapp/features/exercises/exercise_picker_screen.dart';
 import 'package:fitapp/features/history/history_screen.dart';
 import 'package:fitapp/features/progress/exercise_detail_screen.dart';
 import 'package:fitapp/features/progress/progress_screen.dart';
+import 'package:fitapp/features/settings/privacy_screen.dart';
 import 'package:fitapp/features/settings/settings_screen.dart';
 import 'package:fitapp/features/shell/shell_scaffold.dart';
 import 'package:fitapp/features/templates/template_editor_screen.dart';
@@ -26,6 +27,9 @@ abstract final class Routes {
   static const you = '/you';
   static const workout = '/workout';
   static const settings = '/settings';
+
+  /// Step data explanation; also Health Connect's permission rationale.
+  static const privacy = '/privacy';
 
   /// Live GPS tracking (feature 010): setup (GPS check) and the live screen.
   static const trackNew = '/track/new';
@@ -50,7 +54,11 @@ final _rootKey = GlobalKey<NavigatorState>();
 
 GoRouter buildRouter() => GoRouter(
   navigatorKey: _rootKey,
-  initialLocation: Routes.train,
+  initialLocation:
+      WidgetsBinding.instance.platformDispatcher.defaultRouteName ==
+          Routes.privacy
+      ? Routes.privacy
+      : Routes.train,
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, shell) => ShellScaffold(shell: shell),
@@ -156,6 +164,11 @@ GoRouter buildRouter() => GoRouter(
       parentNavigatorKey: _rootKey,
       path: Routes.settings,
       builder: (_, _) => const SettingsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootKey,
+      path: Routes.privacy,
+      builder: (_, _) => const PrivacyScreen(),
     ),
   ],
 );

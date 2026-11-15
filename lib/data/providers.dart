@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:fitapp/core/env.dart';
+import 'package:fitapp/core/step_source.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/repositories/activity_repository.dart';
@@ -97,6 +98,31 @@ final defaultRestProvider = StreamProvider<int>(
 final alertPrefsProvider = StreamProvider<RestAlertPrefs>(
   (ref) => ref.watch(settingsRepositoryProvider).watchAlertPrefs(),
 );
+
+final stepsEnabledProvider = StreamProvider<bool>(
+  (ref) => ref.watch(settingsRepositoryProvider).watchStepsEnabled(),
+);
+
+/// Never touches the source while the feature is off.
+final stepAccessProvider = FutureProvider.autoDispose<StepAccess>((ref) async {
+  final enabled = await ref.watch(stepsEnabledProvider.future);
+  if (!enabled) return StepAccess.unavailable;
+  final access = await ref.watch(stepSourceProvider).access();
+  return access;
+});
+
+/// Today's steps (local midnight to now); null when unreadable.
+final todayStepsProvider = FutureProvider.autoDispose<int?>((ref) async {
+  final enabled = await ref.watch(stepsEnabledProvider.future);
+  if (!enabled) return null;
+  final access = await ref.watch(stepAccessProvider.future);
+  if (access != StepAccess.granted) return null;
+  final now = ref.read(clockProvider)();
+  final steps = await ref
+      .read(stepSourceProvider)
+      .stepsBetween(todayStart(now), now);
+  return steps;
+});
 
 final templateRepositoryProvider = Provider<TemplateRepository>(
   (ref) => TemplateRepository(ref.watch(databaseProvider)),

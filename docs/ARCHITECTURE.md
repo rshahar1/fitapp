@@ -83,6 +83,13 @@ Implementation in `WorkoutRepository`:
 - `AppLifecycleListener` in `lib/app/app.dart` calls `onBackground()` on hide/pause and `onForeground()` on show/resume.
 - Tests override `restAlertsProvider` with a no-op or fake.
 
+## Daily steps (feature 014)
+
+- `lib/core/step_source.dart`: `StepSource` (`access`, `requestAccess`, `installHealthConnect`, `stepsBetween`), `StepAccess`, `NoopStepSource` (default), `stepSourceProvider`, `todayStart`.
+- `lib/core/health_connect_step_source.dart`: production adapter over the `health` package (Health Connect, `READ_STEPS` only); every call is caught, logged and time-limited; overridden in `main()`.
+- Providers `stepsEnabledProvider`, `stepAccessProvider`, `todayStepsProvider` never call the source while the setting is off. Step counts are never stored, synced or sent; `steps_enabled` / `steps_intro_shown` are device-local settings outside the sync whitelist.
+- Android: `MainActivity` is a `FlutterFragmentActivity`; Health Connect's rationale / permission-usage intents start the app at `/privacy` (`PrivacyScreen`).
+
 ## Data model: templates
 
 - `templates`: `id`, `name` (trimmed, 1 to 40 chars, unique ignoring case via the `templates_name_ci` index on lower(name)), `created_at`, `last_used_at` (nullable), plus sync columns (`updated_at`, `dirty`).

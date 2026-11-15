@@ -22,10 +22,10 @@ description: "Task list for daily step count"
 
 ## Phase 3: UI
 
-- [ ] T009 [US1][US2] `StepsCard` + `StepsIntroSheet` on Train screen, resume refresh — lib/features/train/steps_card.dart, train_screen.dart; widget tests for every access state, intro shown once
-- [ ] T010 [US3] Settings "Activity" group: Daily steps switch + access subtitle + privacy row — lib/features/settings/settings_screen.dart; widget tests
-- [ ] T011 `PrivacyScreen` + `/privacy` route and initial-location switch — lib/features/settings/privacy_screen.dart, lib/app/router.dart; widget test
-- [ ] T012 Milestone gate: format, analyze, test, `flutter build apk --debug`; commit
+- [x] T009 [US1][US2] `StepsCard` + `StepsIntroSheet` on Train screen, resume refresh — lib/features/train/steps_card.dart, train_screen.dart; widget tests for every access state, intro shown once
+- [x] T010 [US3] Settings "Activity" group: Daily steps switch + access subtitle + privacy row — lib/features/settings/settings_screen.dart; widget tests
+- [x] T011 `PrivacyScreen` + `/privacy` route and initial-location switch — lib/features/settings/privacy_screen.dart, lib/app/router.dart; widget test
+- [x] T012 Milestone gate: format, analyze, test, `flutter build apk --debug`; commit
 
 ## Phase 4: Polish
 

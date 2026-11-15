@@ -3,6 +3,7 @@ import 'package:drift/native.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/core/rest_alerts.dart';
+import 'package:fitapp/core/step_source.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/settings_repository.dart';
@@ -10,6 +11,8 @@ import 'package:fitapp/features/settings/settings_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+
+import 'fake_step_source.dart';
 
 class _FakeHaptics implements Haptics {
   @override
@@ -39,6 +42,7 @@ class _FakeAlerts extends NoopRestAlerts {
 void main() {
   late AppDatabase db;
   late SettingsRepository settings;
+  late FakeStepSource steps;
   var alerts = _FakeAlerts(
     const AlertStatus(
       notifications: AlertPermission.granted,
@@ -50,6 +54,7 @@ void main() {
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     db = AppDatabase(DatabaseConnection(NativeDatabase.memory()));
     settings = SettingsRepository(db);
+    steps = FakeStepSource();
     alerts = _FakeAlerts(
       const AlertStatus(
         notifications: AlertPermission.granted,
@@ -78,6 +83,7 @@ void main() {
           databaseProvider.overrideWithValue(db),
           hapticsProvider.overrideWithValue(_FakeHaptics()),
           restAlertsProvider.overrideWithValue(alerts),
+          stepSourceProvider.overrideWithValue(steps),
         ],
         child: MaterialApp(
           theme: buildAppTheme(),
@@ -161,5 +167,70 @@ void main() {
     await tester.pumpAndSettle();
     expect(alerts.calls, ['notifications', 'exact']);
     await unmount(tester);
+  });
+
+  group('Activity', () {
+    SwitchListTile row(WidgetTester tester) =>
+        tester.widget(find.widgetWithText(SwitchListTile, 'Daily steps'));
+
+    testWidgets('subtitle follows the access state', (tester) async {
+      for (final (state, text) in [
+        (StepAccess.granted, 'Connected to Health Connect'),
+        (StepAccess.notGranted, 'Not connected — tap to connect'),
+        (StepAccess.needsInstall, 'Health Connect needs to be installed'),
+        (StepAccess.unavailable, 'Health Connect not available on this phone'),
+      ]) {
+        steps.state = state;
+        await pump(tester);
+        expect(row(tester).value, isTrue);
+        expect(find.text(text), findsOneWidget, reason: '$state');
+        await unmount(tester);
+      }
+    });
+
+    testWidgets('switch persists and hides the subtitle when off', (
+      tester,
+    ) async {
+      await pump(tester);
+      await tester.tap(find.text('Daily steps'));
+      await tester.pumpAndSettle();
+      expect(
+        await tester.runAsync(() => settings.watchStepsEnabled().first),
+        isFalse,
+      );
+      expect(find.text('Connected to Health Connect'), findsNothing);
+      expect(steps.calls, isEmpty);
+      await unmount(tester);
+    });
+
+    testWidgets('turning on while not connected requests access', (
+      tester,
+    ) async {
+      await settings.setStepsEnabled(false);
+      steps.state = StepAccess.notGranted;
+      await pump(tester);
+      await tester.tap(find.text('Daily steps'));
+      await tester.pumpAndSettle();
+      expect(steps.calls, ['request']);
+      await unmount(tester);
+    });
+
+    testWidgets('turning on while Health Connect is missing installs it', (
+      tester,
+    ) async {
+      await settings.setStepsEnabled(false);
+      steps.state = StepAccess.needsInstall;
+      await pump(tester);
+      await tester.tap(find.text('Daily steps'));
+      await tester.pumpAndSettle();
+      expect(steps.calls, ['install']);
+      await unmount(tester);
+    });
+
+    testWidgets('privacy row is present', (tester) async {
+      await pump(tester);
+      expect(find.text('How step data is used'), findsOneWidget);
+      await unmount(tester);
+    });
   });
 }

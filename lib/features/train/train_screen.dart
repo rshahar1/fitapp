@@ -8,6 +8,7 @@ import 'package:fitapp/domain/start_guard.dart';
 import 'package:fitapp/domain/tracking/track_reducer.dart' show elapsedAt;
 import 'package:fitapp/features/start/start_actions.dart';
 import 'package:fitapp/features/tracking/tracking_controller.dart';
+import 'package:fitapp/features/train/steps_card.dart';
 import 'package:fitapp/features/workout/widgets/tick.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,6 +42,7 @@ class TrainScreen extends ConsumerWidget {
             Text('Train', style: text.headlineLarge),
             const SizedBox(height: Space.m),
             const _HeroCard(),
+            const StepsCard(),
             SectionHeader(
               'Templates',
               trailing: TextButton(

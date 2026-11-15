@@ -1,11 +1,14 @@
+import 'package:fitapp/app/router.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/core/rest_alerts.dart';
+import 'package:fitapp/core/step_source.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/settings_repository.dart';
 import 'package:fitapp/features/settings/account_section.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Current notification / exact-alarm status; invalidated on app resume.
@@ -30,7 +33,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void initState() {
     super.initState();
     _lifecycle = AppLifecycleListener(
-      onResume: () => ref.invalidate(alertStatusProvider),
+      onResume: () {
+        ref
+          ..invalidate(alertStatusProvider)
+          ..invalidate(stepAccessProvider);
+      },
     );
   }
 
@@ -45,6 +52,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (mounted) ref.invalidate(alertStatusProvider);
   }
 
+  Future<void> _setSteps(bool on) async {
+    await ref.read(settingsRepositoryProvider).setStepsEnabled(on);
+    if (on) {
+      final source = ref.read(stepSourceProvider);
+      switch (await source.access()) {
+        case StepAccess.notGranted:
+          await source.requestAccess();
+        case StepAccess.needsInstall:
+          await source.installHealthConnect();
+        case StepAccess.granted:
+        case StepAccess.unavailable:
+      }
+    }
+    if (mounted) ref.invalidate(stepAccessProvider);
+  }
+
+  static String _stepsSubtitle(StepAccess? access) => switch (access) {
+    StepAccess.granted => 'Connected to Health Connect',
+    StepAccess.notGranted => 'Not connected — tap to connect',
+    StepAccess.needsInstall => 'Health Connect needs to be installed',
+    StepAccess.unavailable => 'Health Connect not available on this phone',
+    null => '',
+  };
+
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
@@ -56,6 +87,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     final alerts = ref.read(restAlertsProvider);
     final status = ref.watch(alertStatusProvider).value;
+
+    final stepsOn = ref.watch(stepsEnabledProvider).value ?? true;
+    final stepsSubtitle = stepsOn
+        ? _stepsSubtitle(ref.watch(stepAccessProvider).value)
+        : '';
 
     String clock(int s) => formatClock(Duration(seconds: s));
 
@@ -158,6 +194,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               'them arrive on time.',
               style: text.bodySmall?.copyWith(color: AppColors.textSecondary),
             ),
+          ),
+          Group(
+            header: 'Activity',
+            children: [
+              SwitchListTile(
+                title: const Text('Daily steps'),
+                subtitle: stepsSubtitle.isEmpty
+                    ? null
+                    : Text(
+                        stepsSubtitle,
+                        style: text.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                value: stepsOn,
+                onChanged: _setSteps,
+              ),
+              GroupRow(
+                title: 'How step data is used',
+                showChevron: true,
+                onTap: () => context.push(Routes.privacy),
+              ),
+            ],
           ),
           Group(
             header: 'Units',

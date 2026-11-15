@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' show DatabaseConnection, driftRuntimeOptions;
 import 'package:drift/native.dart';
+import 'package:fitapp/app/router.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/data/db/app_database.dart';
@@ -77,6 +78,34 @@ void main() {
         child: MaterialApp(theme: buildAppTheme(), home: home),
       ),
     );
+    await settle(tester);
+  }
+
+  // History inside the real router, so rows can push the detail screen.
+  Future<void> pumpHistory(WidgetTester tester) async {
+    tester.view
+      ..physicalSize = const Size(800, 1600)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final router = buildRouter();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          hapticsProvider.overrideWithValue(_FakeHaptics()),
+          routerProvider.overrideWithValue(router),
+        ],
+        child: MaterialApp.router(theme: buildAppTheme(), routerConfig: router),
+      ),
+    );
+    router.go(Routes.history);
+    await settle(tester);
+  }
+
+  Future<void> openRowThenEdit(WidgetTester tester, String row) async {
+    await tester.tap(find.text(row));
+    await settle(tester);
+    await tester.tap(find.byTooltip('Edit activity'));
     await settle(tester);
   }
 
@@ -247,11 +276,10 @@ void main() {
         distanceMeters: 5200,
       ),
     );
-    await pump(tester, const HistoryScreen());
+    await pumpHistory(tester);
     expect(find.text('Running · 5.2 km · 28 min · 5:23 /km'), findsOneWidget);
-    await tester.tap(find.text('Running · 5.2 km · 28 min · 5:23 /km'));
-    await tester.pumpAndSettle();
-    expect(find.text('5.2'), findsOneWidget);
+    await openRowThenEdit(tester, 'Running · 5.2 km · 28 min · 5:23 /km');
+    expect(find.widgetWithText(TextField, '5.2'), findsOneWidget);
     await tester.tap(find.text('Pilates'));
     await tester.pump();
     await save(tester);
@@ -308,9 +336,8 @@ void main() {
 
   testWidgets('History: edit an activity to Cycling', (tester) async {
     await seedHistory(tester);
-    await pump(tester, const HistoryScreen());
-    await tester.tap(find.text('Running · 45 min'));
-    await tester.pumpAndSettle();
+    await pumpHistory(tester);
+    await openRowThenEdit(tester, 'Running · 45 min');
     expect(find.text('Edit activity'), findsOneWidget);
     await tester.tap(find.text('Cycling'));
     await tester.pump();
@@ -319,26 +346,28 @@ void main() {
     final list = await activities(tester);
     expect(list.single.typeId, 'cycling');
     expect(list.single.durationMinutes, 45);
-    expect(find.text('Cycling · 45 min'), findsOneWidget);
+    // The detail screen reflects the edit.
+    expect(find.text('Cycling'), findsOneWidget);
+    expect(find.text('45 min'), findsOneWidget);
     await unmount(tester);
   });
 
   testWidgets('Delete asks to confirm', (tester) async {
     await seedHistory(tester);
-    await pump(tester, const HistoryScreen());
+    await pumpHistory(tester);
     await tester.tap(find.text('Running · 45 min'));
-    await tester.pumpAndSettle();
+    await settle(tester);
 
-    await tester.tap(find.text('Delete'));
-    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Delete activity'));
+    await settle(tester);
     expect(find.text('Delete activity?'), findsOneWidget);
     await tester.tap(find.text('Cancel'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     expect(await activities(tester), hasLength(1));
-    expect(find.text('Edit activity'), findsOneWidget);
+    expect(find.byTooltip('Edit activity'), findsOneWidget);
 
-    await tester.tap(find.text('Delete'));
-    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Delete activity'));
+    await settle(tester);
     await tester.tap(
       find.descendant(
         of: find.byType(AlertDialog),
@@ -347,7 +376,7 @@ void main() {
     );
     await settle(tester);
     expect(await activities(tester), isEmpty);
-    expect(find.text('Edit activity'), findsNothing);
+    expect(find.byTooltip('Edit activity'), findsNothing);
     await unmount(tester);
   });
 }

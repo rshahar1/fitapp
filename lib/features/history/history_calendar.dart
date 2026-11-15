@@ -25,7 +25,7 @@ class HistoryCalendar extends ConsumerStatefulWidget {
 }
 
 class _HistoryCalendarState extends ConsumerState<HistoryCalendar> {
-  _CalendarMode _mode = _CalendarMode.month;
+  _CalendarMode _mode = _CalendarMode.week;
   DateTime? _anchor;
   DateTime? _selected;
 

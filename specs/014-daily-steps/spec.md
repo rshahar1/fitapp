@@ -2,7 +2,7 @@
 
 **Feature Branch**: `014-daily-steps`
 **Created**: 2026-11-15
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: Add daily step-count tracking, preferably via Google Fit. On by default, with an option
 to turn it off in Settings. Owner decisions 2026-11-15: read steps through Android Health Connect

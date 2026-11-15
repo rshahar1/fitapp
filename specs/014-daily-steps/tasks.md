@@ -29,4 +29,4 @@ description: "Task list for daily step count"
 
 ## Phase 4: Polish
 
-- [ ] T013 README roadmap + docs/ARCHITECTURE.md (StepSource), PRD note; mark spec Implemented
+- [x] T013 README roadmap + docs/ARCHITECTURE.md (StepSource), PRD note; mark spec Implemented

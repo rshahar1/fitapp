@@ -77,6 +77,7 @@ gets select/insert/update; `delete` only via account deletion (service role).
                            ├─ local history, cloud empty     ─▶ bind ▶ first backup (push all)
                            └─ local history, cloud has data  ─▶ ask "Merge?"
                                                                   merge ─▶ bind ▶ pull ▶ push
+                                                                  use backup ─▶ wipe ▶ bind ▶ restore
                                                                   cancel ─▶ sign out, unbound
   [Any] ──remove data from phone──▶ wipe user data, keep built-ins, clear cursors ─▶ [Unbound]
   [Bound] ──delete account──▶ server delete ─▶ ask keep/remove local ─▶ [Unbound]

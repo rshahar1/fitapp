@@ -108,6 +108,9 @@ through each choice, verifying the resulting data on the phone and in the accoun
    cancelling keeps the phone unchanged and signed out.
 3. **Given** a merge where both sides have a template (or custom exercise) with the same name, **When** the merge
    completes, **Then** both are kept and one is renamed with a visible suffix such as " (2)".
+4. **Given** a phone with local history that was never signed in (e.g. an old copy put back by Android's own app
+   backup after a reinstall), and an account with a backup, **When** the user signs in and chooses "Use my backup
+   instead", **Then** the phone's data is replaced by the account's backup and nothing from the phone is uploaded.
 
 ---
 
@@ -210,8 +213,10 @@ permanently delete their cloud account and its backup.
 - **FR-022**: Signing in on a phone with no local history MUST restore the account's full backup, showing progress
   until done.
 - **FR-023**: Signing in on a never-signed-in phone that has history, with an account that has a backup, MUST ask the
-  user to merge; merging MUST keep every record from both sides and rename name clashes of templates and custom
-  exercises with a visible suffix.
+  user to merge or to use the backup instead; merging MUST keep every record from both sides and rename name clashes
+  of templates and custom exercises with a visible suffix; "use my backup instead" MUST replace the phone's data with
+  the account's backup without uploading anything from the phone (amended 2026-11-15: a stale pre-sign-in copy
+  restored by Android's app backup would otherwise re-upload items deleted before backup existed).
 - **FR-024**: After restore or merge, progression MUST continue from the latest plans (no recalculation that changes
   past results).
 

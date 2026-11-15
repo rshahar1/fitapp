@@ -17,7 +17,7 @@ import 'package:material_ui/material_ui.dart';
 class _FakeAccount implements AccountService {
   SignInOutcome outcome = SignInOutcome.backedUp;
   bool askMerge = false;
-  bool? mergeAnswer;
+  MergeChoice? mergeAnswer;
   bool? replaceAnswer;
   String? replaceEmail;
   bool? keepAnswer;
@@ -26,11 +26,11 @@ class _FakeAccount implements AccountService {
 
   @override
   Future<SignInOutcome> signIn({
-    required Future<bool> Function() confirmMerge,
+    required Future<MergeChoice> Function() chooseMerge,
     required Future<bool> Function(String? boundEmail) confirmReplace,
   }) async {
     calls.add('signIn');
-    if (askMerge) mergeAnswer = await confirmMerge();
+    if (askMerge) mergeAnswer = await chooseMerge();
     return outcome;
   }
 
@@ -202,8 +202,38 @@ void main() {
     await tester.tap(find.text('Merge'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(svc.mergeAnswer, isTrue);
+    expect(svc.mergeAnswer, MergeChoice.merge);
     expect(find.text('Histories combined and backed up.'), findsOneWidget);
+  });
+
+  testWidgets('merge dialog: use my backup instead', (tester) async {
+    final svc = _FakeAccount()
+      ..askMerge = true
+      ..outcome = SignInOutcome.restored;
+    await pump(tester, service: svc);
+    await tester.tap(find.bySemanticsLabel('Sign in with Google'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Use my backup instead'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(svc.mergeAnswer, MergeChoice.useBackup);
+    expect(find.text('Your history was restored.'), findsOneWidget);
+  });
+
+  testWidgets('merge dialog: dismissing returns cancel', (tester) async {
+    final svc = _FakeAccount()
+      ..askMerge = true
+      ..outcome = SignInOutcome.declined;
+    await pump(tester, service: svc);
+    await tester.tap(find.bySemanticsLabel('Sign in with Google'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tapAt(const Offset(5, 5)); // barrier
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(svc.mergeAnswer, MergeChoice.cancel);
   });
 
   for (final (outcome, message) in [

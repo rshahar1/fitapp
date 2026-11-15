@@ -56,11 +56,12 @@ void main() {
   var mergeAsked = 0;
   String? replaceAskedFor;
   var answer = true;
+  MergeChoice? mergeChoice;
 
   Future<SignInOutcome> signIn() => account.signIn(
-    confirmMerge: () async {
+    chooseMerge: () async {
       mergeAsked++;
-      return answer;
+      return mergeChoice ?? (answer ? MergeChoice.merge : MergeChoice.cancel);
     },
     confirmReplace: (email) async {
       replaceAskedFor = email;
@@ -83,6 +84,7 @@ void main() {
     mergeAsked = 0;
     replaceAskedFor = null;
     answer = true;
+    mergeChoice = null;
   });
   tearDown(() => phone.close());
 
@@ -138,6 +140,37 @@ void main() {
     expect(await phone.count('SELECT COUNT(*) FROM workouts'), 1);
     expect(remote.live('workouts'), hasLength(1));
   });
+
+  test(
+    'use my backup instead: phone data replaced, nothing uploaded',
+    () async {
+      await seedCloud();
+      // A stale pre-sign-in copy, e.g. restored by Android's own app backup.
+      final stale = await phone.activities.create(
+        typeId: 'snowboarding',
+        startedAt: phone.h.now,
+      );
+      await phone.templates.create(name: 'Old', exerciseIds: [inclineId]);
+      mergeChoice = MergeChoice.useBackup;
+
+      expect(await signIn(), SignInOutcome.restored);
+
+      expect(mergeAsked, 1);
+      expect(await phone.binding.boundUserId(), 'user-a');
+      expect(await phone.count('SELECT COUNT(*) FROM templates'), 0);
+      expect(await phone.count('SELECT COUNT(*) FROM workouts'), 1);
+      expect(await phone.count('SELECT COUNT(*) FROM activities'), 1);
+      expect(
+        await phone.count(
+          "SELECT COUNT(*) FROM activities WHERE id = '$stale'",
+        ),
+        0,
+      );
+      expect(remote.live('activities'), hasLength(1));
+      expect(remote.live('templates'), isEmpty, reason: 'nothing uploaded');
+      expect(await phone.dirtyCount(), 0);
+    },
+  );
 
   test('another account: asks, then replaces the data (US4 s2)', () async {
     await phone.binding.bind('user-x', email: 'x@example.com');

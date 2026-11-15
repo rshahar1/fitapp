@@ -86,6 +86,17 @@ Independent test: sign in on a phone with history → all rows reach the backend
 - [x] T044 Final gate; quickstart §1–2; owner steps for §3–4 listed in docs/sync-setup.md; commit
 - [ ] T045 Owner: hosted Supabase project + Google Cloud OAuth clients (docs/sync-setup.md), then quickstart §4 on two phones
 
+## Phase 9: Fix — merge prompt offers "Use my backup instead" (FR-023 amended 2026-11-15)
+
+Found in the reinstall test: Android's own app backup restored a 2-day-old, pre-sign-in copy of the database, so
+sign-in offered only Merge (re-uploading deleted items) or Cancel.
+
+- [x] T046 [US4] Tests first: `AccountService.signIn` merge choice `useBackup` wipes, binds and restores without
+  uploading phone rows — test/data/sync/account_service_test.dart; implement in lib/data/sync/account_service.dart
+- [x] T047 [US4] Merge dialog gets a third action "Use my backup instead" + widget tests —
+  lib/features/settings/account_section.dart, test/features/account_section_test.dart
+- [x] T048 Gate: format, analyze, test; commit
+
 ## Dependencies
 
 Setup → Foundational (backend T004–T010 ∥ local T011–T014, then engine T015–T021) → US1 → US2 → US3, US4 → US5 →

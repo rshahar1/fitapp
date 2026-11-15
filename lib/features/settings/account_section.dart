@@ -44,7 +44,7 @@ class _AccountSectionState extends ConsumerState<AccountSection> {
     setState(() => _signingIn = true);
     try {
       final outcome = await service.signIn(
-        confirmMerge: () => confirmMergeDialog(context),
+        chooseMerge: () => chooseMergeDialog(context),
         confirmReplace: (email) => confirmReplaceDialog(context, email),
       );
       if (!mounted) return;
@@ -236,29 +236,35 @@ class _AccountSectionState extends ConsumerState<AccountSection> {
   }
 }
 
-/// "Combine this phone's workouts with your backup?" -> true to merge.
-Future<bool> confirmMergeDialog(BuildContext context) async {
-  final result = await showDialog<bool>(
+/// "Combine this phone's workouts with your backup, or use the backup?"
+/// Dismissing the dialog counts as cancel.
+Future<MergeChoice> chooseMergeDialog(BuildContext context) async {
+  final result = await showDialog<MergeChoice>(
     context: context,
     builder: (context) => AlertDialog(
       title: const Text('Combine histories?'),
       content: const Text(
         "This phone has workouts that aren't in your account yet. Combine "
-        'them with your backup?',
+        "them with your backup, or replace this phone's data with your "
+        'backup?',
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () => Navigator.of(context).pop(MergeChoice.cancel),
           child: const Text('Cancel'),
         ),
         TextButton(
-          onPressed: () => Navigator.of(context).pop(true),
+          onPressed: () => Navigator.of(context).pop(MergeChoice.useBackup),
+          child: const Text('Use my backup instead'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(MergeChoice.merge),
           child: const Text('Merge'),
         ),
       ],
     ),
   );
-  return result ?? false;
+  return result ?? MergeChoice.cancel;
 }
 
 /// "Replace this phone's data with the account's backup?" -> true to replace.

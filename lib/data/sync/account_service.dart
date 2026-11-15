@@ -27,6 +27,19 @@ enum SignInOutcome {
   declined,
 }
 
+/// Answer to "this phone has history that isn't in your account".
+enum MergeChoice {
+  /// Combine both histories (FR-023).
+  merge,
+
+  /// Replace the phone's data with the account's backup; upload nothing
+  /// (e.g. a stale copy restored by Android's own app backup).
+  useBackup,
+
+  /// Stay signed out; change nothing.
+  cancel,
+}
+
 class AccountService {
   new({
     required this._auth,
@@ -41,11 +54,12 @@ class AccountService {
   final SyncRemote _remote;
 
   /// Signs in with Google and decides what happens to this phone's data.
-  /// [confirmMerge] asks "combine this phone's history with your backup?";
+  /// [chooseMerge] asks what to do when both the phone and the account have
+  /// history;
   /// [confirmReplace] gets the email of the account the phone belongs to and
   /// asks before replacing its data.
   Future<SignInOutcome> signIn({
-    required Future<bool> Function() confirmMerge,
+    required Future<MergeChoice> Function() chooseMerge,
     required Future<bool> Function(String? boundEmail) confirmReplace,
   }) async {
     final result = await _auth.signInWithGoogle();
@@ -89,13 +103,20 @@ class AccountService {
         await _sync.restore();
         return SignInOutcome.restored;
       case SignInDecision.askMerge:
-        if (!await confirmMerge()) {
-          await _auth.signOut();
-          return SignInOutcome.declined;
+        switch (await chooseMerge()) {
+          case MergeChoice.cancel:
+            await _auth.signOut();
+            return SignInOutcome.declined;
+          case MergeChoice.useBackup:
+            await _binding.wipeUserData();
+            await bind();
+            await _sync.restore();
+            return SignInOutcome.restored;
+          case MergeChoice.merge:
+            await bind();
+            await _sync.syncNow();
+            return SignInOutcome.merged;
         }
-        await bind();
-        await _sync.syncNow();
-        return SignInOutcome.merged;
       case SignInDecision.askReplace:
         if (!await confirmReplace(await _binding.boundEmail())) {
           await _auth.signOut();

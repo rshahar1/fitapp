@@ -66,7 +66,8 @@ class DeviceBinding {
 
 Dialogs (all destructive ones use the existing confirm pattern, constitution V):
 
-- **Merge**: "This phone has workouts that aren't in your account yet. Combine them with your backup?" → Merge / Cancel.
+- **Merge**: "This phone has workouts that aren't in your account yet. Combine them with your backup?" → Merge /
+  Use my backup instead / Cancel. "Use my backup instead" replaces the phone's data with the backup (no upload).
 - **Replace**: "This phone holds data from <email X>. Replace it with <email Y>'s backup? Data of X stays in X's
   account." → Replace / Cancel.
 - **Remove data**: "Remove all your workouts, templates and activities from this phone? Backed-up data stays in your

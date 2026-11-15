@@ -20,6 +20,7 @@ part 'app_database.g.dart';
     Activities,
     TrackingSessions,
     TrackPoints,
+    SyncState,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -34,7 +35,7 @@ class AppDatabase extends _$AppDatabase {
   DateTime now() => _clock().toUtc();
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -92,6 +93,14 @@ class AppDatabase extends _$AppDatabase {
           ]) {
             await m.addColumn(a, c);
           }
+        },
+        from6To7: (m, schema) async {
+          // Feature 012: soft-deleted exercises.
+          await m.addColumn(schema.exercises, schema.exercises.deletedAt);
+        },
+        from7To8: (m, schema) async {
+          // Feature 013: cloud sync pull cursors.
+          await m.createTable(schema.syncState);
         },
       )(m, from, to);
       await _createIndexes(version: to);

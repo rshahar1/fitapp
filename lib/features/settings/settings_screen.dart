@@ -3,6 +3,7 @@ import 'package:fitapp/core/format.dart';
 import 'package:fitapp/core/rest_alerts.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/settings_repository.dart';
+import 'package:fitapp/features/settings/account_section.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -86,6 +87,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(Space.m),
         children: [
+          const AccountSection(),
           Group(
             header: 'Rest timer',
             children: [

@@ -1,15 +1,25 @@
+import 'dart:async';
+
+import 'package:fitapp/core/env.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/repositories/activity_repository.dart';
+import 'package:fitapp/data/repositories/auth_repository.dart';
 import 'package:fitapp/data/repositories/exercise_repository.dart';
 import 'package:fitapp/data/repositories/live_session_store.dart';
 import 'package:fitapp/data/repositories/settings_repository.dart';
 import 'package:fitapp/data/repositories/template_repository.dart';
 import 'package:fitapp/data/repositories/tracking_repository.dart';
 import 'package:fitapp/data/repositories/workout_repository.dart';
+import 'package:fitapp/data/sync/account_service.dart';
+import 'package:fitapp/data/sync/device_binding.dart';
+import 'package:fitapp/data/sync/supabase_sync_remote.dart';
+import 'package:fitapp/data/sync/sync_remote.dart';
+import 'package:fitapp/data/sync/sync_service.dart';
 import 'package:fitapp/data/tracking/geolocator_location_source.dart';
 import 'package:fitapp/data/tracking/location_source.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Wall clock, overridable in tests.
 final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
@@ -129,3 +139,87 @@ final activeTrackingProvider = StreamProvider<TrackingSessionRow?>(
 final locationSourceProvider = Provider<LocationSource>(
   (ref) => GeolocatorLocationSource(),
 );
+
+// --- Cloud backup and sync (feature 013) -----------------------------------
+
+/// The Supabase client, or null when the build has no backend configured.
+/// Overridden in main() after `Supabase.initialize`.
+final supabaseClientProvider = Provider<SupabaseClient?>((ref) => null);
+
+final authRepositoryProvider = Provider<AuthRepository>(
+  (ref) => AuthRepository(
+    client: ref.watch(supabaseClientProvider),
+    google: NativeGoogleTokenSource(serverClientId: Env.googleWebClientId),
+  ),
+);
+
+/// The signed-in account, or null.
+final authAccountProvider = StreamProvider<AuthAccount?>(
+  (ref) => ref.watch(authRepositoryProvider).watchAccount(),
+);
+
+final deviceBindingProvider = Provider<DeviceBinding>(
+  (ref) => DeviceBinding(ref.watch(databaseProvider)),
+);
+
+/// The backend for sync; null when not configured. Overridable in tests.
+final syncRemoteProvider = Provider<SyncRemote?>((ref) {
+  final client = ref.watch(supabaseClientProvider);
+  return client == null ? null : SupabaseSyncRemote(client);
+});
+
+/// Null when cloud backup is not configured in this build.
+final syncServiceProvider = Provider<SyncService?>((ref) {
+  final remote = ref.watch(syncRemoteProvider);
+  if (remote == null) return null;
+  final auth = ref.watch(authRepositoryProvider);
+  final service = SyncService(
+    db: ref.watch(databaseProvider),
+    remote: remote,
+    settings: ref.watch(settingsRepositoryProvider),
+    binding: ref.watch(deviceBindingProvider),
+    currentUserId: () => auth.current?.userId,
+  );
+  ref.onDispose(service.dispose);
+  return service;
+});
+
+/// Null when cloud backup is not configured in this build.
+final accountServiceProvider = Provider<AccountService?>((ref) {
+  final sync = ref.watch(syncServiceProvider);
+  final remote = ref.watch(syncRemoteProvider);
+  if (sync == null || remote == null) return null;
+  return AccountService(
+    auth: ref.watch(authRepositoryProvider),
+    binding: ref.watch(deviceBindingProvider),
+    sync: sync,
+    remote: remote,
+  );
+});
+
+final syncStatusProvider = StreamProvider<SyncStatus>((ref) {
+  final sync = ref.watch(syncServiceProvider);
+  if (sync == null) return Stream.value(const SyncStatus());
+  return sync.watchStatus();
+});
+
+/// Time of the last successful backup, or null.
+final lastBackupProvider = StreamProvider<DateTime?>(
+  (ref) => ref.watch(deviceBindingProvider).watchLastSuccessAt(),
+);
+
+/// Email of the account this phone's data belongs to, or null.
+final boundEmailProvider = StreamProvider<String?>(
+  (ref) => ref.watch(deviceBindingProvider).watchBoundEmail(),
+);
+
+/// Starts a background sync if backup is configured; never waits or throws
+/// (FR-002, FR-013).
+void requestSync(Ref ref) => _request(ref.read(syncServiceProvider));
+
+/// [requestSync] for widgets.
+void requestSyncFrom(WidgetRef ref) => _request(ref.read(syncServiceProvider));
+
+void _request(SyncService? sync) {
+  if (sync != null) unawaited(sync.syncNow());
+}

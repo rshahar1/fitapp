@@ -12,6 +12,8 @@ import 'generated/schema_v3.dart' as v3;
 import 'generated/schema_v4.dart' as v4;
 import 'generated/schema_v5.dart' as v5;
 import 'generated/schema_v6.dart' as v6;
+import 'generated/schema_v7.dart' as v7;
+import 'generated/schema_v8.dart' as v8;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -391,6 +393,71 @@ void main() {
           expect(a.splits, isNull);
           expect(await newDb.select(newDb.trackingSessions).get(), isEmpty);
           expect(await newDb.select(newDb.trackPoints).get(), isEmpty);
+        },
+      );
+    },
+  );
+
+  test('migration from v6 to v7 keeps custom exercises active', () async {
+    const ts = '2026-11-14T18:00:00.000Z';
+    await verifier.testWithDataIntegrity(
+      oldVersion: 6,
+      newVersion: 7,
+      createOld: v6.DatabaseAtV6.new,
+      createNew: v7.DatabaseAtV7.new,
+      openTestedDatabase: AppDatabase.new,
+      createItems: (batch, oldDb) {
+        batch.insertAll(oldDb.exercises, [
+          const v6.ExercisesData(
+            updatedAt: ts,
+            dirty: 1,
+            id: 'c1',
+            name: 'Zottman Curl',
+            isPerHand: 1,
+            defaultIncrement: 2,
+            isCustom: 1,
+          ),
+        ]);
+      },
+      validateItems: (newDb) async {
+        final e = await (newDb.select(
+          newDb.exercises,
+        )..where((t) => t.id.equals('c1'))).getSingle();
+        expect(e.name, 'Zottman Curl');
+        expect(e.deletedAt, isNull);
+      },
+    );
+  });
+
+  test(
+    'migration from v7 to v8 keeps data and adds empty sync_state',
+    () async {
+      const ts = '2026-11-14T18:00:00.000Z';
+      await verifier.testWithDataIntegrity(
+        oldVersion: 7,
+        newVersion: 8,
+        createOld: v7.DatabaseAtV7.new,
+        createNew: v8.DatabaseAtV8.new,
+        openTestedDatabase: AppDatabase.new,
+        createItems: (batch, oldDb) {
+          batch.insertAll(oldDb.exercises, [
+            const v7.ExercisesData(
+              updatedAt: ts,
+              dirty: 1,
+              id: 'c1',
+              name: 'Zottman Curl',
+              isPerHand: 1,
+              defaultIncrement: 2,
+              isCustom: 1,
+            ),
+          ]);
+        },
+        validateItems: (newDb) async {
+          final e = await (newDb.select(
+            newDb.exercises,
+          )..where((t) => t.id.equals('c1'))).getSingle();
+          expect(e.name, 'Zottman Curl');
+          expect(await newDb.select(newDb.syncState).get(), isEmpty);
         },
       );
     },

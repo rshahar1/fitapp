@@ -10,6 +10,8 @@ import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
+export 'package:fitapp/core/format.dart' show formatActivityMinutes;
+
 /// Opens the past-session / edit activity form.
 Future<void> showActivitySheet(
   BuildContext context, {
@@ -22,15 +24,6 @@ Future<void> showActivitySheet(
   builder: (_) =>
       _ActivitySheet(existing: existing, initialTypeId: initialTypeId),
 );
-
-/// "45 min" / "1 h 30 min" / "2 h".
-String formatActivityMinutes(int minutes) {
-  final h = minutes ~/ 60;
-  final m = minutes % 60;
-  if (h == 0) return '$m min';
-  if (m == 0) return '$h h';
-  return '$h h $m min';
-}
 
 DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);
 
@@ -250,14 +243,10 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
             ],
             if (!_isGps && _hasDuration) ...[
               const SizedBox(height: Space.m),
-              AppStepper(
-                label: 'Duration',
-                value: _minutes.toDouble(),
-                step: 5,
-                min: 5,
-                max: maxActivityMinutes.toDouble(),
-                format: (v) => formatActivityMinutes(v.toInt()),
-                onChanged: (v) => setState(() => _minutes = v.toInt()),
+              DurationPicker(
+                minutes: _minutes,
+                max: maxActivityMinutes,
+                onChanged: (v) => setState(() => _minutes = v),
               ),
             ],
             if (!_isGps && _showDistance) ...[

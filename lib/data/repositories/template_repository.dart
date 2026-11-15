@@ -101,6 +101,35 @@ class TemplateRepository {
     await (_db.delete(_db.templates)..where((t) => t.id.equals(id))).go();
   });
 
+  /// Removes exercise [exerciseId] from every template (it is being deleted,
+  /// feature 012); templates left without exercises are deleted.
+  Future<void> removeExercise(String exerciseId) => _db.transaction(() async {
+    final te = _db.templateExercises;
+    final rows = await (_db.select(
+      te,
+    )..where((t) => t.exerciseId.equals(exerciseId))).get();
+    await _unlinkLiveSessions([for (final r in rows) r.id]);
+    for (final r in rows) {
+      await _queueDelete('template_exercises', r.id);
+      await (_db.delete(te)..where((t) => t.id.equals(r.id))).go();
+      final left = await (_db.select(
+        te,
+      )..where((t) => t.templateId.equals(r.templateId))).get();
+      if (left.isEmpty) {
+        await delete(r.templateId);
+      } else {
+        await (_db.update(
+          _db.templates,
+        )..where((t) => t.id.equals(r.templateId))).write(
+          TemplatesCompanion(
+            updatedAt: Value(_db.now()),
+            dirty: const Value(true),
+          ),
+        );
+      }
+    }
+  });
+
   /// Creates a template from a workout's exercises (in workout order). Each
   /// plan is seeded from the plan that session currently uses.
   Future<String> saveFromWorkout(String workoutId, {required String name}) =>

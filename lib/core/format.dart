@@ -65,3 +65,12 @@ String formatSpeedMps(double? mps) =>
 
 /// "4.20" km from metres (two decimals, stable while ticking up).
 String formatLiveKm(num meters) => (meters / 1000).toStringAsFixed(2);
+
+/// "45 min" / "1 h 30 min" / "2 h".
+String formatActivityMinutes(int minutes) {
+  final h = minutes ~/ 60;
+  final m = minutes % 60;
+  if (h == 0) return '$m min';
+  if (m == 0) return '$h h';
+  return '$h h $m min';
+}

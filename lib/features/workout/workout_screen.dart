@@ -8,6 +8,7 @@ import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/live_session_store.dart';
 import 'package:fitapp/data/repositories/template_repository.dart';
 import 'package:fitapp/domain/calendar.dart' show dateOnly;
+import 'package:fitapp/features/settings/account_section.dart';
 import 'package:fitapp/features/workout/rest_timer_controller.dart';
 import 'package:fitapp/features/workout/widgets/exercise_card.dart';
 import 'package:fitapp/features/workout/widgets/finish_summary_sheet.dart';
@@ -120,6 +121,8 @@ class _WorkoutView extends ConsumerWidget {
     final haptics = ref.read(hapticsProvider);
     final router = GoRouter.of(context);
     final rootContext = Navigator.of(context, rootNavigator: true).context;
+    final messenger = ScaffoldMessenger.of(context);
+    final container = ProviderScope.containerOf(context);
     if (detail.setCount == 0) {
       final discard = await confirmDestructive(
         context,
@@ -142,6 +145,7 @@ class _WorkoutView extends ConsumerWidget {
       result = await repo.finishWorkout(detail.workout.id);
     });
     if (!ok) return;
+    requestSyncFrom(ref); // back up the finished workout (FR-013)
     await rest.dismiss();
     if (result!.outcomes.any((o) => o.toBase > o.fromBase)) haptics.success();
     var resume = false;
@@ -156,6 +160,15 @@ class _WorkoutView extends ConsumerWidget {
       } on Object {
         // Fall through to Train if resuming is no longer possible.
       }
+    }
+    try {
+      await maybeShowBackupNudge(
+        container,
+        messenger: messenger,
+        router: router,
+      );
+    } on Object {
+      // The nudge is optional; never block leaving the screen.
     }
     router.go(Routes.train);
   }

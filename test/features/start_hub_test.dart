@@ -8,6 +8,8 @@ import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/template_repository.dart';
 import 'package:fitapp/data/repositories/tracking_repository.dart';
 import 'package:fitapp/data/repositories/workout_repository.dart';
+import 'package:fitapp/domain/activity_types.dart';
+import 'package:fitapp/features/start/start_hub_sheet.dart';
 import 'package:fitapp/features/tracking/widgets/route_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -129,18 +131,18 @@ void main() {
         router.go(at);
         await settle(tester);
         await openHub(tester);
-        expect(find.text('Gym workout'), findsOneWidget, reason: at);
+        expect(find.text('Start or log'), findsOneWidget, reason: at);
         expect(find.text('Log a past session'), findsOneWidget, reason: at);
         expect(location(), at);
-        Navigator.of(tester.element(find.text('Gym workout'))).pop();
+        Navigator.of(tester.element(find.text('Start or log'))).pop();
         await settle(tester);
-        expect(find.text('Gym workout'), findsNothing);
+        expect(find.text('Start or log'), findsNothing);
         expect(location(), at);
       }
       await unmount(tester);
     });
 
-    testWidgets('You tab opens Settings and the Exercise library', (
+    testWidgets('You tab opens Settings and the Gym Exercise Library', (
       tester,
     ) async {
       await pumpApp(tester);
@@ -152,7 +154,7 @@ void main() {
       expect(location(), Routes.settings);
       router.pop();
       await settle(tester);
-      await tester.tap(find.text('Exercise library'));
+      await tester.tap(find.text('Gym Exercise Library'));
       await settle(tester);
       expect(location(), Routes.exercises);
       await unmount(tester);
@@ -221,17 +223,21 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('Gym workout starts an empty workout', (tester) async {
-      await pumpApp(tester, at: Routes.progress);
+    testWidgets('while running: Continue first, then the sports', (
+      tester,
+    ) async {
+      await tester.runAsync(startTracking);
+      await pumpApp(tester, at: Routes.history);
       await openHub(tester);
-      await tester.tap(find.text('Gym workout'));
-      await settle(tester);
-      expect(location(), Routes.workout);
-      expect(await tester.runAsync(activeWorkout), isNotNull);
+      final cont = tester.getTopLeft(find.text('Continue running'));
+      final sport = tester.getTopLeft(find.text('Cycling'));
+      expect(cont.dy, lessThan(sport.dy));
       await unmount(tester);
     });
 
-    testWidgets('a template row starts that template', (tester) async {
+    testWidgets('has no Gym workout, template rows or More sports', (
+      tester,
+    ) async {
       await tester.runAsync(
         () =>
             TemplateRepository(db)
@@ -239,31 +245,27 @@ void main() {
       );
       await pumpApp(tester, at: Routes.you);
       await openHub(tester);
-      await tester.tap(find.text('Legs'));
-      await settle(tester);
-      expect(location(), Routes.workout);
-      expect(await tester.runAsync(activeWorkout), isNotNull);
+      expect(find.text('Gym workout'), findsNothing);
+      expect(find.text('Legs'), findsNothing);
+      expect(find.text('More sports'), findsNothing);
       await unmount(tester);
     });
 
-    testWidgets('while running: Continue first, Gym blocked with Open', (
-      tester,
-    ) async {
-      await tester.runAsync(startTracking);
-      await pumpApp(tester, at: Routes.history);
+    testWidgets('lists every activity type without expanding', (tester) async {
+      await pumpApp(tester);
       await openHub(tester);
-      final cont = tester.getTopLeft(find.text('Continue running'));
-      final gym = tester.getTopLeft(find.text('Gym workout'));
-      expect(cont.dy, lessThan(gym.dy));
-      await tester.tap(find.text('Gym workout'));
-      await settle(tester);
-      expect(
-        find.text('Running in progress. Finish it first.'),
-        findsOneWidget,
-      );
-      expect(find.text('Open'), findsOneWidget);
-      expect(await tester.runAsync(activeWorkout), isNull);
-      expect(location(), Routes.history);
+      for (final t in activityTypes) {
+        final row = find.text(t.label);
+        await tester.scrollUntilVisible(
+          row,
+          100,
+          scrollable: find.descendant(
+            of: find.byType(StartHubSheet),
+            matching: find.byType(Scrollable),
+          ),
+        );
+        expect(row, findsOneWidget, reason: t.label);
+      }
       await unmount(tester);
     });
 
@@ -321,16 +323,9 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('More sports → Pilates opens the form for today', (
-      tester,
-    ) async {
+    testWidgets('Pilates opens the form for today', (tester) async {
       await pumpApp(tester);
       await openHub(tester);
-      expect(find.text('Pilates'), findsNothing);
-      await tester.tap(find.text('More sports'));
-      await settle(tester);
-      expect(find.text('Functional training'), findsOneWidget);
-      expect(find.text('Snowboarding'), findsOneWidget);
       await tester.tap(find.text('Pilates'));
       await settle(tester);
       expect(find.text('Today'), findsOneWidget);

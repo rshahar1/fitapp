@@ -21,7 +21,7 @@ class YouScreen extends StatelessWidget {
             Group(
               children: [
                 GroupRow(
-                  title: 'Exercise library',
+                  title: 'Gym Exercise Library',
                   leading: const Icon(Icons.list_alt),
                   showChevron: true,
                   onTap: () => context.push(Routes.exercises),

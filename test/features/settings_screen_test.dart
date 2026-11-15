@@ -68,6 +68,10 @@ void main() {
   }
 
   Future<void> pump(WidgetTester tester) async {
+    // Tall enough for the Account & backup group above the rest settings.
+    tester.view.physicalSize = const Size(800, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [

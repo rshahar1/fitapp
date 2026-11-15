@@ -141,9 +141,13 @@ void main() {
     await tester.tap(find.text('Cycling'));
     await tester.tap(find.text('Set'));
     await tester.pump();
-    expect(find.text('30 min'), findsOneWidget);
+    final value = find.descendant(
+      of: find.byKey(const Key('duration-value')),
+      matching: find.text('30 min'),
+    );
+    expect(value, findsOneWidget);
     final plus = find.descendant(
-      of: find.byType(AppStepper),
+      of: find.byType(DurationPicker),
       matching: find.byIcon(Icons.add),
     );
     await tester.tap(plus);
@@ -156,6 +160,21 @@ void main() {
     final list = await activities(tester);
     expect(list.single.typeId, 'cycling');
     expect(list.single.durationMinutes, 40);
+    await unmount(tester);
+  });
+
+  testWidgets('4 h preset is stored as 240 minutes', (tester) async {
+    await pump(tester, const _Host());
+    await openSheet(tester);
+    await tester.tap(find.text('Cycling'));
+    await tester.tap(find.text('Set'));
+    await tester.pump();
+    await tester.tap(find.text('4 h'));
+    await tester.pump();
+    await save(tester);
+
+    final list = await activities(tester);
+    expect(list.single.durationMinutes, 240);
     await unmount(tester);
   });
 

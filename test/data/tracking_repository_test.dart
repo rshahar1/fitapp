@@ -184,4 +184,14 @@ void main() {
     expect(await h.db.select(h.db.activities).get(), isEmpty);
     await startRun();
   });
+
+  test('does not queue local-only tracking rows on save or discard', () async {
+    final fx = loadTrack('run_5k');
+    final id = await startRun();
+    await repo.appendPoints(id, fx.samples);
+    await repo.finish(id, endedAt: fx.samples.last.t);
+    final id2 = await startRun();
+    await repo.discard(id2);
+    expect(await h.db.select(h.db.pendingDeletes).get(), isEmpty);
+  });
 }

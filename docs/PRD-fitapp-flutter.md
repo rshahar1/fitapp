@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.7, 14 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.8, 14 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -413,7 +413,7 @@ tracking_sessions  id PK, type_id, state ('active'|'paused'), started_at, paused
                    updated_at, dirty                                -- the one live GPS session, local only
 track_points       session_id → tracking_sessions (cascade), seq, t, lat, lon, alt?, accuracy, speed?,
                    paused, PK(session_id, seq)                      -- raw fixes, deleted on save or discard
-pending_deletes    table_name, row_id, PK(table_name, row_id)      -- delete queue for future sync
+pending_deletes    table_name, row_id, PK(table_name, row_id)      -- delete queue for sync
 settings           key PK, value                                   -- local-only in v1, e.g. default_rest_seconds = 60
 ```
 - Schema version is 6 (v2 templates, v3 template plans and `template_exercise_id`, v4 `activities`, v5 `activities.distance_meters`, v6 `tracking_sessions`, `track_points` and the tracked columns on `activities`). Use real schema **migrations** with a version number (drift `stepByStep`). Never drop user data on upgrade.
@@ -422,22 +422,40 @@ settings           key PK, value                                   -- local-only
 
 ---
 
-## 8. Backend and sync (Phase 2, **LATER**; design it in now, build it after v1)
+## 8. Backend and sync (built in feature 013, M7)
 
-- **Supabase** (Postgres + Auth + row-level security). Auth: Google sign-in, Apple sign-in for iOS, email
-  magic link as fallback.
-- Server schema mirrors section 7 plus `user_id` on every row, and a `profiles` table. **RLS: owner-only**
-  (`user_id = auth.uid()`) on every table. The global exercise library (`owner_id IS NULL`) is readable by
-  everyone. **No friendship tables.**
-- **Push sync:** replay `pending_deletes` **first** (children first: sets → workout_exercises → workouts), then
-  upsert dirty rows in FK order (custom exercises → exercise_state → workouts → workout_exercises → sets), then
-  clear `dirty` only if `updated_at` is unchanged since it was read. A failure leaves rows dirty for retry.
-  Deletes go first because a cleared-then-relogged set has a new id with the same
-  `(workout_exercise_id, set_no)`, which would hit the unique constraint.
-- **Pull / restore:** on sign-in on a new device, download the user's rows into the local DB (new in v2; the
-  prototype lacked it).
-- Sync triggers: app start, app returns to the foreground, after finishing a workout. Silent on failure.
-- Supabase migrations live in `supabase/migrations/` and are tested (e.g. against a local Postgres or PGlite).
+- **Opt-in.** Nothing leaves the phone until the user signs in with Google (Android) from Settings. Supabase
+  (Postgres + Auth + RLS). Without the `SUPABASE_*` / `GOOGLE_WEB_CLIENT_ID` keys the app is fully offline.
+  The local database stays the source of truth (schema v8 adds a `sync_state` table with per-table pull cursors).
+- **Server schema** mirrors section 7 with `user_id` on every row (default `auth.uid()`), plus `deleted_at` and
+  `server_updated_at` (set by trigger). **RLS: owner-only** on every table; no friendship tables.
+- **Tombstones, not hard deletes.** A local delete is replayed as `deleted_at`; a trigger tombstones children of a
+  tombstoned parent. Pull applies tombstones as local deletes.
+- **Pull cursors.** Per table, `server_updated_at > cursor - 2 min` (the overlap covers out-of-order commits),
+  ordered, paged by 1000; re-applying rows is idempotent. Pull runs before push.
+- **Conflicts.** Last-writer-wins on the client `updated_at` (trigger); a tombstoned row ignores later updates, so
+  deletes win regardless of clocks. A pulled row never overwrites a dirty, newer local row.
+- **Push** is the `sync_push(payload)` RPC (`SECURITY INVOKER`): deletes first, then upserts in FK order, pages of
+  at most 500 rows. Each row is isolated: a bad row is returned in `rejected` and stays dirty, the rest apply.
+  `dirty` is cleared only if `updated_at` is unchanged since it was read; failures are silent and retried.
+- **No server-side uniqueness** (only PKs and FKs), so one bad row can never block a device. Collisions are
+  resolved on pull: same template or custom exercise name renames the local row " (2)"; same
+  `(workout_exercise_id, set_no)` keeps the newer set.
+- **Exercises.** The built-in library stays in the app. The server holds `custom_exercises` and
+  `exercise_overrides` (built-ins the user hid, `archived_at`), not a global library table. `archived_at` is
+  separate from the `deleted_at` tombstone.
+- **Settings.** `user_settings` syncs a whitelist only: default rest time, rest-alert vibration and sound.
+- **What is synced:** workouts (also unfinished), exercises, sets, plans, templates, custom exercises and
+  overrides, activities with route and splits. Raw GPS points and live sessions never leave the device.
+- **Sign-in decision** (the phone remembers which account its data belongs to): no local history and an empty
+  cloud binds; no local history and cloud data restores; local history and an empty cloud makes a first backup;
+  both have data asks Merge or Cancel; a phone bound to another account asks before replacing its data.
+- **Account actions** (Settings): sign out (data stays, backup stops), remove my data from this phone, delete
+  account (Edge Function `delete-account`; tables cascade; then keep or remove local data).
+- **Triggers:** app start, return to foreground, after finishing a workout, right after sign-in, and a manual
+  "Back up now"; one sync at a time, repeats within 5 s are coalesced.
+- Migrations live in `supabase/migrations/` and are tested on PGlite (`npm ci && node tool/db_test.mjs`).
+  Setup: `docs/sync-setup.md`.
 
 ---
 
@@ -456,7 +474,7 @@ settings           key PK, value                                   -- local-only
 | IDs | `uuid` |
 | Haptics | Flutter's built-in `HapticFeedback` (no package needed) |
 | Dates and formatting | `intl` |
-| Backend (Phase 2) | `supabase_flutter` |
+| Backend (feature 013) | `supabase_flutter`, `google_sign_in` |
 | Lints | `flutter_lints` minimum; prefer `very_good_analysis` (strict) |
 | Tests | `flutter_test`, `mocktail` if needed, drift's in-memory database |
 
@@ -476,7 +494,7 @@ lib/
   data/
     db/                drift database, tables, migrations, seed library
     repositories/      WorkoutRepository, ExerciseRepository, TemplateRepository, ActivityRepository (activity_repository.dart) (all business writes, transactions); plan_store.dart (PlanStore: validated plan reads/writes)
-    sync/              (Phase 2) push/pull, delete queue
+    sync/              push/pull, delete queue, account actions (feature 013)
   features/
     train/             home tab
     workout/           live and edit workout screen, set table, set sheet, plan setup, rest timer
@@ -538,7 +556,7 @@ pure and fully unit-tested; no business logic in widgets; no hard-coded colors o
 | Data safety | No data loss on app kill mid-workout (every set persists immediately). Migrations preserve data. |
 | Orientation | Portrait only. |
 | Min Android | Flutter's current default minimum SDK. |
-| Privacy | No analytics or trackers in v1. Data stays on the device until Phase 2 sync, which the user opts into by signing in. |
+| Privacy | No analytics or trackers. Data stays on the device until the user opts into cloud backup by signing in (section 8). |
 
 ---
 
@@ -610,12 +628,12 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 | **M4** | History tab and edit mode (auto-save, Done, Resume, Delete, clear set, remove exercise, add exercise to a past workout) | Section 11 scenarios 4–8 work in the UI |
 | **M5** | Progress tab and exercise detail (weekly bars, exercise list with base weight, metric tiles, glow line chart with chips, PR badge, history, plan edit) | Charts render with 1, 2 and 20+ sessions |
 | **M6** | Polish: haptics, accessibility labels, empty states, app icon and splash (black), release APK build documented and verified on the phone | APK installed and used for a real workout |
-| **M7** (LATER) | Phase 2: Supabase auth, push sync, pull/restore, RLS migrations with tests | Sign in on a second phone restores full history |
+| **M7** (built, feature 013; manual two-phone check pending) | Phase 2: Supabase auth, push sync, pull/restore, RLS migrations with tests | Sign in on a second phone restores full history |
 
 ---
 
 ## 14. Roadmap (after v1, not in scope now)
-- Sign-in with cloud backup and restore (M7)
+- Sign-in with cloud backup and restore (M7, built in feature 013)
 - Template folders and "repeat last workout" (templates themselves exist since feature 003)
 - Snowboarding tracking, Health Connect/HealthKit import, GPX export, miles and offline map tiles (live GPS tracking for running and cycling exists since feature 010)
 - Drop and failure set types (warm-up sets are intentionally not planned)
@@ -693,3 +711,7 @@ resolved on 12 Nov 2026; see the decisions log.
   - Bottom bar becomes Train, History, [+], Progress, You; [+] opens the Start/Log hub sheet from any tab; new You tab (`/you`) holds Exercise library and Settings (Train header icons removed).
   - One start guard for gym and GPS starts on every entry point; Train hero shows Start/Continue for gym and GPS (tracking banner removed); *Log activity* button removed.
   - Activity sheet: no *Start live*; new entries titled "Log a past session". No schema change, no new packages.
+- **2.8 (14 Nov 2026):** feature 013, cloud backup and sync (M7).
+  - Section 8 rewritten to the built design: opt-in Google sign-in, tombstones, pull cursors, LWW with deletes
+    winning, `sync_push` RPC, custom exercises and overrides, settings whitelist, sign-in decisions, account actions.
+  - Schema v8 (`sync_state`); packages `supabase_flutter`, `google_sign_in`; Edge Function `delete-account`.

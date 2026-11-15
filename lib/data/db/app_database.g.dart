@@ -101,6 +101,17 @@ class $ExercisesTable extends Exercises
       'CHECK ("is_custom" IN (0, 1))',
     ),
   );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     updatedAt,
@@ -111,6 +122,7 @@ class $ExercisesTable extends Exercises
     isPerHand,
     defaultIncrement,
     isCustom,
+    deletedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -187,6 +199,12 @@ class $ExercisesTable extends Exercises
     } else if (isInserting) {
       context.missing(_isCustomMeta);
     }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -228,6 +246,10 @@ class $ExercisesTable extends Exercises
         DriftSqlType.bool,
         data['${effectivePrefix}is_custom'],
       )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
     );
   }
 
@@ -246,6 +268,11 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
   final bool isPerHand;
   final double defaultIncrement;
   final bool isCustom;
+
+  /// Set when the user deleted the exercise (feature 012, soft delete):
+  /// hidden from the library, picker, templates and Progress; history keeps
+  /// it. NULL means active.
+  final DateTime? deletedAt;
   const ExerciseRow({
     required this.updatedAt,
     required this.dirty,
@@ -255,6 +282,7 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
     required this.isPerHand,
     required this.defaultIncrement,
     required this.isCustom,
+    this.deletedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -269,6 +297,9 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
     map['is_per_hand'] = Variable<bool>(isPerHand);
     map['default_increment'] = Variable<double>(defaultIncrement);
     map['is_custom'] = Variable<bool>(isCustom);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
     return map;
   }
 
@@ -284,6 +315,9 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
       isPerHand: Value(isPerHand),
       defaultIncrement: Value(defaultIncrement),
       isCustom: Value(isCustom),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
     );
   }
 
@@ -301,6 +335,7 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
       isPerHand: serializer.fromJson<bool>(json['isPerHand']),
       defaultIncrement: serializer.fromJson<double>(json['defaultIncrement']),
       isCustom: serializer.fromJson<bool>(json['isCustom']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
     );
   }
   @override
@@ -315,6 +350,7 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
       'isPerHand': serializer.toJson<bool>(isPerHand),
       'defaultIncrement': serializer.toJson<double>(defaultIncrement),
       'isCustom': serializer.toJson<bool>(isCustom),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
     };
   }
 
@@ -327,6 +363,7 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
     bool? isPerHand,
     double? defaultIncrement,
     bool? isCustom,
+    Value<DateTime?> deletedAt = const Value.absent(),
   }) => ExerciseRow(
     updatedAt: updatedAt ?? this.updatedAt,
     dirty: dirty ?? this.dirty,
@@ -336,6 +373,7 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
     isPerHand: isPerHand ?? this.isPerHand,
     defaultIncrement: defaultIncrement ?? this.defaultIncrement,
     isCustom: isCustom ?? this.isCustom,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
   );
   ExerciseRow copyWithCompanion(ExercisesCompanion data) {
     return ExerciseRow(
@@ -351,6 +389,7 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
           ? data.defaultIncrement.value
           : this.defaultIncrement,
       isCustom: data.isCustom.present ? data.isCustom.value : this.isCustom,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
     );
   }
 
@@ -364,7 +403,8 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
           ..write('muscleGroup: $muscleGroup, ')
           ..write('isPerHand: $isPerHand, ')
           ..write('defaultIncrement: $defaultIncrement, ')
-          ..write('isCustom: $isCustom')
+          ..write('isCustom: $isCustom, ')
+          ..write('deletedAt: $deletedAt')
           ..write(')'))
         .toString();
   }
@@ -379,6 +419,7 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
     isPerHand,
     defaultIncrement,
     isCustom,
+    deletedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -391,7 +432,8 @@ class ExerciseRow extends DataClass implements Insertable<ExerciseRow> {
           other.muscleGroup == this.muscleGroup &&
           other.isPerHand == this.isPerHand &&
           other.defaultIncrement == this.defaultIncrement &&
-          other.isCustom == this.isCustom);
+          other.isCustom == this.isCustom &&
+          other.deletedAt == this.deletedAt);
 }
 
 class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
@@ -403,6 +445,7 @@ class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
   final Value<bool> isPerHand;
   final Value<double> defaultIncrement;
   final Value<bool> isCustom;
+  final Value<DateTime?> deletedAt;
   final Value<int> rowid;
   const ExercisesCompanion({
     this.updatedAt = const Value.absent(),
@@ -413,6 +456,7 @@ class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
     this.isPerHand = const Value.absent(),
     this.defaultIncrement = const Value.absent(),
     this.isCustom = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ExercisesCompanion.insert({
@@ -424,6 +468,7 @@ class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
     required bool isPerHand,
     required double defaultIncrement,
     required bool isCustom,
+    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : updatedAt = Value(updatedAt),
        id = Value(id),
@@ -440,6 +485,7 @@ class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
     Expression<bool>? isPerHand,
     Expression<double>? defaultIncrement,
     Expression<bool>? isCustom,
+    Expression<DateTime>? deletedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -451,6 +497,7 @@ class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
       if (isPerHand != null) 'is_per_hand': isPerHand,
       if (defaultIncrement != null) 'default_increment': defaultIncrement,
       if (isCustom != null) 'is_custom': isCustom,
+      if (deletedAt != null) 'deleted_at': deletedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -464,6 +511,7 @@ class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
     Value<bool>? isPerHand,
     Value<double>? defaultIncrement,
     Value<bool>? isCustom,
+    Value<DateTime?>? deletedAt,
     Value<int>? rowid,
   }) {
     return ExercisesCompanion(
@@ -475,6 +523,7 @@ class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
       isPerHand: isPerHand ?? this.isPerHand,
       defaultIncrement: defaultIncrement ?? this.defaultIncrement,
       isCustom: isCustom ?? this.isCustom,
+      deletedAt: deletedAt ?? this.deletedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -506,6 +555,9 @@ class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
     if (isCustom.present) {
       map['is_custom'] = Variable<bool>(isCustom.value);
     }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -523,6 +575,7 @@ class ExercisesCompanion extends UpdateCompanion<ExerciseRow> {
           ..write('isPerHand: $isPerHand, ')
           ..write('defaultIncrement: $defaultIncrement, ')
           ..write('isCustom: $isCustom, ')
+          ..write('deletedAt: $deletedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -6274,6 +6327,229 @@ class TrackPointsCompanion extends UpdateCompanion<TrackPointRow> {
   }
 }
 
+class $SyncStateTable extends SyncState
+    with TableInfo<$SyncStateTable, SyncStateRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncStateTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _tableNameValueMeta = const VerificationMeta(
+    'tableNameValue',
+  );
+  @override
+  late final GeneratedColumn<String> tableNameValue = GeneratedColumn<String>(
+    'table_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cursorMeta = const VerificationMeta('cursor');
+  @override
+  late final GeneratedColumn<DateTime> cursor = GeneratedColumn<DateTime>(
+    'cursor',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [tableNameValue, cursor];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_state';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncStateRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('table_name')) {
+      context.handle(
+        _tableNameValueMeta,
+        tableNameValue.isAcceptableOrUnknown(
+          data['table_name']!,
+          _tableNameValueMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_tableNameValueMeta);
+    }
+    if (data.containsKey('cursor')) {
+      context.handle(
+        _cursorMeta,
+        cursor.isAcceptableOrUnknown(data['cursor']!, _cursorMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cursorMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {tableNameValue};
+  @override
+  SyncStateRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncStateRow(
+      tableNameValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}table_name'],
+      )!,
+      cursor: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}cursor'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncStateTable createAlias(String alias) {
+    return $SyncStateTable(attachedDatabase, alias);
+  }
+}
+
+class SyncStateRow extends DataClass implements Insertable<SyncStateRow> {
+  final String tableNameValue;
+
+  /// Max server_updated_at already pulled for this table (UTC).
+  final DateTime cursor;
+  const SyncStateRow({required this.tableNameValue, required this.cursor});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['table_name'] = Variable<String>(tableNameValue);
+    map['cursor'] = Variable<DateTime>(cursor);
+    return map;
+  }
+
+  SyncStateCompanion toCompanion(bool nullToAbsent) {
+    return SyncStateCompanion(
+      tableNameValue: Value(tableNameValue),
+      cursor: Value(cursor),
+    );
+  }
+
+  factory SyncStateRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncStateRow(
+      tableNameValue: serializer.fromJson<String>(json['tableNameValue']),
+      cursor: serializer.fromJson<DateTime>(json['cursor']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'tableNameValue': serializer.toJson<String>(tableNameValue),
+      'cursor': serializer.toJson<DateTime>(cursor),
+    };
+  }
+
+  SyncStateRow copyWith({String? tableNameValue, DateTime? cursor}) =>
+      SyncStateRow(
+        tableNameValue: tableNameValue ?? this.tableNameValue,
+        cursor: cursor ?? this.cursor,
+      );
+  SyncStateRow copyWithCompanion(SyncStateCompanion data) {
+    return SyncStateRow(
+      tableNameValue: data.tableNameValue.present
+          ? data.tableNameValue.value
+          : this.tableNameValue,
+      cursor: data.cursor.present ? data.cursor.value : this.cursor,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncStateRow(')
+          ..write('tableNameValue: $tableNameValue, ')
+          ..write('cursor: $cursor')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(tableNameValue, cursor);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncStateRow &&
+          other.tableNameValue == this.tableNameValue &&
+          other.cursor == this.cursor);
+}
+
+class SyncStateCompanion extends UpdateCompanion<SyncStateRow> {
+  final Value<String> tableNameValue;
+  final Value<DateTime> cursor;
+  final Value<int> rowid;
+  const SyncStateCompanion({
+    this.tableNameValue = const Value.absent(),
+    this.cursor = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncStateCompanion.insert({
+    required String tableNameValue,
+    required DateTime cursor,
+    this.rowid = const Value.absent(),
+  }) : tableNameValue = Value(tableNameValue),
+       cursor = Value(cursor);
+  static Insertable<SyncStateRow> custom({
+    Expression<String>? tableNameValue,
+    Expression<DateTime>? cursor,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (tableNameValue != null) 'table_name': tableNameValue,
+      if (cursor != null) 'cursor': cursor,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncStateCompanion copyWith({
+    Value<String>? tableNameValue,
+    Value<DateTime>? cursor,
+    Value<int>? rowid,
+  }) {
+    return SyncStateCompanion(
+      tableNameValue: tableNameValue ?? this.tableNameValue,
+      cursor: cursor ?? this.cursor,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (tableNameValue.present) {
+      map['table_name'] = Variable<String>(tableNameValue.value);
+    }
+    if (cursor.present) {
+      map['cursor'] = Variable<DateTime>(cursor.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncStateCompanion(')
+          ..write('tableNameValue: $tableNameValue, ')
+          ..write('cursor: $cursor, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -6294,6 +6570,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $TrackPointsTable trackPoints = $TrackPointsTable(this);
+  late final $SyncStateTable syncState = $SyncStateTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6311,6 +6588,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     activities,
     trackingSessions,
     trackPoints,
+    syncState,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -6357,6 +6635,7 @@ typedef $$ExercisesTableCreateCompanionBuilder = ExercisesCompanion Function({
   required bool isPerHand,
   required double defaultIncrement,
   required bool isCustom,
+  Value<DateTime?> deletedAt,
   Value<int> rowid,
 });
 typedef $$ExercisesTableUpdateCompanionBuilder = ExercisesCompanion Function({
@@ -6368,6 +6647,7 @@ typedef $$ExercisesTableUpdateCompanionBuilder = ExercisesCompanion Function({
   Value<bool> isPerHand,
   Value<double> defaultIncrement,
   Value<bool> isCustom,
+  Value<DateTime?> deletedAt,
   Value<int> rowid,
 });
 
@@ -6481,6 +6761,11 @@ class $$ExercisesTableFilterComposer
 
   ColumnFilters<bool> get isCustom => $composableBuilder(
     column: $table.isCustom,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6608,6 +6893,11 @@ class $$ExercisesTableOrderingComposer
     column: $table.isCustom,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ExercisesTableAnnotationComposer
@@ -6646,6 +6936,9 @@ class $$ExercisesTableAnnotationComposer
 
   GeneratedColumn<bool> get isCustom =>
       $composableBuilder(column: $table.isCustom, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 
   Expression<T> exerciseStateRefs<T extends Object>(
     Expression<T> Function($$ExerciseStateTableAnnotationComposer a) f,
@@ -6764,6 +7057,7 @@ class $$ExercisesTableTableManager
                 Value<bool> isPerHand = const Value.absent(),
                 Value<double> defaultIncrement = const Value.absent(),
                 Value<bool> isCustom = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExercisesCompanion(
                 updatedAt: updatedAt,
@@ -6774,6 +7068,7 @@ class $$ExercisesTableTableManager
                 isPerHand: isPerHand,
                 defaultIncrement: defaultIncrement,
                 isCustom: isCustom,
+                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -6786,6 +7081,7 @@ class $$ExercisesTableTableManager
                 required bool isPerHand,
                 required double defaultIncrement,
                 required bool isCustom,
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExercisesCompanion.insert(
                 updatedAt: updatedAt,
@@ -6796,6 +7092,7 @@ class $$ExercisesTableTableManager
                 isPerHand: isPerHand,
                 defaultIncrement: defaultIncrement,
                 isCustom: isCustom,
+                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -10987,6 +11284,158 @@ typedef $$TrackPointsTableProcessedTableManager =
       TrackPointRow,
       PrefetchHooks Function({bool sessionId})
     >;
+typedef $$SyncStateTableCreateCompanionBuilder = SyncStateCompanion Function({
+  required String tableNameValue,
+  required DateTime cursor,
+  Value<int> rowid,
+});
+typedef $$SyncStateTableUpdateCompanionBuilder = SyncStateCompanion Function({
+  Value<String> tableNameValue,
+  Value<DateTime> cursor,
+  Value<int> rowid,
+});
+
+class $$SyncStateTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncStateTable> {
+  $$SyncStateTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get tableNameValue => $composableBuilder(
+    column: $table.tableNameValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get cursor => $composableBuilder(
+    column: $table.cursor,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SyncStateTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncStateTable> {
+  $$SyncStateTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get tableNameValue => $composableBuilder(
+    column: $table.tableNameValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get cursor => $composableBuilder(
+    column: $table.cursor,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SyncStateTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncStateTable> {
+  $$SyncStateTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get tableNameValue => $composableBuilder(
+    column: $table.tableNameValue,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get cursor =>
+      $composableBuilder(column: $table.cursor, builder: (column) => column);
+}
+
+class $$SyncStateTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncStateTable,
+          SyncStateRow,
+          $$SyncStateTableFilterComposer,
+          $$SyncStateTableOrderingComposer,
+          $$SyncStateTableAnnotationComposer,
+          $$SyncStateTableCreateCompanionBuilder,
+          $$SyncStateTableUpdateCompanionBuilder,
+          (
+            SyncStateRow,
+            BaseReferences<_$AppDatabase, $SyncStateTable, SyncStateRow>,
+          ),
+          SyncStateRow,
+          PrefetchHooks Function()
+        > {
+  $$SyncStateTableTableManager(_$AppDatabase db, $SyncStateTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncStateTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncStateTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncStateTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> tableNameValue = const Value.absent(),
+                Value<DateTime> cursor = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncStateCompanion(
+                tableNameValue: tableNameValue,
+                cursor: cursor,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String tableNameValue,
+                required DateTime cursor,
+                Value<int> rowid = const Value.absent(),
+              }) => SyncStateCompanion.insert(
+                tableNameValue: tableNameValue,
+                cursor: cursor,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$SyncStateTable, SyncStateRow>(table),
+                  BaseReferences<_$AppDatabase, $SyncStateTable, SyncStateRow>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SyncStateTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncStateTable,
+      SyncStateRow,
+      $$SyncStateTableFilterComposer,
+      $$SyncStateTableOrderingComposer,
+      $$SyncStateTableAnnotationComposer,
+      $$SyncStateTableCreateCompanionBuilder,
+      $$SyncStateTableUpdateCompanionBuilder,
+      (
+        SyncStateRow,
+        BaseReferences<_$AppDatabase, $SyncStateTable, SyncStateRow>,
+      ),
+      SyncStateRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -11014,4 +11463,6 @@ class $AppDatabaseManager {
       $$TrackingSessionsTableTableManager(_db, _db.trackingSessions);
   $$TrackPointsTableTableManager get trackPoints =>
       $$TrackPointsTableTableManager(_db, _db.trackPoints);
+  $$SyncStateTableTableManager get syncState =>
+      $$SyncStateTableTableManager(_db, _db.syncState);
 }

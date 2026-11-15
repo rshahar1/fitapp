@@ -8,6 +8,24 @@ void main() {
   setUp(() => h = Harness());
   tearDown(() => h.close());
 
+  group('flags', () {
+    test(
+      'unset flag reads null, written flag reads back and overwrites',
+      () async {
+        expect(await h.settings.readFlag('sync.nudge_shown'), isNull);
+        await h.settings.writeFlag('sync.nudge_shown', 'true');
+        expect(await h.settings.readFlag('sync.nudge_shown'), 'true');
+        await h.settings.writeFlag('sync.nudge_shown', 'false');
+        expect(await h.settings.readFlag('sync.nudge_shown'), 'false');
+      },
+    );
+
+    test('flags do not touch synced settings', () async {
+      await h.settings.writeFlag('x', '1');
+      expect(await h.settings.syncedSettingsDirty(), isFalse);
+    });
+  });
+
   group('default rest', () {
     test('is 60 when unset', () async {
       expect(await h.settings.defaultRest(), 60);

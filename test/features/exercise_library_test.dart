@@ -2,6 +2,7 @@ import 'package:fitapp/app/router.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/data/providers.dart';
+import 'package:fitapp/data/repositories/template_repository.dart';
 import 'package:fitapp/features/exercises/exercise_library_screen.dart';
 import 'package:fitapp/features/progress/exercise_detail_screen.dart';
 import 'package:fitapp/features/progress/progress_screen.dart';
@@ -92,12 +93,11 @@ void main() {
 
   testWidgets('lists categories with seeded exercises', (tester) async {
     await pump(tester);
-    expect(find.text('Exercises'), findsOneWidget);
+    expect(find.text('Gym Exercise Library'), findsOneWidget);
     for (final g in ['CHEST', 'BACK', 'LEGS', 'SHOULDERS', 'ARMS']) {
       expect(find.text(g), findsOneWidget);
     }
     expect(find.text('CUSTOM'), findsNothing);
-    expect(find.byIcon(Icons.edit_outlined), findsNothing);
     await unmount(tester);
   });
 
@@ -132,7 +132,9 @@ void main() {
     await pump(tester);
     await createExercise(tester, 'Hip Thrust');
     expect(find.text('CUSTOM'), findsOneWidget);
-    await tester.tap(find.byTooltip('Edit Hip Thrust'));
+    await tester.tap(find.byTooltip('Options for Hip Thrust'));
+    await settle(tester);
+    await tester.tap(find.text('Edit'));
     await settle(tester);
     expect(find.text('Edit exercise'), findsOneWidget);
     expect(find.text('Hip Thrust'), findsWidgets);
@@ -143,7 +145,7 @@ void main() {
     expect(find.text('Hip Thrust'), findsNothing);
     expect(find.text('Glute Bridge'), findsOneWidget);
     expect(find.text('CUSTOM'), findsNothing);
-    expect(find.byTooltip('Edit Glute Bridge'), findsOneWidget);
+    expect(find.byTooltip('Options for Glute Bridge'), findsOneWidget);
     await unmount(tester);
   });
 
@@ -183,6 +185,66 @@ void main() {
     await settle(tester);
     expect(find.byTooltip('New exercise'), findsOneWidget);
     expect(find.text('CHEST'), findsOneWidget);
+    await unmount(tester);
+  });
+
+  Future<void> openDelete(WidgetTester tester, String name) async {
+    await tester.tap(find.byTooltip('Options for $name'));
+    await settle(tester);
+    await tester.tap(find.text('Delete'));
+    await settle(tester);
+  }
+
+  testWidgets('deleting a custom exercise removes it', (tester) async {
+    await pump(tester);
+    await createExercise(tester, 'Hip Thrust');
+    await openDelete(tester, 'Hip Thrust');
+    expect(find.text('Delete "Hip Thrust"?'), findsOneWidget);
+    await tester.tap(find.text('Delete').last);
+    await settle(tester);
+    expect(find.text('Hip Thrust'), findsNothing);
+    expect(find.text('Deleted Hip Thrust'), findsOneWidget);
+    await unmount(tester);
+  });
+
+  testWidgets('deleting a built-in exercise removes it', (tester) async {
+    await pump(tester);
+    await tester.tap(find.byTooltip('Options for Dumbbell Row'));
+    await settle(tester);
+    expect(find.text('Edit'), findsNothing);
+    await tester.tap(find.text('Delete'));
+    await settle(tester);
+    await tester.tap(find.text('Delete').last);
+    await settle(tester);
+    expect(find.text('Dumbbell Row'), findsNothing);
+    await unmount(tester);
+  });
+
+  testWidgets('cancel keeps the exercise', (tester) async {
+    await pump(tester);
+    await openDelete(tester, 'Dumbbell Row');
+    await tester.tap(find.text('Cancel'));
+    await settle(tester);
+    expect(find.text('Dumbbell Row'), findsOneWidget);
+    await unmount(tester);
+  });
+
+  testWidgets('delete dialog lists templates and empty ones', (tester) async {
+    await pump(tester);
+    final repo = TemplateRepository(h.db);
+    await tester.runAsync(() async {
+      await repo.create(name: 'Solo Day', exerciseIds: [inclineId]);
+      await repo.create(name: 'Push Day', exerciseIds: [inclineId, latId]);
+    });
+    await openDelete(tester, 'Incline Dumbbell Bench Press');
+    expect(find.textContaining('Removed from:'), findsOneWidget);
+    expect(find.textContaining('Solo Day'), findsWidgets);
+    expect(find.textContaining('Push Day'), findsOneWidget);
+    expect(
+      find.text('"Solo Day" has no other exercises and will be deleted.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('"Push Day" has no other'), findsNothing);
     await unmount(tester);
   });
 }

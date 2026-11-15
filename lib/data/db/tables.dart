@@ -15,6 +15,11 @@ class Exercises extends Table with SyncColumns {
   RealColumn get defaultIncrement => real()();
   BoolColumn get isCustom => boolean()();
 
+  /// Set when the user deleted the exercise (feature 012, soft delete):
+  /// hidden from the library, picker, templates and Progress; history keeps
+  /// it. NULL means active.
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
   @override
   Set<Column<Object>> get primaryKey => {id};
 }
@@ -216,4 +221,19 @@ class TrackPoints extends Table {
 
   @override
   Set<Column<Object>> get primaryKey => {sessionId, seq};
+}
+
+/// Pull cursor per synced server table (feature 013). Local only.
+@DataClassName('SyncStateRow')
+class SyncState extends Table {
+  TextColumn get tableNameValue => text().named('table_name')();
+
+  /// Max server_updated_at already pulled for this table (UTC).
+  DateTimeColumn get cursor => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {tableNameValue};
+
+  @override
+  String get tableName => 'sync_state';
 }

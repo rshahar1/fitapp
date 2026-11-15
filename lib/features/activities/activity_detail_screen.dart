@@ -18,7 +18,8 @@ import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart' show LatLng;
 import 'package:material_ui/material_ui.dart';
 
-/// Detail of a GPS-tracked activity: route map, metrics, splits, note.
+/// Read-only summary of an activity (GPS or manual): route map and splits
+/// when present, the recorded metrics, and the note.
 class ActivityDetailScreen extends ConsumerWidget {
   /// Creates the screen for [activityId].
   const new({required this.activityId, super.key});

@@ -75,10 +75,24 @@ void main() {
   Finder cell(String startsWith) =>
       find.bySemanticsLabel(RegExp('^$startsWith'));
 
+  Future<void> toMonth(WidgetTester tester) async {
+    await tester.tap(find.text('Month'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('defaults to the week view of the current week', (tester) async {
+    await pumpCalendar(tester);
+    expect(find.text('9 – 15 Nov 2026'), findsOneWidget);
+    expect(find.text('November 2026'), findsNothing);
+    expect(find.byTooltip('Previous week'), findsOneWidget);
+    expect(find.byTooltip('Previous month'), findsNothing);
+  });
+
   testWidgets('shows month, icons, +N and the selected day sessions', (
     tester,
   ) async {
     await pumpCalendar(tester);
+    await toMonth(tester);
     expect(find.text('November 2026'), findsOneWidget);
     expect(find.byIcon(Icons.fitness_center), findsWidgets);
     // 5 Nov: cycling first (08:00), then gym => bike icon and +1.
@@ -107,6 +121,7 @@ void main() {
 
   testWidgets('navigates months, Today and the picker', (tester) async {
     await pumpCalendar(tester);
+    await toMonth(tester);
     expect(
       tester
           .widget<IconButton>(
@@ -139,8 +154,6 @@ void main() {
 
   testWidgets('week mode shows 7 days and moves by week', (tester) async {
     await pumpCalendar(tester);
-    await tester.tap(find.text('Week'));
-    await tester.pumpAndSettle();
     expect(find.text('9 – 15 Nov 2026'), findsOneWidget);
     expect(
       find.bySemanticsLabel(RegExp(r'^\w+day \d+ \w+, ')),
@@ -160,8 +173,7 @@ void main() {
     addTearDown(tester.view.reset);
     await pumpCalendar(tester);
     expect(tester.takeException(), isNull);
-    await tester.tap(find.text('Week'));
-    await tester.pumpAndSettle();
+    await toMonth(tester);
     expect(tester.takeException(), isNull);
   });
 }

@@ -6,7 +6,6 @@ import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/domain/activity_types.dart';
 import 'package:fitapp/features/activities/activity_icons.dart';
-import 'package:fitapp/features/activities/activity_sheet.dart';
 import 'package:fitapp/features/history/route_thumbnail.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:go_router/go_router.dart';
@@ -103,9 +102,7 @@ class HistoryActivityRow extends StatelessWidget {
               )
             : null,
         showChevron: true,
-        onTap: () => isGps
-            ? context.push(Routes.activity(activity.id))
-            : showActivitySheet(context, existing: activity),
+        onTap: () => context.push(Routes.activity(activity.id)),
       ),
     );
   }

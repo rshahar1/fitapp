@@ -7,6 +7,7 @@ import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/activity_repository.dart';
 import 'package:fitapp/domain/tracking/geo.dart';
+import 'package:fitapp/features/activities/activity_detail_screen.dart';
 import 'package:fitapp/features/history/route_thumbnail.dart';
 import 'package:fitapp/features/tracking/widgets/route_map.dart';
 import 'package:fitapp/widgets/widgets.dart';
@@ -137,7 +138,7 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('tapping a GPS row opens the detail; manual opens the sheet', (
+    testWidgets('tapping a GPS or a manual row opens the detail screen', (
       tester,
     ) async {
       await tester.runAsync(() async {
@@ -156,12 +157,60 @@ void main() {
       await settle(tester);
       await tester.tap(find.byIcon(Icons.self_improvement));
       await settle(tester);
-      expect(find.text('Edit activity'), findsOneWidget);
+      expect(find.byType(ActivityDetailScreen), findsOneWidget);
+      expect(find.byTooltip('Edit activity'), findsOneWidget);
+      expect(find.text('Log a past session'), findsNothing);
       await unmount(tester);
     });
   });
 
   group('detail screen', () {
+    testWidgets('manual activity: metrics and note, no map, Edit opens sheet', (
+      tester,
+    ) async {
+      final id = (await tester.runAsync(
+        () => ActivityRepository(db).create(
+          typeId: 'running',
+          startedAt: started,
+          durationMinutes: 30,
+          distanceMeters: 5000,
+          notes: 'Felt good',
+        ),
+      ))!;
+      await pumpApp(tester, location: Routes.activity(id));
+      expect(find.byType(RouteMap), findsNothing);
+      expect(find.text('DISTANCE'), findsOneWidget);
+      expect(find.text('5'), findsOneWidget);
+      expect(find.text('DURATION'), findsOneWidget);
+      expect(find.text('AVG PACE'), findsOneWidget);
+      expect(find.text('MOVING TIME'), findsNothing);
+      expect(find.text('CLIMB'), findsNothing);
+      expect(find.text('SPLITS'), findsNothing);
+      expect(find.text('NOTE'), findsOneWidget);
+      expect(find.text('Felt good'), findsOneWidget);
+      expect(find.byTooltip('Delete activity'), findsOneWidget);
+      await tester.tap(find.byTooltip('Edit activity'));
+      await settle(tester);
+      expect(find.text('Edit activity'), findsOneWidget);
+      await unmount(tester);
+    });
+
+    testWidgets('a bare manual Pilates activity shows no empty tiles', (
+      tester,
+    ) async {
+      final id = (await tester.runAsync(
+        () =>
+            ActivityRepository(db)
+                .create(typeId: 'pilates', startedAt: started),
+      ))!;
+      await pumpApp(tester, location: Routes.activity(id));
+      expect(find.text('Pilates'), findsOneWidget);
+      expect(find.byType(RouteMap), findsNothing);
+      expect(find.byType(MetricTile), findsNothing);
+      expect(find.text('NOTE'), findsNothing);
+      await unmount(tester);
+    });
+
     testWidgets('shows metrics, splits and note', (tester) async {
       final id = (await tester.runAsync(addGps))!;
       await pumpApp(tester, location: Routes.activity(id));

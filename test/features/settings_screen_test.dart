@@ -117,24 +117,40 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('alert status rows show On when allowed', (tester) async {
+  testWidgets('alert rows are all switches reflecting status', (tester) async {
     await pump(tester);
-    expect(find.text('On'), findsNWidgets(2));
+    for (final t in ['Vibrate', 'Sound', 'Notifications', 'Precise timing']) {
+      expect(find.widgetWithText(SwitchListTile, t), findsOneWidget, reason: t);
+    }
+    SwitchListTile row(String t) =>
+        tester.widget(find.widgetWithText(SwitchListTile, t));
+    expect(row('Notifications').value, isTrue);
+    expect(row('Precise timing').value, isTrue);
+    expect(find.textContaining('Needed for alerts'), findsNothing);
     await tester.tap(find.text('Notifications'));
     await tester.pumpAndSettle();
-    expect(alerts.calls, isEmpty);
+    expect(alerts.calls, ['notifications']);
     await unmount(tester);
   });
 
-  testWidgets('tapping Off rows opens the right settings', (tester) async {
+  testWidgets('Off switches show hints and open the right settings', (
+    tester,
+  ) async {
     alerts.current = const AlertStatus(
       notifications: AlertPermission.denied,
       exactAlarms: false,
     );
     await pump(tester);
-    expect(find.text('Off — tap to enable'), findsOneWidget);
+    SwitchListTile row(String t) =>
+        tester.widget(find.widgetWithText(SwitchListTile, t));
+    expect(row('Notifications').value, isFalse);
+    expect(row('Precise timing').value, isFalse);
     expect(
-      find.text('Off — alerts may be late while the phone is idle'),
+      find.text('Needed for alerts while the app is in the background'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Alerts may be late while the phone is idle'),
       findsOneWidget,
     );
     await tester.tap(find.text('Notifications'));

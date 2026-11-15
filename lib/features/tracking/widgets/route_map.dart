@@ -227,9 +227,32 @@ class _TileMapState extends State<_TileMap> {
               ),
           ],
         ),
-        const SimpleAttributionWidget(
-          source: Text('© MapTiler © OpenStreetMap contributors'),
-          backgroundColor: AppColors.backdropBottomScrim,
+        RichAttributionWidget(
+          showFlutterMapAttribution: false,
+          popupInitialDisplayDuration: widget.interactive
+              ? const Duration(seconds: 3)
+              : Duration.zero,
+          popupBackgroundColor: AppColors.surface,
+          attributions: const [
+            TextSourceAttribution('MapTiler'),
+            TextSourceAttribution('OpenStreetMap contributors'),
+          ],
+          openButton: (context, open) => IconButton(
+            tooltip: 'Map attribution',
+            visualDensity: VisualDensity.compact,
+            iconSize: 18,
+            color: AppColors.textSecondary,
+            icon: const Icon(Icons.info_outline),
+            onPressed: open,
+          ),
+          closeButton: (context, close) => IconButton(
+            tooltip: 'Close attribution',
+            visualDensity: VisualDensity.compact,
+            iconSize: 18,
+            color: AppColors.textSecondary,
+            icon: const Icon(Icons.close),
+            onPressed: close,
+          ),
         ),
       ],
     );

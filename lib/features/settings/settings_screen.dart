@@ -45,29 +45,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (mounted) ref.invalidate(alertStatusProvider);
   }
 
-  Widget _statusRow(
-    TextTheme text, {
-    required String title,
-    required bool on,
-    required String offText,
-    required Future<void> Function() open,
-  }) {
-    return GroupRow(
-      title: title,
-      trailing: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 180),
-        child: Text(
-          on ? 'On' : offText,
-          textAlign: TextAlign.end,
-          style: text.bodyLarge?.copyWith(
-            color: on ? AppColors.accent : AppColors.textSecondary,
-          ),
-        ),
-      ),
-      onTap: on ? null : () => _open(open),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
@@ -141,19 +118,35 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onChanged: (v) => repo.setAlertPrefs(prefs.copyWith(sound: v)),
               ),
               if (status != null) ...[
-                _statusRow(
-                  text,
-                  title: 'Notifications',
-                  on: status.notifications == AlertPermission.granted,
-                  offText: 'Off — tap to enable',
-                  open: alerts.openNotificationSettings,
+                SwitchListTile(
+                  title: const Text('Notifications'),
+                  subtitle: status.notifications == AlertPermission.granted
+                      ? null
+                      : Text(
+                          'Needed for alerts while the app is in the background',
+                          style: text.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                  value: status.notifications == AlertPermission.granted,
+                  onChanged: (v) => _open(
+                    v && status.notifications == AlertPermission.notAsked
+                        ? alerts.requestNotificationPermission
+                        : alerts.openNotificationSettings,
+                  ),
                 ),
-                _statusRow(
-                  text,
-                  title: 'Precise timing',
-                  on: status.exactAlarms,
-                  offText: 'Off — alerts may be late while the phone is idle',
-                  open: alerts.openExactAlarmSettings,
+                SwitchListTile(
+                  title: const Text('Precise timing'),
+                  subtitle: status.exactAlarms
+                      ? null
+                      : Text(
+                          'Alerts may be late while the phone is idle',
+                          style: text.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                  value: status.exactAlarms,
+                  onChanged: (_) => _open(alerts.openExactAlarmSettings),
                 ),
               ],
             ],

@@ -11,7 +11,9 @@ replay). A second pure reducer, the **snow reducer**, runs on the fixes the base
 and classifies them into run / lift / rest segments, from which all snowboarding metrics are
 derived. Saving writes the same single `activities` row with six new optional columns (drift
 schema v9 + one Supabase migration). The live screen, finish sheet, detail screen and History row
-get a snowboarding branch.
+get a snowboarding branch. On top of the stored day, three review tools from Slopes Premium are
+built with no new package: a speed heatmap with switchable map styles, a run comparison with
+best-run badges, and a 2D run replay.
 
 ## Technical Context
 
@@ -124,14 +126,17 @@ Reused columns for a tracked snowboarding day:
 `k` kind (`r` run, `l` lift, `s` rest) · `t` start, seconds since the activity started · `d`
 duration in seconds · `m` distance in metres · `v` vertical in metres (drop for a run, gain for
 a lift, 0 for rest) · `s` max speed in m/s, one decimal (runs only) · `n` number of points of
-`route` that belong to this segment. Each segment is simplified on its own (Douglas-Peucker,
+`route` that belong to this segment · `a`, `b` smoothed altitude in metres at the segment's
+start and end. Runs also carry two arrays of length `n`, one entry per route point: `p` speed
+there in whole km/h and `q` whole seconds since the run began. They feed the heatmap and the
+replay; an 8-hour day adds roughly 40–60 KB. Each segment is simplified on its own (Douglas-Peucker,
 5 m) and the results are concatenated, so slices of `route` by `n` give each segment's line.
 
 **Local**: migration `from8To9` adds the six columns; `drift_schemas/drift_schema_v9.json`;
 generated `schema_v9.dart`; migration test v8→v9 (existing rows keep nulls).
 
 **Server**: `supabase/migrations/20261116000001_activities_snowboard.sql` adds the same columns
-(`>= 0` checks, `length(segments) <= 100000`), and replaces `public.sync_columns` so the
+(`>= 0` checks, `length(segments) <= 300000`), and replaces `public.sync_columns` so the
 `activities` whitelist includes them. `lib/data/sync/sync_table.dart` gains the six
 `SyncColumn`s (`max_speed_mps` is `ColKind.real`). Older clients ignore the columns.
 
@@ -143,7 +148,8 @@ generated `schema_v9.dart`; migration test v8→v9 (existing rows keep nulls).
 | `tracking/track_profile.dart` | `TrackProfile.snowboarding` (max 45 m/s, auto-pause speed 0 so it never triggers); `forType` accepts it |
 | `tracking/snow_state.dart` | `SnowKind`, `SnowSegment`, immutable `SnowState` (closed segments, current segment, candidate, signal windows) with getters for every metric in the table above |
 | `tracking/snow_reducer.dart` | `SnowTuning`, `startSnow`, `accumulateSnow(state, fix)`, `pauseSnow`, `resumeSnow`, `replaySnow(accepted)`, `snowDescents(segments)` |
-| `tracking/snow_summary.dart` | `SnowSummary` and `summarizeSnow(state, accepted, endedAt)`: closes the open segment, simplifies per segment, encodes the route, builds the segment list; `encodeSegments` / `decodeSegments` |
+| `tracking/snow_summary.dart` | `SnowSummary` and `summarizeSnow(state, accepted, endedAt)`: closes the open segment, simplifies per segment, encodes the route, builds the segment list with altitudes and per-point speed and time; `encodeSegments` / `decodeSegments` |
+| `tracking/snow_review.dart` | read side, on decoded segments: `snowDayStats` (highest / lowest altitude, longest run), `snowBadges` (fastest, longest, most vertical; needs two runs), `compareRuns(descents, metric, order)`, `replayAt(run, routeSlice, seconds)` → interpolated position, speed, altitude; `speedColorStops(minKmh, maxKmh)` → bucket limits for the heatmap |
 
 The base reducer is not changed. Per-fix cost stays constant: windows are bounded by time.
 
@@ -169,6 +175,12 @@ The base reducer is not changed. Per-fix cost stays constant: windows are bounde
 | Activity detail | snowboarding branch: sectioned map, totals, time bar, `snow_timeline.dart` listing descents (run number, start time, duration, drop, distance, max speed) and lifts (start time, duration, gain). No km markers, no splits |
 | History row | "8 runs · 3,240 m ↓" instead of pace or speed |
 
+| `RouteMap` | `coloured` sections (a colour per point, for the heatmap); `style` parameter: Dark `dataviz-dark`, Winter `winter-v2`, Satellite `satellite` (same MapTiler key; the exact style ids are checked against MapTiler's docs when implementing); attribution per style |
+| Map style | `mapStyleProvider` stored in the existing local settings (device only, not synced); a style button on the detail map |
+| Heatmap | detail map colours run points in five buckets from `speedColorStops`, lifts muted; legend with km/h limits. Colour ramp from theme tokens, readable on all three styles |
+| `widgets/snow_compare.dart` | "Compare runs": metric chips (max speed, avg speed, vertical, distance, duration), sort toggle, one bar per run, badges |
+| `snow_replay_screen.dart` | route `/activity/:id/replay/:run`: map fitted to the run, marker driven by a `Ticker` through `replayAt`, readout, play / pause, scrubber, 1× / 4× / 16× |
+
 Colours from theme tokens; Semantics labels on the chip, the bar and each timeline row.
 
 ## Fixtures
@@ -177,7 +189,8 @@ Colours from theme tokens; Semantics labels on the chip, the bar and each timeli
 horizontal, 4 m altitude) from a script of legs (lift, run, queue, stop) and returns the fixes
 with reference totals. Scenarios: plain day (3 lifts, 3 runs); chairlift stopping 90 s;
 stop mid-run; short traverse under 30 m; manual pause for lunch; gondola with a 3-minute GPS gap;
-fixes without altitude; an 8-hour day for the size and performance criteria. A real GPX from the
+fixes without altitude; three runs of clearly different speed, length and drop (badges and
+comparison); an 8-hour day for the size and performance criteria. A real GPX from the
 owner, if they provide one, is added as an extra fixture.
 
 ## Constitution Check
@@ -198,4 +211,5 @@ owner, if they provide one, is added as an extra fixture.
 |---|---|---|
 | A second reducer beside `track_reducer` | Run / lift / rest classification with backdating is a different state machine from pace and auto-pause | Folding it into `TrackState` would put snowboarding fields and branches into every run and ride |
 | `segments` JSON column | The detail timeline and the run / lift colouring need per-segment data | A child table needs its own sync table, triggers, RLS and tombstones for data that is never queried on its own |
+| Per-point `p` and `q` arrays inside `segments` | Heatmap and replay need speed and time along the route after the raw fixes are deleted | Keeping raw fixes breaks the feature 010 rule and principle VI; a second polyline-like column would need the same sync plumbing for no gain |
 | Five scalar columns besides the JSON | History rows and future stats read totals without parsing JSON | Deriving them from `segments` on every list row costs a parse per row |

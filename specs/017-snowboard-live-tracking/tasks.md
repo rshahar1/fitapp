@@ -20,7 +20,7 @@ description: "Task list for live snowboarding tracking"
 - [ ] T005 Fixture generator: scripted legs (lift, run, queue, stop) with seeded noise and reference totals; scenarios from plan "Fixtures" — test/domain/tracking/snow_fixtures.dart
 - [ ] T006 Tests: signals (speed fallback, altitude median, vertical rate), raw labels, candidate confirmation and backdating, lift ends at last climbing fix, chairlift stop under 120 s, gondola gap, stop mid-run, traverse under 30 m not a run, no altitude, pause / resume, `snowDescents`, metrics within 5% and exact run count on every scenario, replay equals incremental — test/domain/tracking/snow_reducer_test.dart
 - [ ] T007 Implement lib/domain/tracking/snow_state.dart and snow_reducer.dart (`SnowTuning`, `startSnow`, `accumulateSnow`, `pauseSnow`, `resumeSnow`, `replaySnow`, `snowDescents`)
-- [ ] T008 Tests: summary totals, open segment closed at `endedAt`, per-segment simplification (sum of `n` equals route length, slices start and end on segment boundaries), segments JSON round trip, 8-hour day within SC-004 sizes — test/domain/tracking/snow_summary_test.dart
+- [ ] T008 Tests: summary totals, open segment closed at `endedAt`, per-segment simplification (sum of `n` equals route length, slices start and end on segment boundaries), start / end altitudes, per-point `p` and `q` arrays (length `n`, `q` non-decreasing, last `q` ≤ duration), segments JSON round trip, 8-hour day within SC-004 sizes — test/domain/tracking/snow_summary_test.dart
 - [ ] T009 Implement lib/domain/tracking/snow_summary.dart (`SnowSummary`, `summarizeSnow`, `encodeSegments`, `decodeSegments`)
 
 ## Phase 3: Foundational — data
@@ -48,7 +48,16 @@ description: "Task list for live snowboarding tracking"
 - [ ] T024 `SnowTimeline` (descents and lifts) — lib/features/activities/widgets/snow_timeline.dart; widget test
 - [ ] T025 Activity detail snowboarding branch: sectioned map, totals, time bar, timeline; no km markers or splits — lib/features/activities/activity_detail_screen.dart; test in test/features/gps_activity_test.dart
 
-## Phase 6: Polish
+## Phase 6: User Story 5 + 6 + 7 — Slopes Premium review tools (P3)
+
+- [ ] T030 Tests then implementation: `snowDayStats`, `snowBadges`, `compareRuns`, `replayAt`, `speedColorStops` — lib/domain/tracking/snow_review.dart, test/domain/tracking/snow_review_test.dart
+- [ ] T031 `RouteMap`: per-point coloured sections and `style` (Dark, Winter, Satellite; confirm the MapTiler style ids and attribution in their docs first); plain-background fallback keeps the colours — route_map.dart; tests
+- [ ] T032 [P] `mapStyleProvider` persisted in local settings (not synced) and the style button — lib/features/settings/, detail screen; test
+- [ ] T033 Heatmap on the detail map with legend; highest / lowest altitude and longest run in the totals — activity_detail_screen.dart; widget test
+- [ ] T034 [P] `SnowCompare` view with metric chips, sort and badges; badges in `SnowTimeline` — lib/features/activities/widgets/snow_compare.dart; widget test
+- [ ] T035 Replay screen and route `/activity/:id/replay/:run`; entry from a timeline row and from the badges — lib/features/activities/snow_replay_screen.dart, lib/app/router.dart; widget test with a fake ticker
+
+## Phase 7: Polish
 
 - [ ] T026 Docs: PRD (v2.9: snowboarding tracking moves from LATER to done, glossary, changelog), README roadmap, docs/ARCHITECTURE.md (snow reducer, schema v9)
 - [ ] T027 `dart format --set-exit-if-changed .`, `flutter analyze`, `flutter test`, `node tool/db_test.mjs` all green; domain coverage 100% for the new files
@@ -59,4 +68,5 @@ description: "Task list for live snowboarding tracking"
 
 - T003–T009 before everything else; T010 before T012–T014; T011 is independent of the app code.
 - T016 needs T007, T009, T014. T018 and T020 need T016 and T017. T025 needs T017, T019, T024.
+- Phase 6 needs T009 (stored arrays) and T025; T031 before T033 and T035; T030 before T033–T035.
 - [P] tasks touch files nobody else touches and can run in parallel.

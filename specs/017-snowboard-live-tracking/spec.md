@@ -30,6 +30,12 @@ lifts; current, average and max speed; total daily distance, vertical drop and r
 - Q: Does a manual snowboarding entry change? → A: It gains the optional **Distance** field
   (same as running and cycling). Nothing else changes; old entries stay as they are.
 - Q: Units? → A: km, km/h and metres (kg/km-only rule).
+- Q: Which Slopes Premium features
+  ([list](https://blog.getslopes.com/discover-slopes-premium/))? → A: **In**: speed heatmap,
+  Winter and Satellite map styles, 2D run-by-run replay, run-by-run comparison, detailed stats,
+  best-run badges, live stats (already User Story 3). **Not now** (owner, 2026-11-16): 3D maps
+  and replay (needs another map engine), lift names (needs a third-party lookup that receives
+  locations), heart rate and fitness (needs a watch, a new health permission and a scope change).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -81,6 +87,36 @@ runs and lifts coloured differently, the day totals, a bar showing the share of 
 rest time, and a timeline listing each run (number, start time, duration, vertical drop,
 distance, max speed) and each lift (start time, duration, vertical gain).
 
+### User Story 5 - Speed heatmap and map styles (Priority: P3)
+
+On the detail screen the runs are coloured by speed, from slow to fast, with a small legend
+showing the scale in km/h; lifts stay muted. A style button switches the map between Dark,
+Winter and Satellite. The choice is remembered.
+
+**Independent Test**: A stored day with known per-point speeds renders run sections whose colours
+follow the speeds; switching style changes the tile source and persists across app restarts.
+
+### User Story 6 - Compare runs and see the best ones (Priority: P3)
+
+Below the timeline a "Compare runs" view lists every run with bars for one chosen metric (max
+speed, average speed, vertical drop, distance or duration), sortable by that metric or by time.
+The fastest run, the longest run and the run with the most vertical carry a badge in the
+timeline and in the comparison. The totals also show the highest and lowest altitude of the day
+and the longest run.
+
+**Independent Test**: For a fixture day with three different runs, each badge lands on the
+expected run and sorting by each metric gives the expected order.
+
+### User Story 7 - Replay a run (Priority: P3)
+
+Tapping a run in the timeline opens a replay: the map fits that run, a marker travels along it,
+and a readout shows speed, altitude and time into the run. Controls: play / pause, a scrubber
+and 1× / 4× / 16× speed. Runs with a badge are one tap away ("Replay fastest run").
+
+**Independent Test**: For a stored run, the replay position at a given time equals the
+interpolated point between the two stored route points around that time, and the readout shows
+the interpolated speed.
+
 ### Edge Cases
 
 - A descent of less than 30 m of drop (traversing to a lift, a short slide) counts as ride time
@@ -97,6 +133,10 @@ distance, max speed) and each lift (start time, duration, vertical gain).
   metrics; every screen shows them as before.
 - Editing a tracked snowboarding day allows date and note only; the type cannot change.
 - Only one live session at a time (unchanged, FR-008 of feature 010).
+- With no map key or no network every style falls back to the route drawn on a plain background;
+  the heatmap and the replay still work.
+- A day with a single run shows no "Compare runs" view; badges need at least two runs.
+- Replay of a run shorter than two route points is not offered.
 
 ## Requirements *(mandatory)*
 
@@ -119,6 +159,17 @@ distance, max speed) and each lift (start time, duration, vertical gain).
 - **FR-008**: History rows, the finish sheet and the Activity detail screen MUST show the
   snowboarding metrics for tracked snowboarding days; the detail map MUST distinguish runs from
   lifts.
+- **FR-010**: Each stored run MUST keep, for every route point, the speed there and the time
+  since the run began, and every segment its start and end altitude, so the heatmap, the replay
+  and the altitude stats work after the raw points are deleted.
+- **FR-011**: The detail map MUST colour runs by speed with a legend, and MUST offer Dark,
+  Winter and Satellite styles from the configured tile provider, remembering the last choice on
+  the device.
+- **FR-012**: The detail screen MUST offer a run comparison (five metrics, sortable), badges for
+  the fastest, longest and most-vertical run, and the day's highest and lowest altitude and
+  longest run.
+- **FR-013**: Each run MUST be replayable in 2D with play / pause, scrubbing and three speeds,
+  showing speed, altitude and time.
 - **FR-009**: Everything in feature 010 that is not sport-specific (permission flow, foreground
   service, 5 s persistence, provider fallback, recovery, one live session, location privacy)
   MUST apply unchanged.
@@ -130,13 +181,16 @@ distance, max speed) and each lift (start time, duration, vertical gain).
 - **SC-002**: A lift is shown as "On lift" within 60 s of leaving the bottom station; a run is
   shown as "Riding" within 15 s of setting off.
 - **SC-003**: Replay equals incremental for every fixture (same metrics, same segments).
-- **SC-004**: An 8-hour day stores a route of ≤ 400 KB and a segment list of ≤ 20 KB; the live
+- **SC-004**: An 8-hour day stores a route of ≤ 400 KB and a segment list of ≤ 100 KB; the live
   screen never draws more than 2,000 route points.
+- **SC-006**: The replay plays at 16× without dropped frames on the owner's phone; opening the
+  detail screen of an 8-hour day takes under one second.
 - **SC-005**: Format, analyze and all tests green; SQL tests green; one real day on the mountain
   validated by the owner (run count matches what they rode).
 
 ## Out of scope
 
-Barometer altitude, resort / piste / lift names, piste maps, 3D replay, friends and live location,
-skiing as a separate type, GPX export or import, miles and feet, offline tile download, speed
-heat-map colouring of the route.
+Barometer altitude; resort, piste and lift names (lift identification); piste maps; 3D maps and
+3D replay; heart rate overlay and fitness insights; friends and live location; skiing as a
+separate type; GPX export or import; miles and feet; offline tile download; season or lifetime
+statistics across days.

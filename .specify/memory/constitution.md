@@ -4,9 +4,10 @@ Sync Impact Report
   2026-11-16)
 - Modified principles: VI (a saved snowboarding day's per-segment breakdown is backed up with its
   route to the user's own account, like splits); VII (live GPS tracking for snowboarding with
-  automatic run / lift / rest detection, speed, vertical drop and run count is in scope;
-  barometer-based altitude, resort or piste names, 3D replay, friends and live location sharing
-  remain out of scope)
+  automatic run / lift / rest detection, speed, vertical drop and run count is in scope, with a
+  speed heatmap, Winter and Satellite map styles, 2D run replay and run comparison for review;
+  barometer-based altitude, lift, resort or piste names, 3D replay, heart rate, friends and live
+  location sharing remain out of scope)
 - Added sections: none | Removed sections: none
 - Deferred TODOs: none
 
@@ -218,8 +219,10 @@ Rationale: a personal health log is private data; leaked keys are irreversible.
   015, owner request 2026-11-16) is in scope for the last 30 days. Live GPS tracking for
   snowboarding (feature 017, owner request 2026-11-16) with automatic run / lift / rest
   detection, current / average / max speed, ride distance, vertical drop and run count is in
-  scope, using GPS altitude only. Barometer-based altitude, resort or piste names, 3D replay,
-  HealthKit, writing to Health Connect, other health data types, step goals and charts, GPX
+  scope, using GPS altitude only, together with its review tools: speed heatmap on the route,
+  Winter and Satellite map styles from the same tile provider, 2D run replay, run comparison and
+  best-run badges. Barometer-based altitude, lift, resort or piste names, 3D maps and replay,
+  heart rate, HealthKit, writing to Health Connect, other health data types, step goals and charts, GPX
   export, miles and offline tile download remain out of scope until the owner requests them.
 - Phase 2 cloud backup and sync with Google sign-in (feature 013, owner approval 2026-11-14) is in
   scope, Android only. Apple Sign-In, email magic link, live push between devices and any sharing

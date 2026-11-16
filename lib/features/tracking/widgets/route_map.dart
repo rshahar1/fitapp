@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:fitapp/app/theme/tokens.dart';
+import 'package:flutter/foundation.dart' show immutable, listEquals;
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart' show LatLng;
@@ -11,6 +12,59 @@ const mapTilesKey = String.fromEnvironment('MAP_TILES_KEY');
 
 /// Whether real map tiles are drawn. False without a key; tests override it.
 final mapTilesEnabledProvider = Provider<bool>((ref) => mapTilesKey.isNotEmpty);
+
+/// The look of the map tiles (feature 017).
+enum MapStyle {
+  dark('Dark', 'dataviz-dark', 'png'),
+  winter('Winter', 'winter-v2', 'png'),
+  satellite('Satellite', 'satellite', 'jpg');
+
+  new(this.label, this.mapId, this.format);
+
+  /// Display name.
+  final String label;
+
+  /// MapTiler map id and raster tile format.
+  final String mapId;
+  final String format;
+
+  /// The stored name of a style; [dark] for null or anything unknown.
+  static MapStyle parse(String? name) => MapStyle.values.firstWhere(
+    (s) => s.name == name,
+    orElse: () => MapStyle.dark,
+  );
+
+  String get urlTemplate =>
+      'https://api.maptiler.com/maps/$mapId/256/{z}/{x}/{y}.$format'
+      '?key=$mapTilesKey';
+}
+
+/// A stretch of the route drawn in its own colour over the base line: the
+/// points `route[from]` to `route[to]` (inclusive).
+@immutable
+class RouteSpan {
+  const new(this.from, this.to, this.color);
+
+  final int from;
+  final int to;
+  final Color color;
+
+  @override
+  bool operator ==(Object other) =>
+      other is RouteSpan &&
+      other.from == from &&
+      other.to == to &&
+      other.color == color;
+
+  @override
+  int get hashCode => Object.hash(from, to, color);
+}
+
+/// The points of [span] in [route], or empty when it does not fit.
+List<LatLng> spanPoints(List<LatLng> route, RouteSpan span) =>
+    span.from < 0 || span.to >= route.length || span.to <= span.from
+    ? const []
+    : route.sublist(span.from, span.to + 1);
 
 /// What a [RouteMarker] marks.
 enum RouteMarkerKind { start, finish, km }
@@ -37,10 +91,22 @@ class RouteMap extends ConsumerWidget {
     this.markers = const [],
     this.fitToRoute = true,
     this.followCurrent = false,
+    this.spans = const [],
+    this.style = MapStyle.dark,
+    this.fitTo,
     super.key,
   });
 
   final List<LatLng> route;
+
+  /// Stretches of [route] drawn in another colour (lifts, speed heatmap).
+  final List<RouteSpan> spans;
+
+  /// Tile style; ignored when no tiles are drawn.
+  final MapStyle style;
+
+  /// Points to keep in view instead of the whole route (e.g. one run).
+  final List<LatLng>? fitTo;
 
   /// Latest position, drawn as a dot.
   final LatLng? current;
@@ -71,6 +137,9 @@ class RouteMap extends ConsumerWidget {
                   markers: markers,
                   fitToRoute: fitToRoute,
                   followCurrent: followCurrent,
+                  spans: spans,
+                  style: style,
+                  fitTo: fitTo,
                 )
               : CustomPaint(
                   size: Size.infinite,
@@ -78,6 +147,8 @@ class RouteMap extends ConsumerWidget {
                     route: route,
                     current: current,
                     markers: markers,
+                    spans: spans,
+                    fitTo: fitTo,
                   ),
                 ),
         ),
@@ -94,6 +165,9 @@ class _TileMap extends StatefulWidget {
     required this.markers,
     required this.fitToRoute,
     required this.followCurrent,
+    required this.spans,
+    required this.style,
+    required this.fitTo,
   });
 
   final List<LatLng> route;
@@ -102,6 +176,9 @@ class _TileMap extends StatefulWidget {
   final List<RouteMarker> markers;
   final bool fitToRoute;
   final bool followCurrent;
+  final List<RouteSpan> spans;
+  final MapStyle style;
+  final List<LatLng>? fitTo;
 
   @override
   State<_TileMap> createState() => _TileMapState();
@@ -114,13 +191,14 @@ class _TileMapState extends State<_TileMap> {
   /// Whether the camera sits on a real point (not the empty world view).
   late bool _placed = _firstPoint != null;
 
+  double get _edge => widget.style == MapStyle.dark ? 0 : 1.5;
+
   static const _padding = EdgeInsets.all(Space.l);
   static const _fallbackZoom = 16.0;
 
-  List<LatLng> get _all => [
-    ...widget.route,
-    if (widget.current != null) widget.current!,
-  ];
+  List<LatLng> get _all =>
+      widget.fitTo ??
+      [...widget.route, if (widget.current != null) widget.current!];
 
   LatLng? get _firstPoint => widget.current ?? widget.route.lastOrNull;
 
@@ -141,7 +219,8 @@ class _TileMapState extends State<_TileMap> {
     } else if (widget.fitToRoute &&
         !widget.followCurrent &&
         (widget.route.length != old.route.length ||
-            widget.current != old.current)) {
+            widget.current != old.current ||
+            !listEquals(widget.fitTo, old.fitTo))) {
       final fit = _fit();
       if (fit != null) {
         _controller.fitCamera(fit);
@@ -193,9 +272,8 @@ class _TileMapState extends State<_TileMap> {
       ),
       children: [
         TileLayer(
-          urlTemplate:
-              'https://api.maptiler.com/maps/dataviz-dark/256/{z}/{x}/{y}.png'
-              '?key=$mapTilesKey',
+          key: ValueKey(widget.style),
+          urlTemplate: widget.style.urlTemplate,
           userAgentPackageName: 'com.fitapp.app',
           maxNativeZoom: 20,
         ),
@@ -206,7 +284,20 @@ class _TileMapState extends State<_TileMap> {
                 points: widget.route,
                 strokeWidth: Sizes.routeStroke,
                 color: AppColors.accent,
+                // Light tiles need an edge to keep the line readable.
+                borderStrokeWidth: _edge,
+                borderColor: AppColors.background,
               ),
+              for (final span in widget.spans)
+                if (spanPoints(widget.route, span) case final pts
+                    when pts.isNotEmpty)
+                  Polyline(
+                    points: pts,
+                    strokeWidth: Sizes.routeStroke,
+                    color: span.color,
+                    borderStrokeWidth: _edge,
+                    borderColor: AppColors.background,
+                  ),
             ],
           ),
         MarkerLayer(
@@ -309,15 +400,19 @@ class _RoutePainter extends CustomPainter {
     required this.route,
     required this.current,
     required this.markers,
+    this.spans = const [],
+    this.fitTo,
   });
 
   final List<LatLng> route;
   final LatLng? current;
   final List<RouteMarker> markers;
+  final List<RouteSpan> spans;
+  final List<LatLng>? fitTo;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final pts = [...route, ?current, for (final m in markers) m.point];
+    final pts = fitTo ?? [...route, ?current, for (final m in markers) m.point];
     if (pts.isEmpty || size.isEmpty) return;
     var minLat = pts.first.latitude;
     var maxLat = minLat;
@@ -348,21 +443,28 @@ class _RoutePainter extends CustomPainter {
       offY + (maxLat - p.latitude) * scale,
     );
 
-    if (route.length >= 2) {
-      final path = Path()..moveTo(at(route.first).dx, at(route.first).dy);
-      for (final p in route.skip(1)) {
+    void line(List<LatLng> points, Color color) {
+      if (points.length < 2) return;
+      final path = Path()..moveTo(at(points.first).dx, at(points.first).dy);
+      for (final p in points.skip(1)) {
         final o = at(p);
         path.lineTo(o.dx, o.dy);
       }
       canvas.drawPath(
         path,
         Paint()
-          ..color = AppColors.accent
+          ..color = color
           ..style = PaintingStyle.stroke
           ..strokeWidth = Sizes.routeStroke
           ..strokeCap = StrokeCap.round
           ..strokeJoin = StrokeJoin.round,
       );
+    }
+
+    if (fitTo != null) canvas.clipRect(Offset.zero & size);
+    line(route, AppColors.accent);
+    for (final span in spans) {
+      line(spanPoints(route, span), span.color);
     }
     void dot(LatLng p, Color color) {
       canvas
@@ -384,5 +486,7 @@ class _RoutePainter extends CustomPainter {
       old.route.length != route.length ||
       old.current != current ||
       old.markers.length != markers.length ||
-      (route.isNotEmpty && old.route.last != route.last);
+      (route.isNotEmpty && old.route.last != route.last) ||
+      !listEquals(old.spans, spans) ||
+      !listEquals(old.fitTo, fitTo);
 }

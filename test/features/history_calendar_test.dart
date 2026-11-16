@@ -92,24 +92,19 @@ void main() {
   Finder cell(String startsWith) =>
       find.bySemanticsLabel(RegExp('^$startsWith'));
 
-  Future<void> toMonth(WidgetTester tester) async {
-    await tester.tap(find.text('Month'));
-    await tester.pumpAndSettle();
-  }
-
-  testWidgets('defaults to the week view of the current week', (tester) async {
+  testWidgets('shows the month view with no Week selector', (tester) async {
     await pumpCalendar(tester);
-    expect(find.text('9 – 15 Nov 2026'), findsOneWidget);
-    expect(find.text('November 2026'), findsNothing);
-    expect(find.byTooltip('Previous week'), findsOneWidget);
-    expect(find.byTooltip('Previous month'), findsNothing);
+    expect(find.text('November 2026'), findsOneWidget);
+    expect(find.text('Week'), findsNothing);
+    expect(find.text('Month'), findsNothing);
+    expect(find.byTooltip('Previous month'), findsOneWidget);
+    expect(find.byTooltip('Previous week'), findsNothing);
   });
 
   testWidgets('shows month, icons, +N and the selected day sessions', (
     tester,
   ) async {
     await pumpCalendar(tester);
-    await toMonth(tester);
     expect(find.text('November 2026'), findsOneWidget);
     expect(find.byIcon(Icons.fitness_center), findsWidgets);
     // 5 Nov: cycling first (08:00), then gym => bike icon and +1.
@@ -138,7 +133,6 @@ void main() {
 
   testWidgets('navigates months, Today and the picker', (tester) async {
     await pumpCalendar(tester);
-    await toMonth(tester);
     expect(
       tester
           .widget<IconButton>(
@@ -169,28 +163,12 @@ void main() {
     expect(find.text('March 2026'), findsNothing);
   });
 
-  testWidgets('week mode shows 7 days and moves by week', (tester) async {
-    await pumpCalendar(tester);
-    expect(find.text('9 – 15 Nov 2026'), findsOneWidget);
-    expect(
-      find.bySemanticsLabel(RegExp(r'^\w+day \d+ \w+, ')),
-      findsNWidgets(7),
-    );
-    await tester.tap(find.byTooltip('Previous week'));
-    await tester.pumpAndSettle();
-    expect(find.text('2 – 8 Nov 2026'), findsOneWidget);
-    await tester.tap(find.text('Today'));
-    await tester.pumpAndSettle();
-    expect(find.text('9 – 15 Nov 2026'), findsOneWidget);
-  });
-
   testWidgets('does not overflow at 360x690', (tester) async {
     tester.view.physicalSize = const Size(360, 690);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await pumpCalendar(tester);
     expect(tester.takeException(), isNull);
-    await toMonth(tester);
     expect(tester.takeException(), isNull);
   });
 
@@ -200,7 +178,6 @@ void main() {
     final todayMidnight = DateTime(today.year, today.month, today.day);
 
     Future<void> selectDay(WidgetTester tester, String label) async {
-      if (cell(label).evaluate().isEmpty) await toMonth(tester);
       await tester.ensureVisible(cell(label));
       await tester.tap(cell(label));
       await tester.pumpAndSettle();
@@ -300,7 +277,6 @@ void main() {
     testWidgets('hidden for a future day without a read', (tester) async {
       final src = FakeStepSource();
       await pumpCalendar(tester, steps: src);
-      await toMonth(tester);
       await selectDay(tester, 'Sunday 15 November');
       expect(headerSteps(), findsNothing);
       expect(
@@ -314,7 +290,6 @@ void main() {
     ) async {
       final src = FakeStepSource();
       await pumpCalendar(tester, steps: src);
-      await toMonth(tester);
       for (var i = 0; i < 2; i++) {
         await tester.tap(find.byTooltip('Previous month'));
         await tester.pumpAndSettle();

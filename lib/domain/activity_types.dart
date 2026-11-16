@@ -35,7 +35,12 @@ class ActivityType {
 const activityTypes = [
   ActivityType('functional', 'Functional training'),
   ActivityType('cycling', 'Cycling', hasDistance: true, hasLiveTracking: true),
-  ActivityType('snowboarding', 'Snowboarding'),
+  ActivityType(
+    'snowboarding',
+    'Snowboarding',
+    hasDistance: true,
+    hasLiveTracking: true,
+  ),
   ActivityType('running', 'Running', hasDistance: true, hasLiveTracking: true),
   ActivityType('pilates', 'Pilates'),
 ];
@@ -181,5 +186,19 @@ String formatPace(int meters, int minutes) {
 /// Average speed, "24.5 km/h".
 String formatSpeed(int meters, int minutes) =>
     '${(meters / 1000 / (minutes / 60)).toStringAsFixed(1)} km/h';
+
+/// Speed in km/h from metres per second, one decimal: 17.4 -> "62.6 km/h".
+String formatSpeedKmh(double mps) => '${(mps * 3.6).toStringAsFixed(1)} km/h';
+
+/// Whole metres with a comma thousands separator: 3240 -> "3,240 m".
+String formatMetersGrouped(int meters) {
+  final digits = meters.abs().toString();
+  final out = StringBuffer(meters < 0 ? '-' : '');
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 == 0) out.write(',');
+    out.write(digits[i]);
+  }
+  return '$out m';
+}
 
 DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);

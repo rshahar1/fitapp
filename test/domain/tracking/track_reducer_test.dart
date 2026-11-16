@@ -99,6 +99,17 @@ void main() {
   });
 
   group('accumulate', () {
+    test('snowboarding profile never auto-pauses', () {
+      final p = TrackProfile.forType('snowboarding');
+      expect(p.maxSpeedMps, 45);
+      var s = accumulate(start(_t0), at(0, 0), p);
+      for (var i = 1; i <= 60; i++) {
+        s = accumulate(s, at(i, 0), p);
+        expect(s.autoPaused, isFalse);
+      }
+      expect(s.movingSeconds, greaterThan(0));
+    });
+
     test('first fix becomes the anchor, no distance', () {
       final s = accumulate(start(_t0), at(0, 0), run_);
       expect(s.distanceMeters, 0);

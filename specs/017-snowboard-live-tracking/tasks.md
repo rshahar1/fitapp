@@ -15,13 +15,13 @@ description: "Task list for live snowboarding tracking"
 
 ## Phase 2: Foundational — domain (tests first)
 
-- [ ] T003 Tests: snowboarding has distance and live tracking; `validateActivity` accepts a snowboarding distance; `TrackProfile.forType('snowboarding')` (45 m/s limit, never auto-pauses); `formatSpeedMps`, `formatMetersGrouped` — test/domain/activity_types_test.dart, test/domain/tracking/track_reducer_test.dart
-- [ ] T004 Implement T003 in lib/domain/activity_types.dart and lib/domain/tracking/track_profile.dart; fix the tests that assumed snowboarding has no distance (activity_types_test, activity_repository_test, activities_test, start_hub_test)
-- [ ] T005 Fixture generator: scripted legs (lift, run, queue, stop) with seeded noise and reference totals; scenarios from plan "Fixtures" — test/domain/tracking/snow_fixtures.dart
-- [ ] T006 Tests: signals (speed fallback, altitude median, vertical rate), raw labels, candidate confirmation and backdating, lift ends at last climbing fix, chairlift stop under 120 s, gondola gap, stop mid-run, traverse under 30 m not a run, no altitude, pause / resume, `snowDescents`, metrics within 5% and exact run count on every scenario, replay equals incremental — test/domain/tracking/snow_reducer_test.dart
-- [ ] T007 Implement lib/domain/tracking/snow_state.dart and snow_reducer.dart (`SnowTuning`, `startSnow`, `accumulateSnow`, `pauseSnow`, `resumeSnow`, `replaySnow`, `snowDescents`)
-- [ ] T008 Tests: summary totals, open segment closed at `endedAt`, per-segment simplification (sum of `n` equals route length, slices start and end on segment boundaries), start / end altitudes, per-point `p` and `q` arrays (length `n`, `q` non-decreasing, last `q` ≤ duration), segments JSON round trip, 8-hour day within SC-004 sizes — test/domain/tracking/snow_summary_test.dart
-- [ ] T009 Implement lib/domain/tracking/snow_summary.dart (`SnowSummary`, `summarizeSnow`, `encodeSegments`, `decodeSegments`)
+- [x] T003 Tests: snowboarding has distance and live tracking; `validateActivity` accepts a snowboarding distance; `TrackProfile.forType('snowboarding')` (45 m/s limit, never auto-pauses); `formatSpeedKmh`, `formatMetersGrouped` — test/domain/activity_types_test.dart, test/domain/tracking/track_reducer_test.dart
+- [x] T004 Implement T003 in lib/domain/activity_types.dart and lib/domain/tracking/track_profile.dart; fix the tests that assumed snowboarding has no distance (activity_types_test, activity_repository_test, activities_test, start_hub_test)
+- [x] T005 Fixture generator: scripted legs (lift, run, queue, stop) with seeded noise and reference totals; scenarios from plan "Fixtures" — test/domain/tracking/snow_fixtures.dart
+- [x] T006 Tests: signals (speed fallback, altitude median, vertical rate), raw labels, candidate confirmation and backdating, lift ends at last climbing fix, chairlift stop under 120 s, gondola gap, stop mid-run, traverse under 30 m not a run, no altitude, pause / resume, `snowDescents`, metrics within 5% and exact run count on every scenario, replay equals incremental — test/domain/tracking/snow_reducer_test.dart
+- [x] T007 Implement lib/domain/tracking/snow_state.dart and snow_reducer.dart (`SnowTuning`, `startSnow`, `accumulateSnow`, `pauseSnow`, `resumeSnow`, `replaySnow`, `snowDescents`)
+- [x] T008 Tests: summary totals, open segment closed at `endedAt`, per-segment simplification (sum of `n` equals route length, slices start and end on segment boundaries), start / end altitudes, per-point `p` and `q` arrays (length `n`, `q` non-decreasing, last `q` ≤ duration), segments JSON round trip, 8-hour day within SC-004 sizes — test/domain/tracking/snow_summary_test.dart
+- [x] T009 Implement lib/domain/tracking/snow_summary.dart (`SnowSummary`, `summarizeSnow`, `encodeSegments`, `decodeSegments`)
 
 ## Phase 3: Foundational — data
 

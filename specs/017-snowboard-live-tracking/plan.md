@@ -144,7 +144,7 @@ generated `schema_v9.dart`; migration test v8→v9 (existing rows keep nulls).
 
 | File | Content |
 |---|---|
-| `activity_types.dart` | snowboarding: `hasDistance: true, hasLiveTracking: true`; `formatSpeedMps`, `formatMetersGrouped` ("3,240 m") |
+| `activity_types.dart` | snowboarding: `hasDistance: true, hasLiveTracking: true`; `formatSpeedKmh`, `formatMetersGrouped` ("3,240 m") |
 | `tracking/track_profile.dart` | `TrackProfile.snowboarding` (max 45 m/s, auto-pause speed 0 so it never triggers); `forType` accepts it |
 | `tracking/snow_state.dart` | `SnowKind`, `SnowSegment`, immutable `SnowState` (closed segments, current segment, candidate, signal windows) with getters for every metric in the table above |
 | `tracking/snow_reducer.dart` | `SnowTuning`, `startSnow`, `accumulateSnow(state, fix)`, `pauseSnow`, `resumeSnow`, `replaySnow(accepted)`, `snowDescents(segments)` |

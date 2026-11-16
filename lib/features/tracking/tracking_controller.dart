@@ -6,6 +6,10 @@ import 'package:fitapp/data/repositories/tracking_repository.dart';
 import 'package:fitapp/data/tracking/location_source.dart';
 import 'package:fitapp/domain/activity_types.dart';
 import 'package:fitapp/domain/tracking/geo.dart';
+import 'package:fitapp/domain/tracking/live_route.dart';
+import 'package:fitapp/domain/tracking/snow_reducer.dart';
+import 'package:fitapp/domain/tracking/snow_state.dart';
+import 'package:fitapp/domain/tracking/snow_summary.dart';
 import 'package:fitapp/domain/tracking/track_profile.dart';
 import 'package:fitapp/domain/tracking/track_reducer.dart' as reducer;
 import 'package:fitapp/domain/tracking/track_sample.dart';
@@ -87,13 +91,22 @@ class TrackingLive extends TrackingUiState {
     this.serviceEnabled = true,
     this.accuracy,
     this.gpsIssue,
+    this.snow,
+    this.liftSpans = const [],
   });
 
   final String sessionId;
   final String typeId;
   final TrackState state;
 
-  /// The accepted fixes drawn as the route so far. A fresh list per change.
+  /// Snowboarding metrics (runs, lifts, rests); null for other activities.
+  final SnowState? snow;
+
+  /// The ranges of [points] ridden on a lift (snowboarding only).
+  final List<({int from, int to})> liftSpans;
+
+  /// The route so far: every accepted fix on a short track, thinned on a
+  /// long one (see `LiveRoute`). A fresh list per change.
   final List<GeoPoint> points;
 
   /// The latest position received (accepted or not), for the map dot.
@@ -141,9 +154,14 @@ class TrackingController extends Notifier<TrackingUiState> {
   TrackProfile? _profile;
   TrackState? _track;
 
-  /// Fixes the reducer accepted, and the same as an immutable route snapshot.
+  /// Fixes the reducer accepted, and the route drawn from them.
   final List<TrackSample> _accepted = [];
+  final LiveRoute _liveRoute = LiveRoute();
   List<GeoPoint> _route = const [];
+  List<({int from, int to})> _liftSpans = const [];
+
+  /// Snowboarding only: classification of the accepted fixes.
+  SnowState? _snow;
 
   @override
   TrackingUiState build() {
@@ -253,10 +271,11 @@ class TrackingController extends Notifier<TrackingUiState> {
     _typeId = typeId;
     _profile = TrackProfile.forType(typeId);
     _track = track;
-    _accepted
-      ..clear()
-      ..addAll(accepted);
-    _route = _routeOf(_accepted);
+    _accepted.clear();
+    _liveRoute.clear();
+    _snow = typeId == 'snowboarding' ? startSnow() : null;
+    accepted.forEach(_accept);
+    _snapshotRoute();
     _publish();
     _flushTimer?.cancel();
     _flushTimer = Timer.periodic(
@@ -293,6 +312,17 @@ class TrackingController extends Notifier<TrackingUiState> {
     final track = _track;
     if (track == null) return null;
     return summarize(track, _accepted, endedAt: _now());
+  }
+
+  /// The snowboarding part of what [finish] would store right now, or null
+  /// when the session is not a snowboarding one.
+  SnowSummary? previewSnowSummary() {
+    final track = _track;
+    if (track == null || _snow == null) return null;
+    return TrackingRepository.snowSummary(
+      _accepted,
+      startedAt: track.startedAt,
+    );
   }
 
   /// Saves the session as an activity and returns its id.
@@ -486,8 +516,8 @@ class TrackingController extends Notifier<TrackingUiState> {
     final sample = fix.withPaused(paused: track.manualPaused);
     final next = reducer.accumulate(track, sample, profile);
     if (identical(next.lastAccepted, sample)) {
-      _accepted.add(sample);
-      _route = _routeOf(_accepted);
+      _accept(sample);
+      _snapshotRoute();
     }
     _setTrack(next);
     _buffer.add(sample);
@@ -510,6 +540,8 @@ class TrackingController extends Notifier<TrackingUiState> {
     serviceEnabled: _serviceOn,
     accuracy: _accuracy,
     gpsIssue: _gpsIssue,
+    snow: _snow,
+    liftSpans: _liftSpans,
   );
 
   GeoPoint? _lastAcceptedPoint() {
@@ -517,8 +549,34 @@ class TrackingController extends Notifier<TrackingUiState> {
     return a == null ? null : (lat: a.lat, lon: a.lon);
   }
 
-  static List<GeoPoint> _routeOf(List<TrackSample> samples) =>
-      List.unmodifiable([for (final s in samples) (lat: s.lat, lon: s.lon)]);
+  /// Takes a fix the track reducer accepted: route point and, when
+  /// snowboarding, classification. A fix received while manually paused ends
+  /// the snow segment in progress, exactly as `replaySnow` does.
+  void _accept(TrackSample sample) {
+    final snow = _snow;
+    _liveRoute.add((
+      lat: sample.lat,
+      lon: sample.lon,
+    ), snow?.count ?? _accepted.length);
+    _accepted.add(sample);
+    if (snow != null) {
+      _snow = sample.paused ? pauseSnow(snow) : accumulateSnow(snow, sample);
+    }
+  }
+
+  void _snapshotRoute() {
+    _route = _liveRoute.points;
+    final snow = _snow;
+    if (snow == null) return;
+    final current = snow.current;
+    _liftSpans = _liveRoute.spans([
+      for (final seg in snow.segments)
+        if (seg.kind == SnowKind.lift)
+          (first: seg.firstIndex, last: seg.lastIndex),
+      if (current != null && current.kind == SnowKind.lift)
+        (first: current.firstIndex, last: current.lastIndex),
+    ]);
+  }
 
   /// Writes buffered fixes; writes are serialised so order is kept.
   Future<void> _flush() {
@@ -588,7 +646,10 @@ class TrackingController extends Notifier<TrackingUiState> {
     _track = null;
     _profile = null;
     _accepted.clear();
+    _liveRoute.clear();
     _route = const [];
+    _liftSpans = const [];
+    _snow = null;
     _buffer.clear();
     _fix = null;
     _serviceOn = true;

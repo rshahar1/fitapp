@@ -33,8 +33,8 @@ description: "Task list for live snowboarding tracking"
 
 ## Phase 4: User Story 1 + 2 — record and recover (P1)
 
-- [ ] T015 Controller tests with FakeLocationSource replaying a ski-day fixture: `TrackingLive.snow` updates, pause / resume, `previewSnowSummary`, finish stores the same numbers as the preview, recovery after recreating the container gives the same snow state, live route never exceeds 2,000 points and running / cycling routes still draw — test/features/tracking/tracking_controller_test.dart
-- [ ] T016 Implement T015 in lib/features/tracking/tracking_controller.dart (snow state, preview, route thinning)
+- [x] T015 Controller tests with FakeLocationSource replaying a ski-day fixture: `TrackingLive.snow` updates, pause / resume, `previewSnowSummary`, finish stores the same numbers as the preview, recovery after recreating the container gives the same snow state, live route never exceeds 2,000 points and running / cycling routes still draw — test/features/tracking/tracking_controller_test.dart
+- [x] T016 Implement T015 in lib/features/tracking/tracking_controller.dart (snow state, preview, route thinning)
 - [ ] T017 `RouteMap` sections (muted ranges) in the tile map and the painter fallback; test — lib/features/tracking/widgets/route_map.dart, test/features/tracking/route_map_test.dart
 - [ ] T018 Live screen snowboarding panel: speed hero, status chip, six tiles, sectioned live route — lib/features/tracking/widgets/snow_live_panel.dart, live_track_screen.dart; widget test
 - [ ] T019 [P] `SnowTimeBar` (ride / lift / rest with legend and semantics) — lib/features/tracking/widgets/snow_time_bar.dart; widget test

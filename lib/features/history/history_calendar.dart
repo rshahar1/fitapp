@@ -11,9 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
-enum _CalendarMode { month, week }
-
-/// Month / week calendar of logged sessions with a per-day session list.
+/// Month calendar of logged sessions with a per-day session list.
 class HistoryCalendar extends ConsumerStatefulWidget {
   /// Creates the calendar for [entries].
   const new({super.key, required this.entries});
@@ -26,7 +24,6 @@ class HistoryCalendar extends ConsumerStatefulWidget {
 }
 
 class _HistoryCalendarState extends ConsumerState<HistoryCalendar> {
-  _CalendarMode _mode = _CalendarMode.week;
   DateTime? _anchor;
   DateTime? _selected;
   late final AppLifecycleListener _lifecycle;
@@ -52,22 +49,16 @@ class _HistoryCalendarState extends ConsumerState<HistoryCalendar> {
   DateTime get _anchorDay => _anchor ?? _today;
   DateTime get _selectedDay => _selected ?? _today;
 
-  bool get _isMonth => _mode == _CalendarMode.month;
-
   bool get _canGoNext {
     final t = _today;
     final a = _anchorDay;
-    return _isMonth
-        ? DateTime(a.year, a.month).isBefore(DateTime(t.year, t.month))
-        : startOfWeek(a).isBefore(startOfWeek(t));
+    return DateTime(a.year, a.month).isBefore(DateTime(t.year, t.month));
   }
 
   void _step(int delta) {
     final a = _anchorDay;
     setState(() {
-      _anchor = _isMonth
-          ? addMonths(a, delta)
-          : DateTime(a.year, a.month, a.day + 7 * delta);
+      _anchor = addMonths(a, delta);
     });
   }
 
@@ -102,9 +93,7 @@ class _HistoryCalendarState extends ConsumerState<HistoryCalendar> {
     final today = _today;
     final anchor = _anchorDay;
     final selected = _selectedDay;
-    final weeks = _isMonth
-        ? monthGrid(anchor.year, anchor.month)
-        : [weekDays(anchor)];
+    final weeks = monthGrid(anchor.year, anchor.month);
     final dayEntries = byDay[dayKey(selected)] ?? const <HistoryEntry>[];
     final text = Theme.of(context).textTheme;
 
@@ -112,19 +101,10 @@ class _HistoryCalendarState extends ConsumerState<HistoryCalendar> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: Space.s),
-        SegmentedButton<_CalendarMode>(
-          segments: const [
-            ButtonSegment(value: _CalendarMode.month, label: Text('Month')),
-            ButtonSegment(value: _CalendarMode.week, label: Text('Week')),
-          ],
-          selected: {_mode},
-          showSelectedIcon: false,
-          onSelectionChanged: (s) => setState(() => _mode = s.first),
-        ),
         Row(
           children: [
             IconButton(
-              tooltip: _isMonth ? 'Previous month' : 'Previous week',
+              tooltip: 'Previous month',
               constraints: const BoxConstraints(
                 minWidth: Sizes.tap,
                 minHeight: Sizes.tap,
@@ -146,9 +126,7 @@ class _HistoryCalendarState extends ConsumerState<HistoryCalendar> {
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
-                          _isMonth
-                              ? DateFormat('MMMM y').format(anchor)
-                              : _weekTitle(weekDays(anchor)),
+                          DateFormat('MMMM y').format(anchor),
                           style: text.titleMedium,
                         ),
                       ),
@@ -158,7 +136,7 @@ class _HistoryCalendarState extends ConsumerState<HistoryCalendar> {
               ),
             ),
             IconButton(
-              tooltip: _isMonth ? 'Next month' : 'Next week',
+              tooltip: 'Next month',
               constraints: const BoxConstraints(
                 minWidth: Sizes.tap,
                 minHeight: Sizes.tap,
@@ -200,7 +178,7 @@ class _HistoryCalendarState extends ConsumerState<HistoryCalendar> {
                   child: _DayCell(
                     day: day,
                     entries: byDay[dayKey(day)] ?? const [],
-                    inMonth: !_isMonth || day.month == anchor.month,
+                    inMonth: day.month == anchor.month,
                     isToday: day == today,
                     isSelected: day == selected,
                     onTap: () => setState(() => _selected = day),
@@ -252,20 +230,6 @@ class _DaySteps extends ConsumerWidget {
       ),
     );
   }
-}
-
-String _weekTitle(List<DateTime> days) {
-  final a = days.first;
-  final b = days.last;
-  if (a.year != b.year) {
-    return '${DateFormat('d MMM y').format(a)} – '
-        '${DateFormat('d MMM y').format(b)}';
-  }
-  if (a.month != b.month) {
-    return '${DateFormat('d MMM').format(a)} – '
-        '${DateFormat('d MMM y').format(b)}';
-  }
-  return '${a.day} – ${DateFormat('d MMM y').format(b)}';
 }
 
 class _DayCell extends StatelessWidget {

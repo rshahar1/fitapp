@@ -35,7 +35,7 @@ class AppDatabase extends _$AppDatabase {
   DateTime now() => _clock().toUtc();
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -101,6 +101,20 @@ class AppDatabase extends _$AppDatabase {
         from7To8: (m, schema) async {
           // Feature 013: cloud sync pull cursors.
           await m.createTable(schema.syncState);
+        },
+        from8To9: (m, schema) async {
+          // Feature 017: snowboarding metrics of tracked activities.
+          final a = schema.activities;
+          for (final c in [
+            a.verticalDropMeters,
+            a.runCount,
+            a.maxSpeedMps,
+            a.liftSeconds,
+            a.restSeconds,
+            a.segments,
+          ]) {
+            await m.addColumn(a, c);
+          }
         },
       )(m, from, to);
       await _createIndexes(version: to);

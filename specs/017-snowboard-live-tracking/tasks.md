@@ -25,11 +25,11 @@ description: "Task list for live snowboarding tracking"
 
 ## Phase 3: Foundational — data
 
-- [ ] T010 Schema v9: six `activities` columns; `from8To9`; regenerate; make-migrations → drift_schemas/drift_schema_v9.json and test/drift/fitapp/generated/schema_v9.dart; migration test v8→v9 (existing rows keep nulls)
-- [ ] T011 [P] Server: supabase/migrations/20261116000001_activities_snowboard.sql (columns, checks, length limit, `sync_columns` whitelist); extend supabase/tests/sync_push_test.sql and limits_test.sql; `node tool/db_test.mjs` green
-- [ ] T012 Sync columns in lib/data/sync/sync_table.dart; push / pull round-trip test with the new fields — test/data/sync/
-- [ ] T013 Repository tests: start accepts snowboarding; finish for snowboarding writes ride distance, ride seconds, vertical drop, run count, max speed, lift and rest seconds, route and segments, with null splits and climb, and deletes points in one transaction; running and cycling unchanged; editing a tracked snowboarding day keeps its type — test/data/tracking_repository_test.dart, test/data/activity_repository_test.dart
-- [ ] T014 Implement T013 in lib/data/repositories/tracking_repository.dart (`finish` branch, `replaySnowState`) and activity_repository.dart
+- [x] T010 Schema v9: six `activities` columns; `from8To9`; regenerate; make-migrations → drift_schemas/drift_schema_v9.json and test/drift/fitapp/generated/schema_v9.dart; migration test v8→v9 (existing rows keep nulls)
+- [x] T011 [P] Server: supabase/migrations/20261116000001_activities_snowboard.sql (columns, checks, length limit, `sync_columns` whitelist); extend supabase/tests/sync_push_test.sql and limits_test.sql; `node tool/db_test.mjs` green
+- [x] T012 Sync columns in lib/data/sync/sync_table.dart; push / pull round-trip test with the new fields — test/data/sync/
+- [x] T013 Repository tests: start accepts snowboarding; finish for snowboarding writes ride distance, ride seconds, vertical drop, run count, max speed, lift and rest seconds, route and segments, with null splits and climb, and deletes points in one transaction; running and cycling unchanged; editing a tracked snowboarding day keeps its type — test/data/tracking_repository_test.dart, test/data/activity_repository_test.dart
+- [x] T014 Implement T013 in lib/data/repositories/tracking_repository.dart (`finish` branch, `replaySnowState`) and activity_repository.dart
 
 ## Phase 4: User Story 1 + 2 — record and recover (P1)
 
@@ -50,7 +50,7 @@ description: "Task list for live snowboarding tracking"
 
 ## Phase 6: User Story 5 + 6 + 7 — Slopes Premium review tools (P3)
 
-- [ ] T030 Tests then implementation: `snowDayStats`, `snowBadges`, `compareRuns`, `replayAt`, `speedColorStops` — lib/domain/tracking/snow_review.dart, test/domain/tracking/snow_review_test.dart
+- [x] T030 Tests then implementation: `snowDayStats`, `snowBadges`, `compareRuns`, `replayAt`, `speedColorStops` — lib/domain/tracking/snow_review.dart, test/domain/tracking/snow_review_test.dart
 - [ ] T031 `RouteMap`: per-point coloured sections and `style` (Dark, Winter, Satellite; confirm the MapTiler style ids and attribution in their docs first); plain-background fallback keeps the colours — route_map.dart; tests
 - [ ] T032 [P] `mapStyleProvider` persisted in local settings (not synced) and the style button — lib/features/settings/, detail screen; test
 - [ ] T033 Heatmap on the detail map with legend; highest / lowest altitude and longest run in the totals — activity_detail_screen.dart; widget test

@@ -4632,6 +4632,71 @@ class $ActivitiesTable extends Activities
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _verticalDropMetersMeta =
+      const VerificationMeta('verticalDropMeters');
+  @override
+  late final GeneratedColumn<int> verticalDropMeters = GeneratedColumn<int>(
+    'vertical_drop_meters',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _runCountMeta = const VerificationMeta(
+    'runCount',
+  );
+  @override
+  late final GeneratedColumn<int> runCount = GeneratedColumn<int>(
+    'run_count',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _maxSpeedMpsMeta = const VerificationMeta(
+    'maxSpeedMps',
+  );
+  @override
+  late final GeneratedColumn<double> maxSpeedMps = GeneratedColumn<double>(
+    'max_speed_mps',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _liftSecondsMeta = const VerificationMeta(
+    'liftSeconds',
+  );
+  @override
+  late final GeneratedColumn<int> liftSeconds = GeneratedColumn<int>(
+    'lift_seconds',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _restSecondsMeta = const VerificationMeta(
+    'restSeconds',
+  );
+  @override
+  late final GeneratedColumn<int> restSeconds = GeneratedColumn<int>(
+    'rest_seconds',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _segmentsMeta = const VerificationMeta(
+    'segments',
+  );
+  @override
+  late final GeneratedColumn<String> segments = GeneratedColumn<String>(
+    'segments',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     updatedAt,
@@ -4647,6 +4712,12 @@ class $ActivitiesTable extends Activities
     elevationGainMeters,
     route,
     splits,
+    verticalDropMeters,
+    runCount,
+    maxSpeedMps,
+    liftSeconds,
+    restSeconds,
+    segments,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4755,6 +4826,54 @@ class $ActivitiesTable extends Activities
         splits.isAcceptableOrUnknown(data['splits']!, _splitsMeta),
       );
     }
+    if (data.containsKey('vertical_drop_meters')) {
+      context.handle(
+        _verticalDropMetersMeta,
+        verticalDropMeters.isAcceptableOrUnknown(
+          data['vertical_drop_meters']!,
+          _verticalDropMetersMeta,
+        ),
+      );
+    }
+    if (data.containsKey('run_count')) {
+      context.handle(
+        _runCountMeta,
+        runCount.isAcceptableOrUnknown(data['run_count']!, _runCountMeta),
+      );
+    }
+    if (data.containsKey('max_speed_mps')) {
+      context.handle(
+        _maxSpeedMpsMeta,
+        maxSpeedMps.isAcceptableOrUnknown(
+          data['max_speed_mps']!,
+          _maxSpeedMpsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('lift_seconds')) {
+      context.handle(
+        _liftSecondsMeta,
+        liftSeconds.isAcceptableOrUnknown(
+          data['lift_seconds']!,
+          _liftSecondsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('rest_seconds')) {
+      context.handle(
+        _restSecondsMeta,
+        restSeconds.isAcceptableOrUnknown(
+          data['rest_seconds']!,
+          _restSecondsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('segments')) {
+      context.handle(
+        _segmentsMeta,
+        segments.isAcceptableOrUnknown(data['segments']!, _segmentsMeta),
+      );
+    }
     return context;
   }
 
@@ -4816,6 +4935,30 @@ class $ActivitiesTable extends Activities
         DriftSqlType.string,
         data['${effectivePrefix}splits'],
       ),
+      verticalDropMeters: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}vertical_drop_meters'],
+      ),
+      runCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}run_count'],
+      ),
+      maxSpeedMps: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}max_speed_mps'],
+      ),
+      liftSeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}lift_seconds'],
+      ),
+      restSeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rest_seconds'],
+      ),
+      segments: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}segments'],
+      ),
     );
   }
 
@@ -4845,6 +4988,25 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
 
   /// Encoded per-km splits (JSON) for tracked activities.
   final String? splits;
+
+  /// Vertical drop in meters; set only for tracked snowboarding days (feature 017).
+  final int? verticalDropMeters;
+
+  /// Number of runs; set only for tracked snowboarding days (feature 017).
+  final int? runCount;
+
+  /// Max speed in m/s; set only for tracked snowboarding days (feature 017).
+  final double? maxSpeedMps;
+
+  /// Seconds spent on lifts; set only for tracked snowboarding days (feature 017).
+  final int? liftSeconds;
+
+  /// Seconds spent resting; set only for tracked snowboarding days (feature 017).
+  final int? restSeconds;
+
+  /// JSON list of run / lift / rest segments; set only for tracked snowboarding
+  /// days (feature 017).
+  final String? segments;
   const ActivityRow({
     required this.updatedAt,
     required this.dirty,
@@ -4859,6 +5021,12 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
     this.elevationGainMeters,
     this.route,
     this.splits,
+    this.verticalDropMeters,
+    this.runCount,
+    this.maxSpeedMps,
+    this.liftSeconds,
+    this.restSeconds,
+    this.segments,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4889,6 +5057,24 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
     }
     if (!nullToAbsent || splits != null) {
       map['splits'] = Variable<String>(splits);
+    }
+    if (!nullToAbsent || verticalDropMeters != null) {
+      map['vertical_drop_meters'] = Variable<int>(verticalDropMeters);
+    }
+    if (!nullToAbsent || runCount != null) {
+      map['run_count'] = Variable<int>(runCount);
+    }
+    if (!nullToAbsent || maxSpeedMps != null) {
+      map['max_speed_mps'] = Variable<double>(maxSpeedMps);
+    }
+    if (!nullToAbsent || liftSeconds != null) {
+      map['lift_seconds'] = Variable<int>(liftSeconds);
+    }
+    if (!nullToAbsent || restSeconds != null) {
+      map['rest_seconds'] = Variable<int>(restSeconds);
+    }
+    if (!nullToAbsent || segments != null) {
+      map['segments'] = Variable<String>(segments);
     }
     return map;
   }
@@ -4922,6 +5108,24 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
       splits: splits == null && nullToAbsent
           ? const Value.absent()
           : Value(splits),
+      verticalDropMeters: verticalDropMeters == null && nullToAbsent
+          ? const Value.absent()
+          : Value(verticalDropMeters),
+      runCount: runCount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(runCount),
+      maxSpeedMps: maxSpeedMps == null && nullToAbsent
+          ? const Value.absent()
+          : Value(maxSpeedMps),
+      liftSeconds: liftSeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(liftSeconds),
+      restSeconds: restSeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(restSeconds),
+      segments: segments == null && nullToAbsent
+          ? const Value.absent()
+          : Value(segments),
     );
   }
 
@@ -4946,6 +5150,12 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
       ),
       route: serializer.fromJson<String?>(json['route']),
       splits: serializer.fromJson<String?>(json['splits']),
+      verticalDropMeters: serializer.fromJson<int?>(json['verticalDropMeters']),
+      runCount: serializer.fromJson<int?>(json['runCount']),
+      maxSpeedMps: serializer.fromJson<double?>(json['maxSpeedMps']),
+      liftSeconds: serializer.fromJson<int?>(json['liftSeconds']),
+      restSeconds: serializer.fromJson<int?>(json['restSeconds']),
+      segments: serializer.fromJson<String?>(json['segments']),
     );
   }
   @override
@@ -4965,6 +5175,12 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
       'elevationGainMeters': serializer.toJson<int?>(elevationGainMeters),
       'route': serializer.toJson<String?>(route),
       'splits': serializer.toJson<String?>(splits),
+      'verticalDropMeters': serializer.toJson<int?>(verticalDropMeters),
+      'runCount': serializer.toJson<int?>(runCount),
+      'maxSpeedMps': serializer.toJson<double?>(maxSpeedMps),
+      'liftSeconds': serializer.toJson<int?>(liftSeconds),
+      'restSeconds': serializer.toJson<int?>(restSeconds),
+      'segments': serializer.toJson<String?>(segments),
     };
   }
 
@@ -4982,6 +5198,12 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
     Value<int?> elevationGainMeters = const Value.absent(),
     Value<String?> route = const Value.absent(),
     Value<String?> splits = const Value.absent(),
+    Value<int?> verticalDropMeters = const Value.absent(),
+    Value<int?> runCount = const Value.absent(),
+    Value<double?> maxSpeedMps = const Value.absent(),
+    Value<int?> liftSeconds = const Value.absent(),
+    Value<int?> restSeconds = const Value.absent(),
+    Value<String?> segments = const Value.absent(),
   }) => ActivityRow(
     updatedAt: updatedAt ?? this.updatedAt,
     dirty: dirty ?? this.dirty,
@@ -5004,6 +5226,14 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
         : this.elevationGainMeters,
     route: route.present ? route.value : this.route,
     splits: splits.present ? splits.value : this.splits,
+    verticalDropMeters: verticalDropMeters.present
+        ? verticalDropMeters.value
+        : this.verticalDropMeters,
+    runCount: runCount.present ? runCount.value : this.runCount,
+    maxSpeedMps: maxSpeedMps.present ? maxSpeedMps.value : this.maxSpeedMps,
+    liftSeconds: liftSeconds.present ? liftSeconds.value : this.liftSeconds,
+    restSeconds: restSeconds.present ? restSeconds.value : this.restSeconds,
+    segments: segments.present ? segments.value : this.segments,
   );
   ActivityRow copyWithCompanion(ActivitiesCompanion data) {
     return ActivityRow(
@@ -5028,6 +5258,20 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
           : this.elevationGainMeters,
       route: data.route.present ? data.route.value : this.route,
       splits: data.splits.present ? data.splits.value : this.splits,
+      verticalDropMeters: data.verticalDropMeters.present
+          ? data.verticalDropMeters.value
+          : this.verticalDropMeters,
+      runCount: data.runCount.present ? data.runCount.value : this.runCount,
+      maxSpeedMps: data.maxSpeedMps.present
+          ? data.maxSpeedMps.value
+          : this.maxSpeedMps,
+      liftSeconds: data.liftSeconds.present
+          ? data.liftSeconds.value
+          : this.liftSeconds,
+      restSeconds: data.restSeconds.present
+          ? data.restSeconds.value
+          : this.restSeconds,
+      segments: data.segments.present ? data.segments.value : this.segments,
     );
   }
 
@@ -5046,7 +5290,13 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
           ..write('movingSeconds: $movingSeconds, ')
           ..write('elevationGainMeters: $elevationGainMeters, ')
           ..write('route: $route, ')
-          ..write('splits: $splits')
+          ..write('splits: $splits, ')
+          ..write('verticalDropMeters: $verticalDropMeters, ')
+          ..write('runCount: $runCount, ')
+          ..write('maxSpeedMps: $maxSpeedMps, ')
+          ..write('liftSeconds: $liftSeconds, ')
+          ..write('restSeconds: $restSeconds, ')
+          ..write('segments: $segments')
           ..write(')'))
         .toString();
   }
@@ -5066,6 +5316,12 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
     elevationGainMeters,
     route,
     splits,
+    verticalDropMeters,
+    runCount,
+    maxSpeedMps,
+    liftSeconds,
+    restSeconds,
+    segments,
   );
   @override
   bool operator ==(Object other) =>
@@ -5083,7 +5339,13 @@ class ActivityRow extends DataClass implements Insertable<ActivityRow> {
           other.movingSeconds == this.movingSeconds &&
           other.elevationGainMeters == this.elevationGainMeters &&
           other.route == this.route &&
-          other.splits == this.splits);
+          other.splits == this.splits &&
+          other.verticalDropMeters == this.verticalDropMeters &&
+          other.runCount == this.runCount &&
+          other.maxSpeedMps == this.maxSpeedMps &&
+          other.liftSeconds == this.liftSeconds &&
+          other.restSeconds == this.restSeconds &&
+          other.segments == this.segments);
 }
 
 class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
@@ -5100,6 +5362,12 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
   final Value<int?> elevationGainMeters;
   final Value<String?> route;
   final Value<String?> splits;
+  final Value<int?> verticalDropMeters;
+  final Value<int?> runCount;
+  final Value<double?> maxSpeedMps;
+  final Value<int?> liftSeconds;
+  final Value<int?> restSeconds;
+  final Value<String?> segments;
   final Value<int> rowid;
   const ActivitiesCompanion({
     this.updatedAt = const Value.absent(),
@@ -5115,6 +5383,12 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
     this.elevationGainMeters = const Value.absent(),
     this.route = const Value.absent(),
     this.splits = const Value.absent(),
+    this.verticalDropMeters = const Value.absent(),
+    this.runCount = const Value.absent(),
+    this.maxSpeedMps = const Value.absent(),
+    this.liftSeconds = const Value.absent(),
+    this.restSeconds = const Value.absent(),
+    this.segments = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ActivitiesCompanion.insert({
@@ -5131,6 +5405,12 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
     this.elevationGainMeters = const Value.absent(),
     this.route = const Value.absent(),
     this.splits = const Value.absent(),
+    this.verticalDropMeters = const Value.absent(),
+    this.runCount = const Value.absent(),
+    this.maxSpeedMps = const Value.absent(),
+    this.liftSeconds = const Value.absent(),
+    this.restSeconds = const Value.absent(),
+    this.segments = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : updatedAt = Value(updatedAt),
        id = Value(id),
@@ -5150,6 +5430,12 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
     Expression<int>? elevationGainMeters,
     Expression<String>? route,
     Expression<String>? splits,
+    Expression<int>? verticalDropMeters,
+    Expression<int>? runCount,
+    Expression<double>? maxSpeedMps,
+    Expression<int>? liftSeconds,
+    Expression<int>? restSeconds,
+    Expression<String>? segments,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -5167,6 +5453,13 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
         'elevation_gain_meters': elevationGainMeters,
       if (route != null) 'route': route,
       if (splits != null) 'splits': splits,
+      if (verticalDropMeters != null)
+        'vertical_drop_meters': verticalDropMeters,
+      if (runCount != null) 'run_count': runCount,
+      if (maxSpeedMps != null) 'max_speed_mps': maxSpeedMps,
+      if (liftSeconds != null) 'lift_seconds': liftSeconds,
+      if (restSeconds != null) 'rest_seconds': restSeconds,
+      if (segments != null) 'segments': segments,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -5185,6 +5478,12 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
     Value<int?>? elevationGainMeters,
     Value<String?>? route,
     Value<String?>? splits,
+    Value<int?>? verticalDropMeters,
+    Value<int?>? runCount,
+    Value<double?>? maxSpeedMps,
+    Value<int?>? liftSeconds,
+    Value<int?>? restSeconds,
+    Value<String?>? segments,
     Value<int>? rowid,
   }) {
     return ActivitiesCompanion(
@@ -5201,6 +5500,12 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
       elevationGainMeters: elevationGainMeters ?? this.elevationGainMeters,
       route: route ?? this.route,
       splits: splits ?? this.splits,
+      verticalDropMeters: verticalDropMeters ?? this.verticalDropMeters,
+      runCount: runCount ?? this.runCount,
+      maxSpeedMps: maxSpeedMps ?? this.maxSpeedMps,
+      liftSeconds: liftSeconds ?? this.liftSeconds,
+      restSeconds: restSeconds ?? this.restSeconds,
+      segments: segments ?? this.segments,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -5247,6 +5552,24 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
     if (splits.present) {
       map['splits'] = Variable<String>(splits.value);
     }
+    if (verticalDropMeters.present) {
+      map['vertical_drop_meters'] = Variable<int>(verticalDropMeters.value);
+    }
+    if (runCount.present) {
+      map['run_count'] = Variable<int>(runCount.value);
+    }
+    if (maxSpeedMps.present) {
+      map['max_speed_mps'] = Variable<double>(maxSpeedMps.value);
+    }
+    if (liftSeconds.present) {
+      map['lift_seconds'] = Variable<int>(liftSeconds.value);
+    }
+    if (restSeconds.present) {
+      map['rest_seconds'] = Variable<int>(restSeconds.value);
+    }
+    if (segments.present) {
+      map['segments'] = Variable<String>(segments.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -5269,6 +5592,12 @@ class ActivitiesCompanion extends UpdateCompanion<ActivityRow> {
           ..write('elevationGainMeters: $elevationGainMeters, ')
           ..write('route: $route, ')
           ..write('splits: $splits, ')
+          ..write('verticalDropMeters: $verticalDropMeters, ')
+          ..write('runCount: $runCount, ')
+          ..write('maxSpeedMps: $maxSpeedMps, ')
+          ..write('liftSeconds: $liftSeconds, ')
+          ..write('restSeconds: $restSeconds, ')
+          ..write('segments: $segments, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -10167,6 +10496,12 @@ typedef $$ActivitiesTableCreateCompanionBuilder = ActivitiesCompanion Function({
   Value<int?> elevationGainMeters,
   Value<String?> route,
   Value<String?> splits,
+  Value<int?> verticalDropMeters,
+  Value<int?> runCount,
+  Value<double?> maxSpeedMps,
+  Value<int?> liftSeconds,
+  Value<int?> restSeconds,
+  Value<String?> segments,
   Value<int> rowid,
 });
 typedef $$ActivitiesTableUpdateCompanionBuilder = ActivitiesCompanion Function({
@@ -10183,6 +10518,12 @@ typedef $$ActivitiesTableUpdateCompanionBuilder = ActivitiesCompanion Function({
   Value<int?> elevationGainMeters,
   Value<String?> route,
   Value<String?> splits,
+  Value<int?> verticalDropMeters,
+  Value<int?> runCount,
+  Value<double?> maxSpeedMps,
+  Value<int?> liftSeconds,
+  Value<int?> restSeconds,
+  Value<String?> segments,
   Value<int> rowid,
 });
 
@@ -10257,6 +10598,36 @@ class $$ActivitiesTableFilterComposer
 
   ColumnFilters<String> get splits => $composableBuilder(
     column: $table.splits,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get verticalDropMeters => $composableBuilder(
+    column: $table.verticalDropMeters,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get runCount => $composableBuilder(
+    column: $table.runCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get maxSpeedMps => $composableBuilder(
+    column: $table.maxSpeedMps,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get liftSeconds => $composableBuilder(
+    column: $table.liftSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get restSeconds => $composableBuilder(
+    column: $table.restSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get segments => $composableBuilder(
+    column: $table.segments,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -10334,6 +10705,36 @@ class $$ActivitiesTableOrderingComposer
     column: $table.splits,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get verticalDropMeters => $composableBuilder(
+    column: $table.verticalDropMeters,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get runCount => $composableBuilder(
+    column: $table.runCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get maxSpeedMps => $composableBuilder(
+    column: $table.maxSpeedMps,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get liftSeconds => $composableBuilder(
+    column: $table.liftSeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get restSeconds => $composableBuilder(
+    column: $table.restSeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get segments => $composableBuilder(
+    column: $table.segments,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ActivitiesTableAnnotationComposer
@@ -10391,6 +10792,32 @@ class $$ActivitiesTableAnnotationComposer
 
   GeneratedColumn<String> get splits =>
       $composableBuilder(column: $table.splits, builder: (column) => column);
+
+  GeneratedColumn<int> get verticalDropMeters => $composableBuilder(
+    column: $table.verticalDropMeters,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get runCount =>
+      $composableBuilder(column: $table.runCount, builder: (column) => column);
+
+  GeneratedColumn<double> get maxSpeedMps => $composableBuilder(
+    column: $table.maxSpeedMps,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get liftSeconds => $composableBuilder(
+    column: $table.liftSeconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get restSeconds => $composableBuilder(
+    column: $table.restSeconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get segments =>
+      $composableBuilder(column: $table.segments, builder: (column) => column);
 }
 
 class $$ActivitiesTableTableManager
@@ -10437,6 +10864,12 @@ class $$ActivitiesTableTableManager
                 Value<int?> elevationGainMeters = const Value.absent(),
                 Value<String?> route = const Value.absent(),
                 Value<String?> splits = const Value.absent(),
+                Value<int?> verticalDropMeters = const Value.absent(),
+                Value<int?> runCount = const Value.absent(),
+                Value<double?> maxSpeedMps = const Value.absent(),
+                Value<int?> liftSeconds = const Value.absent(),
+                Value<int?> restSeconds = const Value.absent(),
+                Value<String?> segments = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ActivitiesCompanion(
                 updatedAt: updatedAt,
@@ -10452,6 +10885,12 @@ class $$ActivitiesTableTableManager
                 elevationGainMeters: elevationGainMeters,
                 route: route,
                 splits: splits,
+                verticalDropMeters: verticalDropMeters,
+                runCount: runCount,
+                maxSpeedMps: maxSpeedMps,
+                liftSeconds: liftSeconds,
+                restSeconds: restSeconds,
+                segments: segments,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -10469,6 +10908,12 @@ class $$ActivitiesTableTableManager
                 Value<int?> elevationGainMeters = const Value.absent(),
                 Value<String?> route = const Value.absent(),
                 Value<String?> splits = const Value.absent(),
+                Value<int?> verticalDropMeters = const Value.absent(),
+                Value<int?> runCount = const Value.absent(),
+                Value<double?> maxSpeedMps = const Value.absent(),
+                Value<int?> liftSeconds = const Value.absent(),
+                Value<int?> restSeconds = const Value.absent(),
+                Value<String?> segments = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ActivitiesCompanion.insert(
                 updatedAt: updatedAt,
@@ -10484,6 +10929,12 @@ class $$ActivitiesTableTableManager
                 elevationGainMeters: elevationGainMeters,
                 route: route,
                 splits: splits,
+                verticalDropMeters: verticalDropMeters,
+                runCount: runCount,
+                maxSpeedMps: maxSpeedMps,
+                liftSeconds: liftSeconds,
+                restSeconds: restSeconds,
+                segments: segments,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

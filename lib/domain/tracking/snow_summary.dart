@@ -30,6 +30,7 @@ class SnowRecord {
     this.endAlt,
     this.speedsKmh = const [],
     this.seconds = const [],
+    this.altitudes = const [],
   });
 
   final SnowKind kind;
@@ -52,10 +53,12 @@ class SnowRecord {
   final int? startAlt;
   final int? endAlt;
 
-  /// Runs only, one entry per route point: the speed there in km/h and the
-  /// seconds since the run began.
+  /// Runs only, one entry per route point: the speed there in km/h, the
+  /// seconds since the run began and the altitude in metres ([altitudes] is
+  /// empty when the fixes had none).
   final List<int> speedsKmh;
   final List<int> seconds;
+  final List<int> altitudes;
 
   int get endSeconds => startSeconds + durationSeconds;
 
@@ -71,6 +74,7 @@ class SnowRecord {
     'b': ?endAlt,
     if (speedsKmh.isNotEmpty) 'p': speedsKmh,
     if (seconds.isNotEmpty) 'q': seconds,
+    if (altitudes.isNotEmpty) 'h': altitudes,
   };
 }
 
@@ -100,6 +104,7 @@ List<SnowRecord> decodeSnowRecords(String? text) {
           endAlt: (item['b'] as num?)?.toInt(),
           speedsKmh: _ints(item['p']),
           seconds: _ints(item['q']),
+          altitudes: _ints(item['h']),
         ),
     ];
   } on Object {
@@ -299,6 +304,7 @@ SnowSummary summarizeSnow(
         seconds: isRun
             ? [for (final i in kept) slice[i].t.difference(seg.start).inSeconds]
             : const [],
+        altitudes: isRun ? _altitudes(slice, kept) : const [],
       ),
     );
   }
@@ -313,6 +319,30 @@ SnowSummary summarizeSnow(
     route: encodePolyline(route),
     records: List.unmodifiable(records),
   );
+}
+
+/// Altitude at each of the [kept] fixes of [slice]: the median of the fixes
+/// within 7 s around it. Empty when any of them has no altitude nearby.
+List<int> _altitudes(List<TrackSample> slice, List<int> kept) {
+  final out = <int>[];
+  for (final i in kept) {
+    final t = slice[i].t;
+    final near = <double>[];
+    for (var j = i; j >= 0; j--) {
+      if (t.difference(slice[j].t).inSeconds > 7) break;
+      final alt = slice[j].alt;
+      if (alt != null) near.add(alt);
+    }
+    for (var j = i + 1; j < slice.length; j++) {
+      if (slice[j].t.difference(t).inSeconds > 7) break;
+      final alt = slice[j].alt;
+      if (alt != null) near.add(alt);
+    }
+    if (near.isEmpty) return const [];
+    near.sort();
+    out.add(near[near.length ~/ 2].round());
+  }
+  return out;
 }
 
 /// Speed at fix [i] of [slice] in m/s: the device speed, else from the

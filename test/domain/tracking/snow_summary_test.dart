@@ -85,6 +85,9 @@ void main() {
         if (r.kind == SnowKind.run) {
           expect(r.speedsKmh, hasLength(r.pointCount));
           expect(r.seconds, hasLength(r.pointCount));
+          expect(r.altitudes, hasLength(r.pointCount));
+          expect(r.altitudes.first, closeTo(r.startAlt!, 15));
+          expect(r.altitudes.last, closeTo(r.endAlt!, 15));
           expect(r.seconds.first, 0);
           expect(r.seconds.last, closeTo(r.durationSeconds, 1));
           for (var i = 1; i < r.seconds.length; i++) {
@@ -97,6 +100,7 @@ void main() {
         } else {
           expect(r.speedsKmh, isEmpty);
           expect(r.seconds, isEmpty);
+          expect(r.altitudes, isEmpty);
           expect(r.maxSpeedMps, 0);
         }
       }
@@ -117,6 +121,16 @@ void main() {
       final run = summaryOf(g).records
           .firstWhere((r) => r.kind == SnowKind.run);
       expect(run.speedsKmh.reduce((a, b) => a > b ? a : b), greaterThan(30));
+    });
+
+    test('without altitude the runs carry no altitudes', () {
+      final g = buildSnowDay(plainDay, altitude: false);
+      final runs = summaryOf(g).records.where((r) => r.kind == SnowKind.run);
+      expect(runs, isNotEmpty);
+      for (final r in runs) {
+        expect(r.altitudes, isEmpty);
+        expect(r.speedsKmh, hasLength(r.pointCount));
+      }
     });
 
     test('a single fix summarises to nothing', () {
@@ -184,6 +198,7 @@ void main() {
         expect(b.endAlt, a.endAlt);
         expect(b.speedsKmh, a.speedsKmh);
         expect(b.seconds, a.seconds);
+        expect(b.altitudes, a.altitudes);
       }
     });
 

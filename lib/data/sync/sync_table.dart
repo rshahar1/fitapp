@@ -260,6 +260,12 @@ const syncTables = <SyncTable>[
       SyncColumn('elevation_gain_meters', ColKind.integer),
       SyncColumn('route', ColKind.text),
       SyncColumn('splits', ColKind.text),
+      SyncColumn('vertical_drop_meters', ColKind.integer),
+      SyncColumn('run_count', ColKind.integer),
+      SyncColumn('max_speed_mps', ColKind.real),
+      SyncColumn('lift_seconds', ColKind.integer),
+      SyncColumn('rest_seconds', ColKind.integer),
+      SyncColumn('segments', ColKind.text),
     ],
   ),
 ];

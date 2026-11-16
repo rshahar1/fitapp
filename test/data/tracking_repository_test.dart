@@ -1,9 +1,14 @@
 import 'dart:convert';
 
+import 'package:fitapp/data/repositories/activity_repository.dart';
 import 'package:fitapp/data/repositories/tracking_repository.dart';
+import 'package:fitapp/domain/tracking/geo.dart';
+import 'package:fitapp/domain/tracking/snow_state.dart';
+import 'package:fitapp/domain/tracking/snow_summary.dart';
 import 'package:fitapp/domain/tracking/track_sample.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../domain/tracking/snow_fixtures.dart';
 import '../domain/tracking/track_fixtures.dart';
 import 'helpers.dart';
 
@@ -173,6 +178,128 @@ void main() {
     final a = (await h.db.select(h.db.activities).get()).single;
     // 12 min elapsed minus the 9 min pause (120 s..660 s) = 3 min.
     expect(a.durationMinutes, 3);
+  });
+
+  group('snowboarding', () {
+    Future<String> saveDay(SnowFixture f) async {
+      final id = await repo.start(typeId: 'snowboarding', startedAt: snowStart);
+      await repo.appendPoints(id, f.samples);
+      return await repo.finish(id, endedAt: f.samples.last.t, notes: 'powder');
+    }
+
+    test('finish stores the snowboarding metrics and segments', () async {
+      final f = buildSnowDay(plainDay);
+      final aid = await saveDay(f);
+      final a = await (h.db.select(
+        h.db.activities,
+      )..where((x) => x.id.equals(aid))).getSingle();
+      expect(a.typeId, 'snowboarding');
+      expect(a.source, 'gps');
+      expect(a.notes, 'powder');
+      expect(a.runCount, 3);
+      expect(a.verticalDropMeters, closeTo(f.dropMeters, f.dropMeters * 0.05));
+      expect(a.distanceMeters, closeTo(f.rideMeters, f.rideMeters * 0.05));
+      expect(a.movingSeconds, closeTo(f.rideSeconds, f.rideSeconds * 0.05));
+      expect(a.liftSeconds, closeTo(f.liftSeconds, f.liftSeconds * 0.05));
+      expect(a.restSeconds, closeTo(f.restSeconds, f.restSeconds * 0.05));
+      expect(a.maxSpeedMps, closeTo(f.maxSpeedMps, f.maxSpeedMps * 0.05));
+      expect(a.durationMinutes, ((f.samples.length - 1) / 60).round());
+      expect(a.elevationGainMeters, isNull);
+      expect(a.splits, isNull);
+      final records = decodeSnowRecords(a.segments);
+      expect(records.where((r) => r.kind == SnowKind.lift), hasLength(3));
+      expect(
+        decodePolyline(a.route!).length,
+        records.fold<int>(0, (n, r) => n + r.pointCount),
+      );
+      expect(await h.db.select(h.db.trackPoints).get(), isEmpty);
+      expect(await repo.session(), isNull);
+    });
+
+    test('fixes of a manual pause are left out of the day', () async {
+      final f = buildSnowDay(const [
+        SnowLeg.stand(60),
+        ...snowCycle,
+        SnowLeg.pause(600),
+        ...snowCycle,
+      ]);
+      final aid = await saveDay(f);
+      final a = await (h.db.select(
+        h.db.activities,
+      )..where((x) => x.id.equals(aid))).getSingle();
+      expect(a.runCount, 2);
+      final total = a.movingSeconds! + a.liftSeconds! + a.restSeconds!;
+      expect(total, closeTo(60 + 820 + 820, 6));
+    });
+
+    test('a day without movement stores no distance and no runs', () async {
+      final aid = await saveDay(buildSnowDay(const [SnowLeg.stand(120)]));
+      final a = await (h.db.select(
+        h.db.activities,
+      )..where((x) => x.id.equals(aid))).getSingle();
+      expect(a.distanceMeters, isNull);
+      expect(a.runCount, 0);
+      expect(a.verticalDropMeters, 0);
+    });
+
+    test('running keeps splits and climb and has no snow metrics', () async {
+      final fx = loadTrack('run_5k');
+      final id = await startRun();
+      await repo.appendPoints(id, fx.samples);
+      final aid = await repo.finish(id, endedAt: fx.samples.last.t);
+      final a = await (h.db.select(
+        h.db.activities,
+      )..where((x) => x.id.equals(aid))).getSingle();
+      expect(a.splits, isNotNull);
+      expect(a.elevationGainMeters, isNotNull);
+      expect(a.runCount, isNull);
+      expect(a.verticalDropMeters, isNull);
+      expect(a.maxSpeedMps, isNull);
+      expect(a.liftSeconds, isNull);
+      expect(a.restSeconds, isNull);
+      expect(a.segments, isNull);
+    });
+
+    test('a tracked day cannot change to or from snowboarding', () async {
+      final activities = ActivityRepository(h.db);
+      final snowId = await saveDay(buildSnowDay(plainDay));
+      expect(
+        () =>
+            activities.update(snowId, typeId: 'running', startedAt: snowStart),
+        throwsArgumentError,
+      );
+      // Date and note can change; the metrics stay.
+      await activities.update(
+        snowId,
+        typeId: 'snowboarding',
+        startedAt: snowStart,
+        durationMinutes: 42,
+        distanceMeters: 8000,
+        notes: 'edited',
+      );
+      final a = (await activities.activity(snowId))!;
+      expect(a.notes, 'edited');
+      expect(a.runCount, 3);
+      expect(a.segments, isNotNull);
+
+      final fx = loadTrack('run_5k');
+      final id = await startRun();
+      await repo.appendPoints(id, fx.samples);
+      final runId = await repo.finish(id, endedAt: fx.samples.last.t);
+      expect(
+        () => activities.update(
+          runId,
+          typeId: 'snowboarding',
+          startedAt: fixtureStart,
+        ),
+        throwsArgumentError,
+      );
+      await activities.update(
+        runId,
+        typeId: 'cycling',
+        startedAt: fixtureStart,
+      );
+    });
   });
 
   test('discard deletes points and session', () async {

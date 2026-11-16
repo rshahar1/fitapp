@@ -185,6 +185,25 @@ class Activities extends Table with SyncColumns {
   /// Encoded per-km splits (JSON) for tracked activities.
   TextColumn get splits => text().nullable()();
 
+  /// Vertical drop in meters; set only for tracked snowboarding days (feature 017).
+  IntColumn get verticalDropMeters => integer().nullable()();
+
+  /// Number of runs; set only for tracked snowboarding days (feature 017).
+  IntColumn get runCount => integer().nullable()();
+
+  /// Max speed in m/s; set only for tracked snowboarding days (feature 017).
+  RealColumn get maxSpeedMps => real().nullable()();
+
+  /// Seconds spent on lifts; set only for tracked snowboarding days (feature 017).
+  IntColumn get liftSeconds => integer().nullable()();
+
+  /// Seconds spent resting; set only for tracked snowboarding days (feature 017).
+  IntColumn get restSeconds => integer().nullable()();
+
+  /// JSON list of run / lift / rest segments; set only for tracked snowboarding
+  /// days (feature 017).
+  TextColumn get segments => text().nullable()();
+
   @override
   Set<Column<Object>> get primaryKey => {id};
 }

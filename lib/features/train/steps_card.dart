@@ -138,7 +138,7 @@ class _StepsCardState extends ConsumerState<StepsCard> {
         return const SizedBox.shrink();
     }
     return Padding(
-      padding: const EdgeInsets.only(top: Space.m),
+      padding: const EdgeInsets.only(top: Space.s),
       child: AppCard(
         child: SizedBox(width: double.infinity, child: body),
       ),

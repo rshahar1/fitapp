@@ -1,5 +1,14 @@
 <!--
 Sync Impact Report
+- Version change: 1.6.0 → 1.7.0 (feature 015, step totals per day in History, owner request
+  2026-11-16)
+- Modified principles: VII (a selected day's step total in the History calendar is in scope, read
+  live from Health Connect for the last 30 days; step goals, charts and data older than 30 days
+  remain out of scope)
+- Added sections: none | Removed sections: none
+- Deferred TODOs: none
+
+Previous report (1.6.0)
 - Version change: 1.5.0 → 1.6.0 (feature 014, daily step count, owner approval 2026-11-15)
 - Modified principles: VI (step counts are read on device from Health Connect, read-only and
   steps only; they are not stored in the app database and never leave the device); VII (reading
@@ -194,8 +203,9 @@ Rationale: a personal health log is private data; leaked keys are irreversible.
   pace, route, splits) with an in-app map via a tile provider (feature 010, owner approval
   2026-11-14) is in scope. Today's step total read from Android Health Connect (feature 014, owner
   approval 2026-11-15; this is how Google Fit data reaches the app) is in scope, on by default
-  with a Settings switch, new data only. Snowboarding tracking, HealthKit, writing to Health
-  Connect, other health data types, step goals and history, GPX export, miles and offline tile
+  with a Settings switch, new data only; a selected day's total in the History calendar (feature
+  015, owner request 2026-11-16) is in scope for the last 30 days. Snowboarding tracking, HealthKit, writing to Health
+  Connect, other health data types, step goals and charts, GPX export, miles and offline tile
   download remain out of scope until the owner requests them.
 - Phase 2 cloud backup and sync with Google sign-in (feature 013, owner approval 2026-11-14) is in
   scope, Android only. Apple Sign-In, email magic link, live push between devices and any sharing
@@ -235,4 +245,4 @@ Rationale: the owner explicitly dropped these; speculative code is maintenance d
   version (MAJOR: principle removed/redefined; MINOR: principle/section added; PATCH: wording).
 - Reviews verify compliance with principles II, III and VI on every milestone.
 
-**Version**: 1.6.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-15
+**Version**: 1.7.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-16

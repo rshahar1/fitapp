@@ -207,7 +207,7 @@ at ~60 % of the screen height on any screen shape.
 
 ## Known limitations / not yet done
 
-- Daily steps (feature 014) read today's total from Health Connect (Google Fit writes there), read-only, on by default, off in Settings → Activity. Needs Android 8.0+ (`minSdk 26`). Before a Play release, file the Health Connect permission declaration and a hosted privacy policy URL in the Play Console.
+- Daily steps (feature 014) read today's total from Health Connect (Google Fit writes there), read-only, on by default, off in Settings → Activity. Needs Android 8.0+ (`minSdk 26`). Before a Play release, file the Health Connect permission declaration and a hosted privacy policy URL in the Play Console. History shows a selected day's total (last 30 days; feature 015), and the Train steps card sits below Templates.
 - Cloud backup (M7, feature 013) is built; the real two-phone Google sign-in check is manual (see `specs/013-cloud-sync/quickstart.md`).
 
 ## Roadmap

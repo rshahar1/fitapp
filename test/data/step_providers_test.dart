@@ -14,6 +14,7 @@ class FakeStepSource implements StepSource {
   int stepCalls = 0;
   DateTime? lastStart;
   DateTime? lastEnd;
+  final intervals = <(DateTime, DateTime)>[];
 
   @override
   Future<StepAccess> access() async {
@@ -32,6 +33,7 @@ class FakeStepSource implements StepSource {
     stepCalls++;
     lastStart = start;
     lastEnd = end;
+    intervals.add((start, end));
     return steps;
   }
 }
@@ -93,5 +95,50 @@ void main() {
   test('source error (null) yields null', () async {
     source.steps = null;
     expect(await today(), isNull);
+  });
+
+  group('daySteps', () {
+    Future<int?> day(DateTime d) {
+      c.listen(daySteps(d), (_, _) {});
+      return c.read(daySteps(d).future);
+    }
+
+    test('granted, today: midnight..now', () async {
+      expect(await day(DateTime(2026, 11, 15)), 1234);
+      expect(source.intervals.single, (DateTime(2026, 11, 15), now));
+    });
+
+    test('granted, past day: full local day', () async {
+      expect(await day(DateTime(2026, 11, 10)), 1234);
+      expect(source.intervals.single, (
+        DateTime(2026, 11, 10),
+        DateTime(2026, 11, 11),
+      ));
+    });
+
+    test('future and out-of-window days never call the source', () async {
+      expect(await day(DateTime(2026, 11, 16)), isNull);
+      expect(await day(DateTime(2026, 10, 15)), isNull);
+      expect(source.stepCalls, 0);
+      expect(source.accessCalls, 0);
+    });
+
+    test('disabled: null without touching the source', () async {
+      await h.settings.setStepsEnabled(false);
+      expect(await day(DateTime(2026, 11, 15)), isNull);
+      expect(source.accessCalls, 0);
+      expect(source.stepCalls, 0);
+    });
+
+    test('not granted: null without a step read', () async {
+      source.state = StepAccess.notGranted;
+      expect(await day(DateTime(2026, 11, 15)), isNull);
+      expect(source.stepCalls, 0);
+    });
+
+    test('source error (null) yields null', () async {
+      source.steps = null;
+      expect(await day(DateTime(2026, 11, 15)), isNull);
+    });
   });
 }

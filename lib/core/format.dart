@@ -74,3 +74,7 @@ String formatActivityMinutes(int minutes) {
   if (m == 0) return '$h h';
   return '$h h $m min';
 }
+
+/// "8,432 steps", "1 step".
+String formatSteps(int n) =>
+    '${NumberFormat.decimalPattern().format(n)} ${n == 1 ? 'step' : 'steps'}';

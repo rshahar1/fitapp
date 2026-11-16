@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' show DatabaseConnection, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/core/haptics.dart';
+import 'package:fitapp/core/step_source.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/workout_repository.dart';
@@ -9,6 +10,8 @@ import 'package:fitapp/features/train/train_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+
+import 'fake_step_source.dart';
 
 const _inclineId = '00000000-0000-4000-8000-000000000002';
 
@@ -50,6 +53,28 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets('steps card sits below Templates, above the metrics', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          hapticsProvider.overrideWithValue(_FakeHaptics()),
+          stepSourceProvider.overrideWithValue(FakeStepSource()),
+        ],
+        child: MaterialApp(theme: buildAppTheme(), home: const TrainScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final templates = tester.getTopLeft(find.text('TEMPLATES')).dy;
+    final steps = tester.getTopLeft(find.text('Steps today')).dy;
+    final metrics = tester.getTopLeft(find.text('THIS WEEK')).dy;
+    expect(templates, lessThan(steps));
+    expect(steps, lessThan(metrics));
+    await unmount(tester);
+  });
 
   testWidgets('empty state offers to start a workout', (tester) async {
     await pump(tester);

@@ -2,6 +2,11 @@ import 'package:fitapp/core/format.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('formatSteps', () {
+    expect(formatSteps(0), '0 steps');
+    expect(formatSteps(1), '1 step');
+    expect(formatSteps(8432), '8,432 steps');
+  });
   test('formatWeight', () {
     expect(formatWeight(20), '20');
     expect(formatWeight(22.5), '22.5');

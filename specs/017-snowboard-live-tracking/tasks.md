@@ -35,32 +35,32 @@ description: "Task list for live snowboarding tracking"
 
 - [x] T015 Controller tests with FakeLocationSource replaying a ski-day fixture: `TrackingLive.snow` updates, pause / resume, `previewSnowSummary`, finish stores the same numbers as the preview, recovery after recreating the container gives the same snow state, live route never exceeds 2,000 points and running / cycling routes still draw — test/features/tracking/tracking_controller_test.dart
 - [x] T016 Implement T015 in lib/features/tracking/tracking_controller.dart (snow state, preview, route thinning)
-- [ ] T017 `RouteMap` sections (muted ranges) in the tile map and the painter fallback; test — lib/features/tracking/widgets/route_map.dart, test/features/tracking/route_map_test.dart
-- [ ] T018 Live screen snowboarding panel: speed hero, status chip, six tiles, sectioned live route — lib/features/tracking/widgets/snow_live_panel.dart, live_track_screen.dart; widget test
-- [ ] T019 [P] `SnowTimeBar` (ride / lift / rest with legend and semantics) — lib/features/tracking/widgets/snow_time_bar.dart; widget test
-- [ ] T020 Finish sheet snowboarding branch (metrics, time bar, sectioned map) — lib/features/tracking/finish_sheet.dart; widget test
-- [ ] T021 Start hub and Log activity sheet: Snowboarding listed with the live types, manual form shows Distance, type picker hidden when editing a tracked snowboarding day — tests in test/features/start_hub_test.dart, activities_test.dart
-- [ ] T022 e2e: fixture ski day from start hub to saved activity — test/e2e/gps_flow.dart
+- [x] T017 `RouteMap` sections (muted ranges) in the tile map and the painter fallback; test — lib/features/tracking/widgets/route_map.dart, test/features/tracking/route_map_test.dart
+- [x] T018 Live screen snowboarding panel: speed hero, status chip, six tiles, sectioned live route — lib/features/tracking/widgets/snow_live_panel.dart, live_track_screen.dart; widget test
+- [x] T019 [P] `SnowTimeBar` (ride / lift / rest with legend and semantics) — lib/features/tracking/widgets/snow_time_bar.dart; widget test
+- [x] T020 Finish sheet snowboarding branch (metrics, time bar, sectioned map) — lib/features/tracking/finish_sheet.dart; widget test
+- [x] T021 Start hub and Log activity sheet: Snowboarding listed with the live types, manual form shows Distance, type picker hidden when editing a tracked snowboarding day — tests in test/features/start_hub_test.dart, activities_test.dart
+- [x] T022 e2e: fixture ski day from start hub to saved activity — test/e2e/gps_flow.dart
 
 ## Phase 5: User Story 3 + 4 — review (P2)
 
-- [ ] T023 History row "N runs · X m ↓" for tracked snowboarding days; manual entries unchanged — lib/features/history/history_rows.dart; test
-- [ ] T024 `SnowTimeline` (descents and lifts) — lib/features/activities/widgets/snow_timeline.dart; widget test
-- [ ] T025 Activity detail snowboarding branch: sectioned map, totals, time bar, timeline; no km markers or splits — lib/features/activities/activity_detail_screen.dart; test in test/features/gps_activity_test.dart
+- [x] T023 History row "N runs · X m ↓" for tracked snowboarding days; manual entries unchanged — lib/features/history/history_rows.dart; test
+- [x] T024 `SnowTimeline` (descents and lifts) — lib/features/activities/widgets/snow_timeline.dart; widget test
+- [x] T025 Activity detail snowboarding branch: sectioned map, totals, time bar, timeline; no km markers or splits — lib/features/activities/activity_detail_screen.dart; test in test/features/gps_activity_test.dart
 
 ## Phase 6: User Story 5 + 6 + 7 — Slopes Premium review tools (P3)
 
 - [x] T030 Tests then implementation: `snowDayStats`, `snowBadges`, `compareRuns`, `replayAt`, `speedColorStops` — lib/domain/tracking/snow_review.dart, test/domain/tracking/snow_review_test.dart
-- [ ] T031 `RouteMap`: per-point coloured sections and `style` (Dark, Winter, Satellite; confirm the MapTiler style ids and attribution in their docs first); plain-background fallback keeps the colours — route_map.dart; tests
-- [ ] T032 [P] `mapStyleProvider` persisted in local settings (not synced) and the style button — lib/features/settings/, detail screen; test
-- [ ] T033 Heatmap on the detail map with legend; highest / lowest altitude and longest run in the totals — activity_detail_screen.dart; widget test
-- [ ] T034 [P] `SnowCompare` view with metric chips, sort and badges; badges in `SnowTimeline` — lib/features/activities/widgets/snow_compare.dart; widget test
-- [ ] T035 Replay screen and route `/activity/:id/replay/:run`; entry from a timeline row and from the badges — lib/features/activities/snow_replay_screen.dart, lib/app/router.dart; widget test with a fake ticker
+- [x] T031 `RouteMap`: per-point coloured sections and `style` (Dark, Winter, Satellite; confirm the MapTiler style ids and attribution in their docs first); plain-background fallback keeps the colours — route_map.dart; tests
+- [x] T032 [P] `mapStyleProvider` persisted in local settings (not synced) and the style button — lib/features/settings/, detail screen; test
+- [x] T033 Heatmap on the detail map with legend; highest / lowest altitude and longest run in the totals — activity_detail_screen.dart; widget test
+- [x] T034 [P] `SnowCompare` view with metric chips, sort and badges; badges in `SnowTimeline` — lib/features/activities/widgets/snow_compare.dart; widget test
+- [x] T035 Replay screen and route `/activity/:id/replay/:run`; entry from a timeline row and from the badges — lib/features/activities/snow_replay_screen.dart, lib/app/router.dart; widget test with a fake ticker
 
 ## Phase 7: Polish
 
-- [ ] T026 Docs: PRD (v2.9: snowboarding tracking moves from LATER to done, glossary, changelog), README roadmap, docs/ARCHITECTURE.md (snow reducer, schema v9)
-- [ ] T027 `dart format --set-exit-if-changed .`, `flutter analyze`, `flutter test`, `node tool/db_test.mjs` all green; domain coverage 100% for the new files
+- [x] T026 Docs: PRD (v2.9: snowboarding tracking moves from LATER to done, glossary, changelog), README roadmap, docs/ARCHITECTURE.md (snow reducer, schema v9)
+- [x] T027 `dart format --set-exit-if-changed .`, `flutter analyze`, `flutter test`, `node tool/db_test.mjs` all green; domain coverage 100% for the new files
 - [ ] T028 Apply the Supabase migration to the project; build the phone-test APK (release build, debug signing, next `app-release-0.0.N`)
 - [ ] T029 (owner) One real day on the mountain; report run count and anything misclassified; tune `SnowTuning` if needed
 

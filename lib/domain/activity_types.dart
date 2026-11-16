@@ -191,14 +191,17 @@ String formatSpeed(int meters, int minutes) =>
 String formatSpeedKmh(double mps) => '${(mps * 3.6).toStringAsFixed(1)} km/h';
 
 /// Whole metres with a comma thousands separator: 3240 -> "3,240 m".
-String formatMetersGrouped(int meters) {
-  final digits = meters.abs().toString();
-  final out = StringBuffer(meters < 0 ? '-' : '');
+String formatMetersGrouped(int meters) => '${formatGrouped(meters)} m';
+
+/// A whole number with a comma thousands separator: 3240 -> "3,240".
+String formatGrouped(int n) {
+  final digits = n.abs().toString();
+  final out = StringBuffer(n < 0 ? '-' : '');
   for (var i = 0; i < digits.length; i++) {
     if (i > 0 && (digits.length - i) % 3 == 0) out.write(',');
     out.write(digits[i]);
   }
-  return '$out m';
+  return out.toString();
 }
 
 DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);

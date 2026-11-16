@@ -27,4 +27,17 @@ void main() {
       },
     );
   });
+
+  testWidgets('end-to-end: record a snowboarding day, review and replay', (
+    tester,
+  ) async {
+    await runSnowFlow(
+      tester,
+      settle: () async {
+        for (var i = 0; i < 4; i++) {
+          await tester.pump(const Duration(milliseconds: 400));
+        }
+      },
+    );
+  });
 }

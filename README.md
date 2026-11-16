@@ -93,8 +93,8 @@ Templates are reusable exercise lists you start in one tap from the Train tab. O
 ## Other sport activities
 
 The Train tab has a **Log activity** button for Functional training, Cycling, Snowboarding, Running and Pilates: pick
-the type and date (today by default, never in the future) and optionally a duration and a note. Running and
-cycling also take an optional distance in km (typed with `.` or `,`); History then shows the distance and, with a
+the type and date (today by default, never in the future) and optionally a duration and a note. Running,
+cycling and snowboarding also take an optional distance in km (typed with `.` or `,`); History then shows the distance and, with a
 duration, the pace (running) or speed (cycling). **History**
 lists workouts and activities together by month, with a dumbbell icon for gym workouts and a sport icon for
 activities; tap an activity to edit or delete it. Activities count toward **This week**, **Week streak** and
@@ -102,7 +102,7 @@ the Progress weekly bars; **Total workouts** counts gym workouts only, and activ
 exercise stats or progression. The sports are a code-level registry in `lib/domain/activity_types.dart`;
 adding one means one registry entry plus one icon in `lib/features/activities/activity_icons.dart`.
 
-## Live GPS tracking (running and cycling)
+## Live GPS tracking (running, cycling and snowboarding)
 
 Pick Running or Cycling in **Log activity** and tap **Start live**: a setup screen waits for a good GPS fix
 (accuracy 20 m or better, or Start anyway), then the live screen shows time, distance, pace or speed and the
@@ -116,6 +116,21 @@ never leaves the device; only map tile requests go to MapTiler (see `MAP_TILES_K
 permissions added: `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `FOREGROUND_SERVICE`,
 `FOREGROUND_SERVICE_LOCATION` (while-in-use only, no background-location permission). New packages: `geolocator`,
 `flutter_map`, `latlong2`. Schema v6 adds the tracking tables and the tracked columns on `activities`.
+
+## Live snowboarding tracking
+
+Snowboarding is a live-tracking type like running and cycling (same setup, permissions, background tracking and
+crash recovery). Runs, lifts and rests are detected automatically from GPS speed and smoothed GPS altitude (no
+barometer); there is no auto-pause, and a manual Pause excludes that time from everything. The live screen shows
+current speed, a Riding / On lift / Resting chip and tiles for runs, vertical, max speed, average speed, distance
+and elapsed time, with lifts drawn muted on the map. A run is a descent between lifts with at least 30 m of drop.
+The finish sheet shows the day totals and a ride / lift / rest time bar; History shows "N runs · X m ↓". The
+Activity detail has a speed heatmap on the route, a map style switch (Dark, Winter, Satellite; kept on the device
+only), a run comparison with best-run badges (fastest, longest, most vertical), a timeline of runs and lifts and a
+2D replay of each run (play / pause, scrubber, 1x / 4x / 16x). Everything is stored on the one `activities` row
+(schema v9) and syncs with it; raw GPS points still never leave the device. Known limits: riding a gondola down
+counts as a run, a slow uphill walk counts as rest, and a very flat conveyor lift may count as rest; thresholds
+will be tuned after a real day on the mountain. No new packages.
 
 ## Workout flow and exercise library
 
@@ -135,7 +150,7 @@ No schema change (still v4) and no new packages.
 
 ## Database schema and migrations
 
-The schema is at version 6 (v6 adds `tracking_sessions`, `track_points` and the tracked-activity columns on `activities`; v2 adds `templates` and `template_exercises`; v3 adds the plan columns on `template_exercises` and `workout_exercises.template_exercise_id`; v4 adds `activities`; v5 adds `activities.distance_meters`). Migrations use drift's generated `stepByStep` helper (`lib/data/db/app_database.steps.dart`). Schema dumps live in `drift_schemas/` and the migration tests in `test/drift/` (plus `test/data/migration_test.dart`). After any schema change, regenerate the dumps and test helpers with:
+The schema is at version 9 (v9 adds the six snowboarding columns on `activities`; v8 adds `sync_state` pull cursors (feature 013); v7 adds `exercises.deleted_at` (feature 012); v6 adds `tracking_sessions`, `track_points` and the tracked-activity columns on `activities`; v2 adds `templates` and `template_exercises`; v3 adds the plan columns on `template_exercises` and `workout_exercises.template_exercise_id`; v4 adds `activities`; v5 adds `activities.distance_meters`). Migrations use drift's generated `stepByStep` helper (`lib/data/db/app_database.steps.dart`). Schema dumps live in `drift_schemas/` and the migration tests in `test/drift/` (plus `test/data/migration_test.dart`). After any schema change, regenerate the dumps and test helpers with:
 
 ```sh
 dart run drift_dev make-migrations
@@ -148,7 +163,7 @@ lib/
   main.dart
   app/                 app.dart, backdrop.dart, router.dart, theme/ (app_theme.dart, tokens.dart)
   core/                format.dart, haptics.dart, rest_alerts.dart, platform_rest_alerts.dart
-  domain/              pure Dart: progression.dart, stats.dart, activity_types.dart (sport registry), workout_dates.dart, calendar.dart
+  domain/              pure Dart: progression.dart, stats.dart, activity_types.dart (sport registry), workout_dates.dart, calendar.dart, tracking/ (GPS and snowboarding reducers)
   data/
     db/                app_database.dart, tables.dart, seed_library.dart (+ generated *.g.dart)
     repositories/      WorkoutRepository, ExerciseRepository, SettingsRepository, TemplateRepository (template_repository.dart), ActivityRepository (activity_repository.dart), plan_store.dart (PlanStore: validated plan reads/writes), live_session_store.dart (device-local live workout record)
@@ -168,7 +183,7 @@ lib/
     settings/          settings screen
   widgets/             shared UI kit (buttons, cards, charts, guard.dart, ...)
 supabase/              migrations, SQL tests, Edge Function delete-account
-drift_schemas/         drift schema dumps (v1 to v4)
+drift_schemas/         drift schema dumps (v1 to v9)
 test/                  unit, data, widget, drift/ (migration tests), and e2e/ (end-to-end widget test)
 integration_test/      key end-to-end flows (device/emulator)
 ```
@@ -213,7 +228,7 @@ at ~60 % of the screen height on any screen shape.
 ## Roadmap
 
 - "Repeat last workout"
-- Snowboarding tracking, HealthKit, step goals/history, GPX export, miles, offline map tiles
+- Barometer altitude, lift and piste names, 3D maps and replay, heart rate, HealthKit, step goals/history, GPX export, miles, offline map tiles
 - Drop and failure set types
 - kg / lb setting
 - Plate calculator

@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../data/fake_location_source.dart';
+import '../domain/tracking/snow_fixtures.dart';
 
 class _NoHaptics implements Haptics {
   @override
@@ -104,4 +105,83 @@ Future<void> runGpsFlow(
   expect(find.text('SPLITS'), findsOneWidget);
   expect(find.text('AVG PACE'), findsOneWidget);
   expect(find.byType(RouteMap), findsOneWidget);
+}
+
+/// Shared snowboarding flow (feature 017): the `+` button → Snowboarding
+/// (setup) → Start → replay a synthetic day of three lifts and three runs →
+/// hold Finish → Save → History shows "3 runs" with a route thumbnail → the
+/// detail screen with the timeline → the replay of run 2.
+Future<void> runSnowFlow(
+  WidgetTester tester, {
+  required Future<void> Function() settle,
+}) async {
+  driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+  final db = AppDatabase(DatabaseConnection(NativeDatabase.memory()));
+  final source = FakeLocationSource();
+  final track = buildSnowDay(plainDay).samples;
+  var now = track.first.t;
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        databaseProvider.overrideWithValue(db),
+        hapticsProvider.overrideWithValue(_NoHaptics()),
+        restAlertsProvider.overrideWithValue(const NoopRestAlerts()),
+        locationSourceProvider.overrideWithValue(source),
+        clockProvider.overrideWithValue(() => now),
+        mapTilesEnabledProvider.overrideWithValue(false),
+      ],
+      child: const FitApp(),
+    ),
+  );
+  await settle();
+
+  Future<void> tap(Finder f) async {
+    await tester.ensureVisible(f.first);
+    await tester.pump();
+    await tester.tap(f.first);
+    await settle();
+  }
+
+  await tap(find.byTooltip('Start or log a session'));
+  await tap(find.text('Snowboarding'));
+  expect(find.text('Searching for GPS'), findsOneWidget);
+
+  source.emit(track.first);
+  await tester.pump();
+  await tap(find.text('START'));
+  expect(find.text('RUNS'), findsOneWidget);
+
+  for (var i = 1; i < track.length; i++) {
+    now = track[i].t;
+    source.emit(track[i]);
+    if (i % 100 == 0) {
+      await tester.pump(const Duration(milliseconds: 50));
+      await settle();
+    }
+  }
+  await tester.pump(const Duration(seconds: 1));
+  expect(find.text('Resting'), findsOneWidget);
+
+  final gesture = await tester.startGesture(
+    tester.getCenter(find.text('FINISH')),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 1100));
+  await gesture.up();
+  await settle();
+  expect(find.text('Snowboarding summary'), findsOneWidget);
+  // On the sheet and on the live screen behind it.
+  expect(find.text('VERTICAL'), findsWidgets);
+
+  await tap(find.text('SAVE'));
+  expect(find.textContaining('3 runs'), findsOneWidget);
+  expect(find.byType(RouteThumbnail), findsOneWidget);
+
+  await tap(find.byType(RouteThumbnail));
+  expect(find.byType(RouteMap), findsOneWidget);
+  expect(find.text('Run 1'), findsWidgets);
+  expect(find.text('Compare runs'), findsOneWidget);
+
+  await tap(find.text('Run 2'));
+  expect(find.text('Run 2 replay'), findsOneWidget);
 }

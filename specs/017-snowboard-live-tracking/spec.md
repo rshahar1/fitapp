@@ -124,7 +124,8 @@ the interpolated speed.
 - Fixes with accuracy worse than 20 m or implying more than 45 m/s are ignored.
 - A gap without accepted fixes (tunnel, gondola cabin, lost signal) of more than 10 s counts as
   rest unless it lies inside a lift, where it stays lift.
-- A fix without altitude does not change the state.
+- A fix without altitude is classified from the altitudes around it; a day with no altitude at
+  all has ride and rest time by speed alone, no lifts and no counted runs.
 - Known limits, accepted for this version: riding a gondola down counts as a run; a slow uphill
   walk counts as rest; a very flat conveyor lift may count as rest.
 - A whole day (8 h, ~29,000 fixes) must stay responsive: the live route is thinned before it is
@@ -159,8 +160,11 @@ the interpolated speed.
 - **FR-008**: History rows, the finish sheet and the Activity detail screen MUST show the
   snowboarding metrics for tracked snowboarding days; the detail map MUST distinguish runs from
   lifts.
-- **FR-010**: Each stored run MUST keep, for every route point, the speed there and the time
-  since the run began, and every segment its start and end altitude, so the heatmap, the replay
+- **FR-009**: Everything in feature 010 that is not sport-specific (permission flow, foreground
+  service, 5 s persistence, provider fallback, recovery, one live session, location privacy)
+  MUST apply unchanged.
+- **FR-010**: Each stored run MUST keep, for every route point, the speed there, the altitude and the
+  time since the run began, and every segment its start and end altitude, so the heatmap, the replay
   and the altitude stats work after the raw points are deleted.
 - **FR-011**: The detail map MUST colour runs by speed with a legend, and MUST offer Dark,
   Winter and Satellite styles from the configured tile provider, remembering the last choice on
@@ -170,9 +174,6 @@ the interpolated speed.
   longest run.
 - **FR-013**: Each run MUST be replayable in 2D with play / pause, scrubbing and three speeds,
   showing speed, altitude and time.
-- **FR-009**: Everything in feature 010 that is not sport-specific (permission flow, foreground
-  service, 5 s persistence, provider fallback, recovery, one live session, location privacy)
-  MUST apply unchanged.
 
 ## Success Criteria *(mandatory)*
 
@@ -183,10 +184,10 @@ the interpolated speed.
 - **SC-003**: Replay equals incremental for every fixture (same metrics, same segments).
 - **SC-004**: An 8-hour day stores a route of ≤ 400 KB and a segment list of ≤ 100 KB; the live
   screen never draws more than 2,000 route points.
-- **SC-006**: The replay plays at 16× without dropped frames on the owner's phone; opening the
-  detail screen of an 8-hour day takes under one second.
 - **SC-005**: Format, analyze and all tests green; SQL tests green; one real day on the mountain
   validated by the owner (run count matches what they rode).
+- **SC-006**: The replay plays at 16× without dropped frames on the owner's phone; opening the
+  detail screen of an 8-hour day takes under one second.
 
 ## Out of scope
 

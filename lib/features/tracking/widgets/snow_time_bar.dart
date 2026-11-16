@@ -47,6 +47,7 @@ class SnowTimeBar extends StatelessWidget {
               child: total <= 0
                   ? const ColoredBox(color: AppColors.surfaceHigh)
                   : Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         for (final p in parts)
                           if (p.seconds > 0)

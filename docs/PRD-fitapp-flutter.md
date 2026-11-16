@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.8, 14 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.9, 16 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -22,7 +22,7 @@ A minimalist, fast, offline-first gym workout logger built around one idea: **au
 The user logs sets between exercises with large tap targets and almost no typing. The app pre-fills every set
 from the user's plan and last session, and moves the working weight up automatically when they earn it.
 Other sports (functional training, cycling, snowboarding, running, Pilates) can be logged as lightweight
-activities that count toward consistency; running and cycling can carry a manually entered distance or be recorded live with GPS (section 5.8).
+activities that count toward consistency; running, cycling and snowboarding can carry a manually entered distance or be recorded live with GPS (sections 5.8 and 5.10).
 
 ### 1.1 Goals
 1. Log a full set in **one tap** when the user did what was planned.
@@ -31,7 +31,7 @@ activities that count toward consistency; running and cycling can carry a manual
 3. Show progress clearly: charts per exercise, personal records, and "compared to last session" deltas.
 4. Work **fully offline**. A gym with no signal must never block logging.
 5. Clean, safe, well-tested codebase that follows Flutter and Dart best practices.
-6. Log other sport activities (date, optional duration, optional distance for running and cycling, and note) so the weekly stats reflect all training.
+6. Log other sport activities (date, optional duration, optional distance for running, cycling and snowboarding, and note) so the weekly stats reflect all training.
 
 ### 1.2 Non-goals (explicitly out of scope)
 - **Social features, friends, feed and leaderboards were dropped by the owner.** Do not build friend tables,
@@ -134,8 +134,8 @@ Numbers use tabular figures.
 | **Overload set** | Set N (the last set), prescribed at `baseWeight + increment`, **always**. It is a stretch target only: it never affects the result. |
 | **Session** | One exercise inside one finished workout. |
 | **Volume** | Σ weight × reps (× 2 if per hand). |
-| **Activity** | A logged non-gym sport session: type, date, optional duration and note. Optional distance (whole metres, 1 to 1,000,000) only for running and cycling; no other sport-specific metrics. Counts toward This week, Week streak and the weekly bars; never toward volume, exercise stats or progression. |
-| **Activity type** | One entry of the code-level registry (`id`, `label`): `functional`, `cycling`, `snowboarding`, `running`, `pilates`. Running and cycling have `hasDistance`. |
+| **Activity** | A logged non-gym sport session: type, date, optional duration and note. Optional distance (whole metres, 1 to 1,000,000) only for running, cycling and snowboarding; live tracked snowboarding days also carry run, lift and rest metrics (section 5.10); no other sport-specific metrics. Counts toward This week, Week streak and the weekly bars; never toward volume, exercise stats or progression. |
+| **Activity type** | One entry of the code-level registry (`id`, `label`): `functional`, `cycling`, `snowboarding`, `running`, `pilates`. Running, cycling and snowboarding have `hasDistance` and live GPS tracking. |
 | **Est. 1RM** | Epley formula: `w × (1 + reps / 30)`, rounded to 0.1. 1 rep gives `w`, 0 reps gives 0. |
 
 ---
@@ -287,7 +287,7 @@ back to the exercise plan.
   The Train header has no icons and there is no *Log activity* button (feature 011, section 5.9).
 - The **activity sheet** (opened from the hub's *Log a past session* and *More sports*; titled "Log a past session" for
   new entries, "Edit activity" when editing; no *Start live*): activity type, date (default today, never in the future), optional
-  duration in minutes (1 to 1440), for running and cycling an optional **distance** (None/Set, typed in km with
+  duration in minutes (1 to 1440), for running, cycling and snowboarding an optional **distance** (None/Set, typed in km with
   `.` or `,`, rounded to 10 m, 0.01 to 1000 km; stored as whole metres) and optional note (max 200 chars). Types come from the registry
   (`lib/domain/activity_types.dart`); adding a sport is one registry entry plus one icon.
 - *This week* and *Week streak* count gym workouts **and** activities. *Total workouts* counts gym workouts only.
@@ -321,10 +321,35 @@ back to the exercise plan.
 - **Rest-timer alert** (SHOULD): haptic on/off and sound on/off, both default on.
 - **Units:** kg only in v1. A kg/lb setting is **LATER**; store kg internally regardless.
 
+### 5.10 Live snowboarding tracking (feature 017)
+- **Scope:** Snowboarding joins running and cycling as a live-tracking type (same hub entry, setup, permission, foreground
+  service, crash recovery, privacy and one-live-session rules as section 5.8) and, like them, accepts an optional manual
+  distance. Out of scope: barometer altitude, lift / piste / resort names, 3D maps and replay, heart rate, friends and
+  live location, GPX, miles, offline tiles.
+- **Detection:** each accepted fix is classified as run, lift or rest automatically from GPS speed and smoothed GPS altitude
+  (no barometer); the user never tags anything. No auto-pause for snowboarding: standing still is rest. Manual **Pause**
+  excludes that time from everything. Pure domain code in `lib/domain/tracking/`, replayable from the stored points.
+- **Metrics:** ride, lift and rest time, ride distance, vertical drop, run count (a run is a descent between lifts with at
+  least 30 m of drop; stopping on the way down is rest, not a new run), current, average and max speed (km/h).
+- **Live screen:** speed hero, status chip (Riding / On lift / Resting), tiles for runs, vertical, max speed, avg speed,
+  distance and elapsed; lifts are drawn muted on the map. Footer unchanged.
+- **Finish sheet and History:** the finish sheet shows the day totals and a ride / lift / rest time bar. The History row shows
+  "N runs · X m ↓" with the route thumbnail.
+- **Saved result:** one `activities` row (`source = gps`, `distance_meters` = ride distance, `moving_seconds` = ride time) plus
+  `vertical_drop_meters`, `run_count`, `max_speed_mps`, `lift_seconds`, `rest_seconds` and `segments` (JSON list of run,
+  lift and rest segments; run segments also carry per-route-point speed, seconds and altitude). Raw points are deleted;
+  all six columns sync with the activity.
+- **Activity detail:** speed heatmap on the route, map style switch (Dark, Winter, Satellite; stored on the device only,
+  not synced), totals, time bar, run comparison (five metrics, sortable) with best-run badges (fastest, longest, most
+  vertical), a timeline of runs and lifts, and a 2D replay of each run (`/activity/:id/replay/:run`: play / pause,
+  scrubber, 1x / 4x / 16x).
+- **Known limits:** riding a gondola down counts as a run; a slow uphill walk counts as rest; a very flat conveyor lift may
+  count as rest. Thresholds will be tuned after a real day on the mountain.
+
 ---
 
-### 5.8 Live GPS tracking (running and cycling; feature 010)
-- **Flow:** **[+]** hub → **Running** or **Cycling** (`/track/new?type=<id>`) → setup screen ("Searching for GPS", Start at accuracy ≤ 20 m or *Start anyway*) → live screen →
+### 5.8 Live GPS tracking (running, cycling and, since feature 017, snowboarding; feature 010)
+- **Flow:** **[+]** hub → **Running**, **Cycling** or **Snowboarding** (`/track/new?type=<id>`) → setup screen ("Searching for GPS", Start at accuracy ≤ 20 m or *Start anyway*) → live screen →
   **Finish** (1 s hold) → finish sheet (route map, metrics, **Save** / **Discard** with confirmation) →
   **History** row with a route thumbnail (drawn locally, no tiles) → **Activity detail** (interactive map, start and
   finish markers, km markers, metrics, per-km splits; edit type, date, note only; delete confirmed).
@@ -344,16 +369,17 @@ back to the exercise plan.
 - **Privacy and map:** location data never leaves the device; only map tile requests go to MapTiler. The key is
   `MAP_TILES_KEY` via `--dart-define-from-file=env/dev.json` (never in the repo). No key or no network: the route is
   drawn on a plain dark background.
-- **LATER:** snowboarding tracking, Health Connect/HealthKit import, GPX export, miles, offline tile download.
+- **LATER:** Health Connect/HealthKit import, GPX export, miles, offline tile download. Snowboarding is tracked live since feature 017 (section 5.10).
+- The live route thins itself to at most 2,000 points for every tracked type (feature 017).
 
 ### 5.9 Start/Log hub and You tab (feature 011)
 - **[+] action** in the middle of the bottom bar (accent circle, label "Start or log a session"); opens the hub sheet from any
   tab and is never a selected tab. **You** tab (`/you`) lists **Exercise library** (`/exercises`) and **Settings** (`/settings`).
 - **Hub sheet:** *START NOW*: **Continue <session>** (only when a session is in progress), **Gym workout**,
-  **Running** / **Cycling** (→ `/track/new?type=<id>`), **More sports** (non-live sports open the past-session form
+  **Running** / **Cycling** / **Snowboarding** (→ `/track/new?type=<id>`), **More sports** (non-live sports open the past-session form
   prefilled with the sport and today), gym templates. *EARLIER*: **Log a past session**.
 - **One start guard** for gym and GPS starts on every entry point (hub, Train hero, template START). A blocked start shows
-  "<Workout|Running|Cycling> in progress. Finish it first." with **Open**. Logging a past session is never blocked.
+  "<Workout|Running|Cycling|Snowboarding> in progress. Finish it first." with **Open**. Logging a past session is never blocked.
 - Train stats and Recent are unchanged (a later slice reworks them). Details: `specs/011-start-hub/` and `docs/ux/unified-start-proposal.md`.
 
 ## 6. Navigation and screens
@@ -369,6 +395,7 @@ Bottom navigation (5 slots)
 Full-screen routes
 ├── /track/new?type=       live tracking setup (GPS fix, Start)
 ├── /track/live            live tracking screen (map, metrics, Pause/Lock/Finish)
+├── /activity/:id/replay/:run   2D replay of one snowboarding run
 ├── /workout               live workout (active)
 ├── /workout/:id           finished workout in edit mode
 ├── /activity/:id          activity detail (map, metrics, splits)
@@ -407,7 +434,9 @@ sets               id PK, workout_exercise_id → workout_exercises (cascade), s
                    UNIQUE(workout_exercise_id, set_no)
 activities         id PK, type_id, started_at, duration_minutes?, distance_meters?, notes?,
                    source ('manual'|'gps'), moving_seconds?, elevation_gain_meters?,
-                   route? (encoded polyline), splits? (JSON), updated_at, dirty,
+                   route? (encoded polyline), splits? (JSON),
+                   vertical_drop_meters?, run_count?, max_speed_mps?, lift_seconds?, rest_seconds?,
+                   segments? (JSON, snowboarding), updated_at, dirty,
                    index on started_at                              -- non-gym sport activities
 tracking_sessions  id PK, type_id, state ('active'|'paused'), started_at, paused_ms, paused_at?,
                    updated_at, dirty                                -- the one live GPS session, local only
@@ -416,7 +445,7 @@ track_points       session_id → tracking_sessions (cascade), seq, t, lat, lon,
 pending_deletes    table_name, row_id, PK(table_name, row_id)      -- delete queue for sync
 settings           key PK, value                                   -- local-only in v1, e.g. default_rest_seconds = 60
 ```
-- Schema version is 6 (v2 templates, v3 template plans and `template_exercise_id`, v4 `activities`, v5 `activities.distance_meters`, v6 `tracking_sessions`, `track_points` and the tracked columns on `activities`). Use real schema **migrations** with a version number (drift `stepByStep`). Never drop user data on upgrade.
+- Schema version is 9 (v2 templates, v3 template plans and `template_exercise_id`, v4 `activities`, v5 `activities.distance_meters`, v6 `tracking_sessions`, `track_points` and the tracked columns on `activities`, v7 `exercises.deleted_at`, v8 `sync_state`, v9 the snowboarding columns on `activities`). Use real schema **migrations** with a version number (drift `stepByStep`). Never drop user data on upgrade.
 - Foreign keys **ON**. Writes that touch several rows (finish, resume, recalculate, delete) run in **one
   transaction**.
 
@@ -446,7 +475,7 @@ settings           key PK, value                                   -- local-only
   separate from the `deleted_at` tombstone.
 - **Settings.** `user_settings` syncs a whitelist only: default rest time, rest-alert vibration and sound.
 - **What is synced:** workouts (also unfinished), exercises, sets, plans, templates, custom exercises and
-  overrides, activities with route and splits. Raw GPS points and live sessions never leave the device.
+  overrides, activities with route, splits and snowboarding segments. Raw GPS points and live sessions never leave the device.
 - **Sign-in decision** (the phone remembers which account its data belongs to): no local history and an empty
   cloud binds; no local history and cloud data restores; local history and an empty cloud makes a first backup;
   both have data asks Merge or Cancel; a phone bound to another account asks before replacing its data.
@@ -635,7 +664,7 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 ## 14. Roadmap (after v1, not in scope now)
 - Sign-in with cloud backup and restore (M7, built in feature 013)
 - Template folders and "repeat last workout" (templates themselves exist since feature 003)
-- Snowboarding tracking, Health Connect/HealthKit import, GPX export, miles and offline map tiles (live GPS tracking for running and cycling exists since feature 010)
+- Barometer altitude, lift and piste names, 3D maps and replay, heart rate, Health Connect/HealthKit import, GPX export, miles and offline map tiles (live GPS tracking for running and cycling exists since feature 010, for snowboarding since feature 017)
 - Drop and failure set types (warm-up sets are intentionally not planned)
 - Rest-timer notifications when the app is in the background, if not done in M3
 - kg / lb setting
@@ -715,3 +744,8 @@ resolved on 12 Nov 2026; see the decisions log.
   - Section 8 rewritten to the built design: opt-in Google sign-in, tombstones, pull cursors, LWW with deletes
     winning, `sync_push` RPC, custom exercises and overrides, settings whitelist, sign-in decisions, account actions.
   - Schema v8 (`sync_state`); packages `supabase_flutter`, `google_sign_in`; Edge Function `delete-account`.
+- **2.9 (16 Nov 2026):** feature 017, live snowboarding tracking (owner request of 16 Nov 2026).
+  - Snowboarding becomes a live-tracking type with an optional manual distance; automatic run / lift / rest detection from GPS speed and altitude; ride / lift / rest time, ride distance, vertical drop, run count, speeds (section 5.10).
+  - Finish sheet and History row with day totals; Activity detail with speed heatmap, Dark / Winter / Satellite map styles, run comparison with best-run badges, timeline and 2D run replay.
+  - Schema v9 (`from8To9`): six nullable columns on `activities`; server migration `20261116000001_activities_snowboard.sql`; all six sync. No new packages. Constitution 1.8.0.
+  - Barometer altitude, lift and piste names, 3D maps and replay, heart rate, GPX, miles, offline tiles stay LATER.

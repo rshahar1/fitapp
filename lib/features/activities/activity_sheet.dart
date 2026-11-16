@@ -172,13 +172,23 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
     if (done && mounted) Navigator.of(context).pop();
   }
 
+  /// Whether the type picker offers [t]. A GPS activity keeps to the live
+  /// types, and tracked snowboarding is never switched to or from.
+  bool _offers(ActivityType t) {
+    if (!_isGps) return true;
+    if (widget.existing?.typeId == 'snowboarding') {
+      return t.id == 'snowboarding';
+    }
+    return t.hasLiveTracking && t.id != 'snowboarding';
+  }
+
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     final now = ref.watch(clockProvider)();
     final options = [
       for (final t in activityTypes)
-        if (!_isGps || t.hasLiveTracking) t,
+        if (_offers(t)) t,
       if (widget.existing != null &&
           activityTypeById(widget.existing!.typeId) == null)
         ActivityType(widget.existing!.typeId, 'Activity'),

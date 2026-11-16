@@ -11,6 +11,7 @@ import 'package:fitapp/data/repositories/workout_repository.dart';
 import 'package:fitapp/domain/activity_types.dart';
 import 'package:fitapp/features/start/start_hub_sheet.dart';
 import 'package:fitapp/features/tracking/widgets/route_map.dart';
+import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -220,6 +221,25 @@ void main() {
       await tester.tap(find.text('Running'));
       await settle(tester);
       expect(location(), '/track/new?type=running');
+      await unmount(tester);
+    });
+
+    testWidgets('Snowboarding is listed with the live-tracking sports', (
+      tester,
+    ) async {
+      await pumpApp(tester, at: Routes.history);
+      await openHub(tester);
+      for (final sport in ['Running', 'Cycling', 'Snowboarding']) {
+        expect(
+          find.descendant(
+            of: find.widgetWithText(GroupRow, sport),
+            matching: find.text('Live GPS'),
+          ),
+          findsOneWidget,
+          reason: sport,
+        );
+      }
+      expect(find.text('More sports'), findsNothing);
       await unmount(tester);
     });
 

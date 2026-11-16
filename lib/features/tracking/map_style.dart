@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/features/tracking/widgets/route_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,12 +12,12 @@ const mapStyleKey = 'map_style';
 class MapStyleController extends Notifier<MapStyle> {
   @override
   MapStyle build() {
-    Future<void>(() async {
+    unawaited(() async {
       final stored = await ref
           .read(settingsRepositoryProvider)
           .readFlag(mapStyleKey);
       if (ref.mounted && stored != null) state = MapStyle.parse(stored);
-    });
+    }());
     return MapStyle.dark;
   }
 

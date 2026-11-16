@@ -14,6 +14,7 @@ import 'package:fitapp/features/tracking/finish_sheet.dart';
 import 'package:fitapp/features/tracking/tracking_controller.dart';
 import 'package:fitapp/features/tracking/widgets/footer_controls.dart';
 import 'package:fitapp/features/tracking/widgets/route_map.dart';
+import 'package:fitapp/features/tracking/widgets/snow_live_panel.dart';
 import 'package:fitapp/features/workout/widgets/tick.dart';
 import 'package:fitapp/widgets/guard.dart';
 import 'package:fitapp/widgets/widgets.dart';
@@ -101,6 +102,7 @@ class _LiveTrackScreenState extends ConsumerState<LiveTrackScreen> {
     final track = state.state;
     final paused = track.manualPaused;
     final here = state.position ?? state.points.lastOrNull;
+    final snow = state.typeId == 'snowboarding' ? state.snow : null;
     return PopScope(
       canPop: !_locked,
       child: Scaffold(
@@ -118,7 +120,21 @@ class _LiveTrackScreenState extends ConsumerState<LiveTrackScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _Hero(typeId: state.typeId, track: track),
+              if (snow != null)
+                SnowLivePanel(
+                  snow: snow,
+                  track: track,
+                  elapsed: Tick(
+                    builder: (_) => MetricTile(
+                      label: 'Elapsed',
+                      value: formatClock(
+                        elapsedAt(track, ref.read(clockProvider)().toUtc()),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                _Hero(typeId: state.typeId, track: track),
               if (!state.serviceEnabled)
                 const _GpsBanner(
                   'Location is off. Turn it on to keep tracking.',
@@ -126,8 +142,10 @@ class _LiveTrackScreenState extends ConsumerState<LiveTrackScreen> {
                 )
               else if (state.gpsIssue != null)
                 _GpsBanner(state.gpsIssue!, icon: Icons.gps_not_fixed),
-              _StatusRow(track: track, accuracy: state.accuracy),
-              _Tiles(typeId: state.typeId, track: track),
+              if (snow == null) ...[
+                _StatusRow(track: track, accuracy: state.accuracy),
+                _Tiles(typeId: state.typeId, track: track),
+              ],
               const SizedBox(height: Space.m),
               Expanded(
                 child: ConstrainedBox(
@@ -136,6 +154,10 @@ class _LiveTrackScreenState extends ConsumerState<LiveTrackScreen> {
                     route: [for (final p in state.points) toLatLng(p)],
                     current: here == null ? null : toLatLng(here),
                     followCurrent: true,
+                    spans: [
+                      for (final s in state.liftSpans)
+                        RouteSpan(s.from, s.to, AppColors.routeLift),
+                    ],
                   ),
                 ),
               ),

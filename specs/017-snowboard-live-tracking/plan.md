@@ -85,7 +85,7 @@ if `altS` rose at least 15 m across it.
 |---|---|
 | ride / lift / rest seconds | sum of segment durations per kind |
 | ride distance | sum of run segment distances (haversine between accepted fixes) |
-| vertical drop | per run segment, descent of `altS` with 5 m hysteresis; summed |
+| vertical drop | per run segment, descent of `altS` with 5 m hysteresis; summed. When a stop is confirmed the run's end height is corrected to the settled altitude, because the median lags by a few seconds |
 | lift gain | per lift segment, ascent of `altS` with 5 m hysteresis |
 | current speed | `hSpeed` over 5 s; 0 while resting |
 | max speed | highest median-of-3 `hSpeed` inside run segments |
@@ -94,11 +94,18 @@ if `altS` rose at least 15 m across it.
 
 `snowDescents(segments)` builds that grouping for the run count and for the detail timeline.
 
+Refinements found while testing on the fixtures: a lift label also needs the altitude to be
+still rising over the last 10 s; a lift's last climbing fix only counts at a new height; a lift
+out of a rest is backdated to the fix where the rider started moving; and a "run" shorter than
+60 s with under 5 m of drop right before a lift is merged into that lift (a cabin leaving the
+station on the flat).
+
 ### 5. Manual pause
 
-A fix flagged `paused` is not fed to the snow reducer. `pauseSnow` closes the current segment
-and drops the candidate; `resumeSnow` clears the signal windows and starts a new rest segment, so
-nothing is measured across the pause.
+A fix flagged `paused` is not fed to the snow reducer: it calls `pauseSnow`, which closes the
+current segment. The next unflagged fix starts a new rest segment with empty signal windows, so
+nothing is measured across the pause. Live tracking and replay both go by the flags, so they
+always agree.
 
 ## Data model
 
@@ -127,8 +134,9 @@ Reused columns for a tracked snowboarding day:
 duration in seconds · `m` distance in metres · `v` vertical in metres (drop for a run, gain for
 a lift, 0 for rest) · `s` max speed in m/s, one decimal (runs only) · `n` number of points of
 `route` that belong to this segment · `a`, `b` smoothed altitude in metres at the segment's
-start and end. Runs also carry two arrays of length `n`, one entry per route point: `p` speed
-there in whole km/h and `q` whole seconds since the run began. They feed the heatmap and the
+start and end. Runs also carry three arrays of length `n`, one entry per route point: `p` speed
+there in whole km/h, `q` whole seconds since the run began and `h` altitude in metres (left out
+when the fixes had none). They feed the heatmap and the
 replay; an 8-hour day adds roughly 40–60 KB. Each segment is simplified on its own (Douglas-Peucker,
 5 m) and the results are concatenated, so slices of `route` by `n` give each segment's line.
 
@@ -147,7 +155,7 @@ generated `schema_v9.dart`; migration test v8→v9 (existing rows keep nulls).
 | `activity_types.dart` | snowboarding: `hasDistance: true, hasLiveTracking: true`; `formatSpeedKmh`, `formatMetersGrouped` ("3,240 m") |
 | `tracking/track_profile.dart` | `TrackProfile.snowboarding` (max 45 m/s, auto-pause speed 0 so it never triggers); `forType` accepts it |
 | `tracking/snow_state.dart` | `SnowKind`, `SnowSegment`, immutable `SnowState` (closed segments, current segment, candidate, signal windows) with getters for every metric in the table above |
-| `tracking/snow_reducer.dart` | `SnowTuning`, `startSnow`, `accumulateSnow(state, fix)`, `pauseSnow`, `resumeSnow`, `replaySnow(accepted)`, `snowDescents(segments)` |
+| `tracking/snow_reducer.dart` | `SnowTuning`, `startSnow`, `accumulateSnow(state, fix)`, `pauseSnow`, `replaySnow(accepted)`, `snowRunCount` |
 | `tracking/snow_summary.dart` | `SnowSummary` and `summarizeSnow(state, accepted, endedAt)`: closes the open segment, simplifies per segment, encodes the route, builds the segment list with altitudes and per-point speed and time; `encodeSegments` / `decodeSegments` |
 | `tracking/snow_review.dart` | read side, on decoded segments: `snowDayStats` (highest / lowest altitude, longest run), `snowBadges` (fastest, longest, most vertical; needs two runs), `compareRuns(descents, metric, order)`, `replayAt(run, routeSlice, seconds)` → interpolated position, speed, altitude; `speedColorStops(minKmh, maxKmh)` → bucket limits for the heatmap |
 

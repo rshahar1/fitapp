@@ -3,11 +3,13 @@ import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/domain/activity_types.dart';
+import 'package:fitapp/domain/tracking/snow_summary.dart';
 import 'package:fitapp/domain/tracking/track_reducer.dart' show elapsedAt;
 import 'package:fitapp/domain/tracking/track_summary.dart';
 import 'package:fitapp/features/tracking/live_track_screen.dart';
 import 'package:fitapp/features/tracking/tracking_controller.dart';
 import 'package:fitapp/features/tracking/widgets/route_map.dart';
+import 'package:fitapp/features/tracking/widgets/snow_time_bar.dart';
 import 'package:fitapp/widgets/guard.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,6 +45,7 @@ class _FinishSheetState extends ConsumerState<_FinishSheet> {
   final _note = TextEditingController();
   late final TrackingLive _live;
   late final TrackSummary _summary;
+  late final SnowSummary? _snow;
   late final Duration _elapsed;
   bool _busy = false;
 
@@ -52,6 +55,7 @@ class _FinishSheetState extends ConsumerState<_FinishSheet> {
     _live = ref.read(trackingControllerProvider) as TrackingLive;
     final ctl = ref.read(trackingControllerProvider.notifier);
     _summary = ctl.previewSummary()!;
+    _snow = ctl.previewSnowSummary();
     _elapsed = elapsedAt(_live.state, ref.read(clockProvider)().toUtc());
   }
 
@@ -61,8 +65,12 @@ class _FinishSheetState extends ConsumerState<_FinishSheet> {
     super.dispose();
   }
 
+  /// Metres for the short-activity check and its message: a snowboarding
+  /// day counts the distance ridden downhill, not the lifts.
+  num get _distanceMeters => _snow?.rideMeters ?? _summary.distanceMeters;
+
   bool get _isShort =>
-      _summary.distanceMeters < shortDistanceMeters || _elapsed < shortDuration;
+      _distanceMeters < shortDistanceMeters || _elapsed < shortDuration;
 
   Future<void> _save() async {
     if (_busy) return;
@@ -73,7 +81,7 @@ class _FinishSheetState extends ConsumerState<_FinishSheet> {
         builder: (context) => AlertDialog(
           title: const Text('Save this short activity?'),
           content: Text(
-            '${formatLiveKm(_summary.distanceMeters)} km in '
+            '${formatLiveKm(_distanceMeters)} km in '
             '${formatClock(_elapsed)}. Save it anyway?',
           ),
           actions: [
@@ -122,6 +130,7 @@ class _FinishSheetState extends ConsumerState<_FinishSheet> {
     final text = Theme.of(context).textTheme;
     final m = context.metrics;
     final speed = usesSpeed(_live.typeId);
+    final snow = _snow;
     final route = [for (final p in _live.points) toLatLng(p)];
     final avg = speed
         ? formatSpeedMps(_live.state.avgSpeedMps)
@@ -146,6 +155,10 @@ class _FinishSheetState extends ConsumerState<_FinishSheet> {
               height: Sizes.mapPreview,
               child: RouteMap(
                 route: route,
+                spans: [
+                  for (final s in _live.liftSpans)
+                    RouteSpan(s.from, s.to, AppColors.routeLift),
+                ],
                 markers: [
                   if (route.isNotEmpty)
                     RouteMarker(route.first, RouteMarkerKind.start),
@@ -155,46 +168,50 @@ class _FinishSheetState extends ConsumerState<_FinishSheet> {
               ),
             ),
             const SizedBox(height: Space.m),
-            Row(
-              children: [
-                Expanded(
-                  child: MetricTile(
-                    label: 'Distance',
-                    value: formatLiveKm(_summary.distanceMeters),
-                    caption: 'km',
-                    color: m.volume,
+            if (snow != null)
+              ..._snowTiles(snow, m)
+            else ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: MetricTile(
+                      label: 'Distance',
+                      value: formatLiveKm(_summary.distanceMeters),
+                      caption: 'km',
+                      color: m.volume,
+                    ),
                   ),
-                ),
-                const SizedBox(width: Space.s),
-                Expanded(
-                  child: MetricTile(
-                    label: 'Time',
-                    value: formatClock(_elapsed),
+                  const SizedBox(width: Space.s),
+                  Expanded(
+                    child: MetricTile(
+                      label: 'Time',
+                      value: formatClock(_elapsed),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: Space.s),
-            Row(
-              children: [
-                Expanded(
-                  child: MetricTile(
-                    label: speed ? 'Avg speed' : 'Avg pace',
-                    value: avg,
-                    caption: speed ? 'km/h' : '/km',
+                ],
+              ),
+              const SizedBox(height: Space.s),
+              Row(
+                children: [
+                  Expanded(
+                    child: MetricTile(
+                      label: speed ? 'Avg speed' : 'Avg pace',
+                      value: avg,
+                      caption: speed ? 'km/h' : '/km',
+                    ),
                   ),
-                ),
-                const SizedBox(width: Space.s),
-                Expanded(
-                  child: MetricTile(
-                    label: 'Climb',
-                    value: '${_summary.elevationGainMeters}',
-                    caption: 'm',
-                    color: m.weight,
+                  const SizedBox(width: Space.s),
+                  Expanded(
+                    child: MetricTile(
+                      label: 'Climb',
+                      value: '${_summary.elevationGainMeters}',
+                      caption: 'm',
+                      color: m.weight,
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
             const SizedBox(height: Space.m),
             TextField(
               controller: _note,
@@ -222,5 +239,55 @@ class _FinishSheetState extends ConsumerState<_FinishSheet> {
         ),
       ),
     );
+  }
+
+  /// Runs, vertical, ride distance, speeds and time as a 3 x 2 grid, then
+  /// the ride / lift / rest split.
+  List<Widget> _snowTiles(SnowSummary snow, MetricColors m) {
+    final tiles = [
+      MetricTile(label: 'Runs', value: '${snow.runCount}'),
+      MetricTile(
+        label: 'Vertical',
+        value: formatGrouped(snow.dropMeters),
+        caption: 'm',
+        color: m.weight,
+      ),
+      MetricTile(
+        label: 'Distance',
+        value: formatLiveKm(snow.rideMeters),
+        caption: 'km',
+        color: m.volume,
+      ),
+      MetricTile(
+        label: 'Max speed',
+        value: formatSpeedMps(snow.maxSpeedMps),
+        caption: 'km/h',
+      ),
+      MetricTile(
+        label: 'Avg speed',
+        value: formatSpeedMps(snow.avgSpeedMps),
+        caption: 'km/h',
+      ),
+      MetricTile(label: 'Time', value: formatClock(_elapsed)),
+    ];
+    return [
+      for (var row = 0; row < 2; row++) ...[
+        if (row > 0) const SizedBox(height: Space.s),
+        Row(
+          children: [
+            for (var col = 0; col < 3; col++) ...[
+              if (col > 0) const SizedBox(width: Space.s),
+              Expanded(child: tiles[row * 3 + col]),
+            ],
+          ],
+        ),
+      ],
+      const SizedBox(height: Space.m),
+      SnowTimeBar(
+        rideSeconds: snow.rideSeconds,
+        liftSeconds: snow.liftSeconds,
+        restSeconds: snow.restSeconds,
+      ),
+    ];
   }
 }

@@ -232,6 +232,15 @@ void main() {
     await unmount(tester);
   });
 
+  testWidgets('Distance section is offered for Snowboarding', (tester) async {
+    await pump(tester, const _Host());
+    await openSheet(tester);
+    await tester.tap(find.text('Snowboarding'));
+    await tester.pump();
+    expect(find.text('DISTANCE'), findsOneWidget);
+    await unmount(tester);
+  });
+
   testWidgets('distance typed in km is stored in metres', (tester) async {
     await pump(tester, const _Host());
     await openSheet(tester);

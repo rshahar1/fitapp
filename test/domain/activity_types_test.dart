@@ -2,6 +2,14 @@ import 'package:fitapp/domain/activity_types.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('formatGrouped', () {
+    expect(formatGrouped(0), '0');
+    expect(formatGrouped(950), '950');
+    expect(formatGrouped(3240), '3,240');
+    expect(formatGrouped(1234567), '1,234,567');
+    expect(formatGrouped(-1500), '-1,500');
+  });
+
   test('initial types in order with stable ids', () {
     expect(activityTypes.map((t) => t.id), [
       'functional',

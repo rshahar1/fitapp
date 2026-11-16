@@ -8,6 +8,7 @@ import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/domain/activity_types.dart';
 import 'package:fitapp/domain/tracking/geo.dart';
 import 'package:fitapp/features/activities/activity_sheet.dart';
+import 'package:fitapp/features/activities/widgets/snow_day_section.dart';
 import 'package:fitapp/features/history/route_thumbnail.dart';
 import 'package:fitapp/features/tracking/widgets/route_map.dart';
 import 'package:fitapp/widgets/guard.dart';
@@ -110,6 +111,7 @@ class _Body extends StatelessWidget {
     final points = decodeRouteOrNull(activity.route);
     final splits = _splits;
     final note = activity.notes;
+    final snow = SnowDaySection.supports(activity);
     return ListView(
       padding: const EdgeInsets.all(Space.m),
       children: [
@@ -118,23 +120,27 @@ class _Body extends StatelessWidget {
           style: text.titleMedium,
         ),
         const SizedBox(height: Space.m),
-        if (points != null) ...[
-          SizedBox(
-            height: Sizes.mapPreview * 1.5,
-            child: RouteMap(
-              route: [for (final p in points) LatLng(p.lat, p.lon)],
-              interactive: true,
-              markers: _markers(points),
+        if (snow)
+          SnowDaySection(activity: activity)
+        else ...[
+          if (points != null) ...[
+            SizedBox(
+              height: Sizes.mapPreview * 1.5,
+              child: RouteMap(
+                route: [for (final p in points) LatLng(p.lat, p.lon)],
+                interactive: true,
+                markers: _markers(points),
+              ),
             ),
-          ),
-          const SizedBox(height: Space.m),
-        ],
-        _Metrics(activity: activity),
-        if (splits.isNotEmpty) ...[
-          const SizedBox(height: Space.l),
-          Text('SPLITS', style: text.labelSmall),
-          const SizedBox(height: Space.s),
-          _Splits(splits: splits),
+            const SizedBox(height: Space.m),
+          ],
+          _Metrics(activity: activity),
+          if (splits.isNotEmpty) ...[
+            const SizedBox(height: Space.l),
+            Text('SPLITS', style: text.labelSmall),
+            const SizedBox(height: Space.s),
+            _Splits(splits: splits),
+          ],
         ],
         if (note != null && note.isNotEmpty) ...[
           const SizedBox(height: Space.l),

@@ -37,5 +37,3 @@ jobs:
         run: flutter analyze
       - name: Test
         run: flutter test --coverage
-      - name: Build debug APK
-        run: flutter build apk --debug

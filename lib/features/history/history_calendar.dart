@@ -1,5 +1,6 @@
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/app/theme/tokens.dart';
+import 'package:fitapp/core/format.dart';
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/domain/calendar.dart';
@@ -28,6 +29,23 @@ class _HistoryCalendarState extends ConsumerState<HistoryCalendar> {
   _CalendarMode _mode = _CalendarMode.week;
   DateTime? _anchor;
   DateTime? _selected;
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(
+      onResume: () => ref
+        ..invalidate(stepAccessProvider)
+        ..invalidate(daySteps),
+    );
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
 
   DateTime get _today => dateOnly(ref.read(clockProvider)().toLocal());
 
@@ -191,7 +209,10 @@ class _HistoryCalendarState extends ConsumerState<HistoryCalendar> {
             ],
           ),
         const SizedBox(height: Space.m),
-        SectionHeader(DateFormat('EEEE d MMMM').format(selected)),
+        SectionHeader(
+          DateFormat('EEEE d MMMM').format(selected),
+          trailing: _DaySteps(day: selected),
+        ),
         if (dayEntries.isEmpty)
           Padding(
             padding: const EdgeInsets.all(Space.m),
@@ -205,6 +226,30 @@ class _HistoryCalendarState extends ConsumerState<HistoryCalendar> {
             children: [for (final e in dayEntries) HistoryEntryRow(entry: e)],
           ),
       ],
+    );
+  }
+}
+
+/// Plain-text step total for [day]; hidden while loading or unavailable.
+class _DaySteps extends ConsumerWidget {
+  const new({required this.day});
+
+  final DateTime day;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final steps = ref.watch(daySteps(day)).value;
+    if (steps == null) return const SizedBox.shrink();
+    final label = formatSteps(steps);
+    return Semantics(
+      container: true,
+      label: 'Steps on ${DateFormat('EEEE d MMMM').format(day)}: $label',
+      excludeSemantics: true,
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.bodyMedium
+            ?.copyWith(color: AppColors.textSecondary, fontFeatures: tabular),
+      ),
     );
   }
 }

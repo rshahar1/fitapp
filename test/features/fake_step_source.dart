@@ -8,6 +8,12 @@ class FakeStepSource implements StepSource {
   int? steps;
   final calls = <String>[];
 
+  /// Per-interval counts keyed by interval start; falls back to [steps].
+  final byStart = <DateTime, int>{};
+
+  /// Every [stepsBetween] interval requested.
+  final intervals = <(DateTime, DateTime)>[];
+
   @override
   Future<StepAccess> access() async => state;
 
@@ -21,5 +27,8 @@ class FakeStepSource implements StepSource {
   Future<void> installHealthConnect() async => calls.add('install');
 
   @override
-  Future<int?> stepsBetween(DateTime start, DateTime end) async => steps;
+  Future<int?> stepsBetween(DateTime start, DateTime end) async {
+    intervals.add((start, end));
+    return byStart[start] ?? steps;
+  }
 }

@@ -2,7 +2,7 @@
 
 **Feature Branch**: `015-step-history`
 **Created**: 2026-11-16
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: (1) Main screen shows today's step count only, placed below the "Templates" section
 (not above it). (2) History: selecting a date shows that day's total step count alongside the

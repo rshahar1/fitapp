@@ -1,15 +1,19 @@
 import 'package:drift/drift.dart' show DatabaseConnection, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/core/step_source.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/activity_repository.dart';
 import 'package:fitapp/data/repositories/exercise_repository.dart';
+import 'package:fitapp/data/repositories/settings_repository.dart';
 import 'package:fitapp/data/repositories/workout_repository.dart';
 import 'package:fitapp/features/history/history_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+
+import 'fake_step_source.dart';
 
 const _incline = '00000000-0000-4000-8000-000000000002';
 
@@ -55,12 +59,25 @@ void main() {
     );
   });
 
-  Future<void> pumpCalendar(WidgetTester tester) async {
+  /// Unmounts the tree and lets drift's stream-cleanup timers fire.
+  Future<void> unmount(WidgetTester tester) async {
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pump(const Duration(milliseconds: 10));
+  }
+
+  Future<void> pumpCalendar(
+    WidgetTester tester, {
+    FakeStepSource? steps,
+  }) async {
     await tester.runAsync(seed);
+    addTearDown(() => unmount(tester));
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           databaseProvider.overrideWithValue(db),
+          if (steps != null) stepSourceProvider.overrideWithValue(steps),
           clockProvider.overrideWithValue(() => DateTime.utc(2026, 11, 13, 12)),
         ],
         child: MaterialApp(theme: buildAppTheme(), home: const HistoryScreen()),
@@ -175,5 +192,136 @@ void main() {
     expect(tester.takeException(), isNull);
     await toMonth(tester);
     expect(tester.takeException(), isNull);
+  });
+
+  group('selected-day steps', () {
+    // Fixed "now": 13 Nov 2026 12:00 UTC (see pumpCalendar).
+    final today = DateTime.utc(2026, 11, 13, 12).toLocal();
+    final todayMidnight = DateTime(today.year, today.month, today.day);
+
+    Future<void> selectDay(WidgetTester tester, String label) async {
+      if (cell(label).evaluate().isEmpty) await toMonth(tester);
+      await tester.ensureVisible(cell(label));
+      await tester.tap(cell(label));
+      await tester.pumpAndSettle();
+    }
+
+    Finder headerSteps() => find.textContaining(RegExp(r'\d steps?$'));
+
+    testWidgets('today shows its total with no icon in the header', (
+      tester,
+    ) async {
+      final src = FakeStepSource()..byStart[todayMidnight] = 8432;
+      await pumpCalendar(tester, steps: src);
+      expect(find.text('8,432 steps'), findsOneWidget);
+      expect(src.intervals.last.$1, todayMidnight);
+      final text = tester.widget<Text>(find.text('8,432 steps'));
+      expect(text.style?.fontFeatures, isNotEmpty);
+      expect(
+        find.descendant(
+          of: find.ancestor(
+            of: find.text('8,432 steps'),
+            matching: find.byType(Row),
+          ),
+          matching: find.byType(Icon),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.bySemanticsLabel(RegExp(r'^Steps on .*: 8,432 steps$')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a day with workouts shows steps above the sessions', (
+      tester,
+    ) async {
+      final src = FakeStepSource()..byStart[DateTime(2026, 11, 5)] = 1000;
+      await pumpCalendar(tester, steps: src);
+      await selectDay(tester, 'Thursday 5 November');
+      expect(find.text('1,000 steps'), findsOneWidget);
+      expect(find.text('Incline Dumbbell Bench Press'), findsOneWidget);
+    });
+
+    testWidgets('a no-training day still shows steps', (tester) async {
+      final src = FakeStepSource()..byStart[DateTime(2026, 11, 4)] = 77;
+      await pumpCalendar(tester, steps: src);
+      await selectDay(tester, 'Wednesday 4 November');
+      expect(find.text('No training'), findsOneWidget);
+      expect(find.text('77 steps'), findsOneWidget);
+    });
+
+    testWidgets('zero and one read "0 steps" and "1 step"', (tester) async {
+      final src = FakeStepSource()
+        ..steps = 0
+        ..byStart[DateTime(2026, 11, 4)] = 1;
+      await pumpCalendar(tester, steps: src);
+      expect(find.text('0 steps'), findsOneWidget);
+      await selectDay(tester, 'Wednesday 4 November');
+      expect(find.text('1 step'), findsOneWidget);
+      expect(find.text('0 steps'), findsNothing);
+    });
+
+    testWidgets('switching days shows only the selected day', (tester) async {
+      final src = FakeStepSource()
+        ..byStart[DateTime(2026, 11, 4)] = 400
+        ..byStart[DateTime(2026, 11, 5)] = 500;
+      await pumpCalendar(tester, steps: src);
+      await selectDay(tester, 'Wednesday 4 November');
+      expect(find.text('400 steps'), findsOneWidget);
+      await selectDay(tester, 'Thursday 5 November');
+      expect(find.text('500 steps'), findsOneWidget);
+      expect(find.text('400 steps'), findsNothing);
+    });
+
+    testWidgets('hidden when steps are turned off', (tester) async {
+      final src = FakeStepSource();
+      await tester.runAsync(
+        () => SettingsRepository(db).setStepsEnabled(false),
+      );
+      await pumpCalendar(tester, steps: src);
+      expect(headerSteps(), findsNothing);
+      expect(src.intervals, isEmpty);
+    });
+
+    testWidgets('hidden when access is not granted', (tester) async {
+      final src = FakeStepSource(state: StepAccess.notGranted);
+      await pumpCalendar(tester, steps: src);
+      expect(headerSteps(), findsNothing);
+      expect(src.intervals, isEmpty);
+    });
+
+    testWidgets('hidden on a read failure', (tester) async {
+      final src = FakeStepSource(steps: null);
+      await pumpCalendar(tester, steps: src);
+      expect(headerSteps(), findsNothing);
+    });
+
+    testWidgets('hidden for a future day without a read', (tester) async {
+      final src = FakeStepSource();
+      await pumpCalendar(tester, steps: src);
+      await toMonth(tester);
+      await selectDay(tester, 'Sunday 15 November');
+      expect(headerSteps(), findsNothing);
+      expect(
+        src.intervals.every((i) => i.$1 != DateTime(2026, 11, 15)),
+        isTrue,
+      );
+    });
+
+    testWidgets('hidden for a day older than 30 days without a read', (
+      tester,
+    ) async {
+      final src = FakeStepSource();
+      await pumpCalendar(tester, steps: src);
+      await toMonth(tester);
+      for (var i = 0; i < 2; i++) {
+        await tester.tap(find.byTooltip('Previous month'));
+        await tester.pumpAndSettle();
+      }
+      await selectDay(tester, 'Wednesday 16 September');
+      expect(headerSteps(), findsNothing);
+      expect(src.intervals.every((i) => i.$1 != DateTime(2026, 9, 16)), isTrue);
+    });
   });
 }

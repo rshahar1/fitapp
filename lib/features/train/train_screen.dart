@@ -42,7 +42,6 @@ class TrainScreen extends ConsumerWidget {
             Text('Train', style: text.headlineLarge),
             const SizedBox(height: Space.m),
             const _HeroCard(),
-            const StepsCard(),
             SectionHeader(
               'Templates',
               trailing: TextButton(
@@ -69,6 +68,7 @@ class TrainScreen extends ConsumerWidget {
                     onStart: () => actions.startGym(context, templateId: t.id),
                   ),
                 ),
+            const StepsCard(),
             const SizedBox(height: Space.m),
             Row(
               children: [

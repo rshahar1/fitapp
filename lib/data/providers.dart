@@ -263,5 +263,7 @@ final daySteps = FutureProvider.autoDispose.family<int?, DateTime>((
   if (window == null) return null;
   final access = await ref.watch(stepAccessProvider.future);
   if (access != StepAccess.granted) return null;
-  return ref.read(stepSourceProvider).stepsBetween(window.start, window.end);
+  return await ref
+      .read(stepSourceProvider)
+      .stepsBetween(window.start, window.end);
 });

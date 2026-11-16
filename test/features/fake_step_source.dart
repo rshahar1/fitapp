@@ -26,6 +26,19 @@ class FakeStepSource implements StepSource {
   @override
   Future<void> installHealthConnect() async => calls.add('install');
 
+  bool distanceGranted = true;
+  double? meters;
+
+  @override
+  Future<bool> distanceAccess() async => distanceGranted;
+
+  @override
+  Future<bool> requestDistanceAccess() async => distanceGranted = true;
+
+  @override
+  Future<double?> distanceBetween(DateTime start, DateTime end) async =>
+      distanceGranted ? meters : null;
+
   @override
   Future<int?> stepsBetween(DateTime start, DateTime end) async {
     intervals.add((start, end));

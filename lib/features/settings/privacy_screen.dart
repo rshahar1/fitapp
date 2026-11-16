@@ -38,8 +38,8 @@ class PrivacyScreen extends StatelessWidget {
         children: [
           section(
             'What FitApp reads',
-            'Your daily step count from Health Connect, where Google Fit and '
-                'other apps share it. Access is read-only and limited to steps.',
+            'Your daily step count and distance from Health Connect, where Google Fit and '
+                'other apps share it. Access is read-only and limited to steps and distance.',
           ),
           section(
             'What FitApp does not do',

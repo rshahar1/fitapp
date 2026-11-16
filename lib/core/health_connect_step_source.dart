@@ -8,6 +8,8 @@ import 'package:health/health.dart';
 const _timeout = Duration(seconds: 5);
 const _types = [HealthDataType.STEPS];
 const _perms = [HealthDataAccess.READ];
+const _distanceTypes = [HealthDataType.DISTANCE_DELTA];
+const _distancePerms = [HealthDataAccess.READ];
 
 /// Production [StepSource] backed by Health Connect (Android only).
 class HealthConnectStepSource implements StepSource {
@@ -68,7 +70,13 @@ class HealthConnectStepSource implements StepSource {
     try {
       await _configure().timeout(_timeout);
       // The permission dialog waits on the user: no timeout here.
-      return await _health.requestAuthorization(_types, permissions: _perms);
+      // Steps and distance together; steps access is judged on steps alone, so
+      // a refused distance permission never hides the step count.
+      await _health.requestAuthorization(
+        [..._types, ..._distanceTypes],
+        permissions: [..._perms, ..._distancePerms],
+      );
+      return await _health.hasPermissions(_types, permissions: _perms) == true;
     } on Object catch (e, s) {
       _log('requestAccess', e, s);
       return false;
@@ -96,6 +104,66 @@ class HealthConnectStepSource implements StepSource {
           .timeout(_timeout);
     } on Object catch (e, s) {
       _log('stepsBetween', e, s);
+      return null;
+    }
+  }
+
+  @override
+  Future<bool> distanceAccess() async {
+    if (!_isAndroid) return false;
+    try {
+      await _configure().timeout(_timeout);
+      final granted = await _health
+          .hasPermissions(_distanceTypes, permissions: _distancePerms)
+          .timeout(_timeout);
+      return granted == true;
+    } on Object catch (e, s) {
+      _log('distanceAccess', e, s);
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> requestDistanceAccess() async {
+    if (!_isAndroid) return false;
+    try {
+      await _configure().timeout(_timeout);
+      // The permission dialog waits on the user: no timeout here.
+      return await _health.requestAuthorization(
+        _distanceTypes,
+        permissions: _distancePerms,
+      );
+    } on Object catch (e, s) {
+      _log('requestDistanceAccess', e, s);
+      return false;
+    }
+  }
+
+  @override
+  Future<double?> distanceBetween(DateTime start, DateTime end) async {
+    if (!_isAndroid) return null;
+    try {
+      await _configure().timeout(_timeout);
+      final seconds = end.difference(start).inSeconds;
+      if (seconds <= 0) return 0;
+      // One bucket over the whole window: Health Connect's aggregate
+      // de-duplicates overlapping sources (phone and watch).
+      final points = await _health
+          .getHealthIntervalDataFromTypes(
+            startDate: start,
+            endDate: end,
+            types: _distanceTypes,
+            interval: seconds,
+          )
+          .timeout(_timeout);
+      var meters = 0.0;
+      for (final p in points) {
+        final v = p.value;
+        if (v is NumericHealthValue) meters += v.numericValue.toDouble();
+      }
+      return meters;
+    } on Object catch (e, s) {
+      _log('distanceBetween', e, s);
       return null;
     }
   }

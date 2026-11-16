@@ -210,6 +210,14 @@ void main() {
       );
     });
 
+    testWidgets('shows km after the steps in the day header', (tester) async {
+      final src = FakeStepSource()
+        ..byStart[todayMidnight] = 8432
+        ..meters = 6213;
+      await pumpCalendar(tester, steps: src);
+      expect(find.text('8,432 steps · 6.21 km'), findsOneWidget);
+    });
+
     testWidgets('a day with workouts shows steps above the sessions', (
       tester,
     ) async {

@@ -34,7 +34,9 @@ class _HistoryCalendarState extends ConsumerState<HistoryCalendar> {
     _lifecycle = AppLifecycleListener(
       onResume: () => ref
         ..invalidate(stepAccessProvider)
-        ..invalidate(daySteps),
+        ..invalidate(daySteps)
+        ..invalidate(dayDistance)
+        ..invalidate(distanceAccessProvider),
     );
   }
 
@@ -218,7 +220,10 @@ class _DaySteps extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final steps = ref.watch(daySteps(day)).value;
     if (steps == null) return const SizedBox.shrink();
-    final label = formatSteps(steps);
+    final meters = ref.watch(dayDistance(day)).value;
+    final label = meters == null
+        ? formatSteps(steps)
+        : '${formatSteps(steps)} · ${formatKm(meters)}';
     return Semantics(
       container: true,
       label: 'Steps on ${DateFormat('EEEE d MMMM').format(day)}: $label',

@@ -17,6 +17,16 @@ abstract interface class StepSource {
 
   /// Total steps in [start, end); null when unavailable or on error.
   Future<int?> stepsBetween(DateTime start, DateTime end);
+
+  /// Whether the separate distance read permission is granted.
+  Future<bool> distanceAccess();
+
+  /// Prompts for the distance permission only; true when it is granted.
+  Future<bool> requestDistanceAccess();
+
+  /// Total distance in metres in [start, end); null when unavailable, not
+  /// granted, or on error.
+  Future<double?> distanceBetween(DateTime start, DateTime end);
 }
 
 /// Used on unsupported platforms and in tests.
@@ -34,6 +44,15 @@ class NoopStepSource implements StepSource {
 
   @override
   Future<int?> stepsBetween(DateTime start, DateTime end) async => null;
+
+  @override
+  Future<bool> distanceAccess() async => false;
+
+  @override
+  Future<bool> requestDistanceAccess() async => false;
+
+  @override
+  Future<double?> distanceBetween(DateTime start, DateTime end) async => null;
 }
 
 /// Local midnight of [now]'s calendar day.

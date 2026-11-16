@@ -249,3 +249,19 @@ void requestSyncFrom(WidgetRef ref) => _request(ref.read(syncServiceProvider));
 void _request(SyncService? sync) {
   if (sync != null) unawaited(sync.syncNow());
 }
+
+/// Steps on one local day (key: date-only local DateTime); null when off, not
+/// granted, outside the readable window, or unreadable. Never reads the
+/// source in those cases.
+final daySteps = FutureProvider.autoDispose.family<int?, DateTime>((
+  ref,
+  day,
+) async {
+  final enabled = await ref.watch(stepsEnabledProvider.future);
+  if (!enabled) return null;
+  final window = stepWindow(day, ref.read(clockProvider)());
+  if (window == null) return null;
+  final access = await ref.watch(stepAccessProvider.future);
+  if (access != StepAccess.granted) return null;
+  return ref.read(stepSourceProvider).stepsBetween(window.start, window.end);
+});

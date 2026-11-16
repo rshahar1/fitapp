@@ -42,6 +42,25 @@ DateTime todayStart(DateTime now) {
   return DateTime(local.year, local.month, local.day);
 }
 
+/// Days back from today whose steps can be read (Health Connect default).
+const stepHistoryDays = 30;
+
+/// The interval to read for local calendar [day], or null when [day] is in the
+/// future or older than [stepHistoryDays]. Today ends at [now]; earlier days
+/// end at the next local midnight (built by calendar arithmetic, DST-safe).
+({DateTime start, DateTime end})? stepWindow(DateTime day, DateTime now) {
+  final today = todayStart(now);
+  final start = DateTime(day.year, day.month, day.day);
+  final oldest = DateTime(today.year, today.month, today.day - stepHistoryDays);
+  if (start.isAfter(today) || start.isBefore(oldest)) return null;
+  final nextMidnight = DateTime(start.year, start.month, start.day + 1);
+  final local = now.toLocal();
+  return (
+    start: start,
+    end: nextMidnight.isAfter(local) ? local : nextMidnight,
+  );
+}
+
 /// Overridden in main() with the Health Connect implementation on Android.
 final stepSourceProvider = Provider<StepSource>(
   (ref) => const NoopStepSource(),

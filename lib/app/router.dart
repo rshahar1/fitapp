@@ -1,4 +1,5 @@
 import 'package:fitapp/features/activities/activity_detail_screen.dart';
+import 'package:fitapp/features/activities/snow_replay_screen.dart';
 import 'package:fitapp/features/exercises/exercise_library_screen.dart';
 import 'package:fitapp/features/exercises/exercise_picker_screen.dart';
 import 'package:fitapp/features/history/history_screen.dart';
@@ -119,6 +120,14 @@ GoRouter buildRouter() => GoRouter(
       path: '/activity/:id',
       builder: (_, state) =>
           ActivityDetailScreen(activityId: state.pathParameters['id']!),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootKey,
+      path: '/activity/:id/replay/:run',
+      builder: (_, state) => SnowReplayScreen(
+        activityId: state.pathParameters['id']!,
+        runNumber: int.tryParse(state.pathParameters['run']!) ?? 1,
+      ),
     ),
     GoRoute(
       parentNavigatorKey: _rootKey,

@@ -17,6 +17,18 @@ abstract final class AppColors {
   static const metricVolume = Color(0xFF64D2FF);
   static const metricWeight = Color(0xFFFF9F0A);
 
+  /// Lift stretches of a snowboarding route (feature 017).
+  static const routeLift = Color(0xFF8E8E93);
+
+  /// Speed heatmap of a snowboarding route, slowest to fastest.
+  static const heat = [
+    Color(0xFF64D2FF),
+    Color(0xFF11D16C),
+    Color(0xFFFFD60A),
+    Color(0xFFFF9F0A),
+    Color(0xFFFF453A),
+  ];
+
   /// Backdrop header wash: background at 45 % alpha.
   static const backdropHeaderScrim = Color(0x73000000);
 

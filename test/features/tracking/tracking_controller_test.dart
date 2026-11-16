@@ -1,6 +1,8 @@
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/tracking/location_source.dart';
+import 'package:fitapp/domain/tracking/snow_reducer.dart';
+import 'package:fitapp/domain/tracking/snow_state.dart';
 import 'package:fitapp/domain/tracking/track_reducer.dart' as reducer;
 import 'package:fitapp/domain/tracking/track_sample.dart';
 import 'package:fitapp/features/tracking/tracking_controller.dart';
@@ -9,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../data/fake_location_source.dart';
 import '../../data/helpers.dart';
+import '../../domain/tracking/snow_fixtures.dart';
 import '../../domain/tracking/track_fixtures.dart';
 
 TrackSample _fix(int sec, {double accuracy = 5, double? lat}) => TrackSample(
@@ -263,6 +266,128 @@ void main() {
     c = makeContainer();
     await ctl().recover();
     expect((ui() as TrackingLive).points, hasLength(10));
+  });
+
+  group('snowboarding', () {
+    Future<void> goSnow(SnowFixture f) async {
+      now = snowStart;
+      await ctl().prepare('snowboarding');
+      source.emit(f.samples.first);
+      await ctl().startSession();
+    }
+
+    void play(Iterable<TrackSample> samples) {
+      for (final p in samples) {
+        now = p.t;
+        source.emit(p);
+      }
+    }
+
+    test('live state carries runs, lifts and the lift spans', () async {
+      final f = buildSnowDay(plainDay);
+      await goSnow(f);
+      expect((ui() as TrackingLive).snow, isNotNull);
+      play(f.samples);
+      final live = ui() as TrackingLive;
+      final snow = live.snow!;
+      expect(snowRunCount(snow), 3);
+      expect(snow.dropMeters, closeTo(f.dropMeters, f.dropMeters * 0.05));
+      expect(live.liftSpans, hasLength(3));
+      for (final span in live.liftSpans) {
+        expect(span.to, greaterThan(span.from));
+        expect(span.to, lessThan(live.points.length));
+        // A lift climbs north in the fixture.
+        expect(
+          live.points[span.to].lat,
+          greaterThan(live.points[span.from].lat),
+        );
+      }
+      // No auto-pause: standing in the queue never pauses the session.
+      expect(live.state.autoPaused, isFalse);
+    });
+
+    test('finish stores what the preview showed', () async {
+      final f = buildSnowDay(plainDay);
+      await goSnow(f);
+      play(f.samples);
+      final preview = ctl().previewSnowSummary()!;
+      expect(preview.runCount, 3);
+      final id = await ctl().finish();
+      final a = (await h.db.select(h.db.activities).get()).single;
+      expect(a.id, id);
+      expect(a.typeId, 'snowboarding');
+      expect(a.runCount, preview.runCount);
+      expect(a.verticalDropMeters, preview.dropMeters);
+      expect(a.distanceMeters, preview.rideMeters);
+      expect(a.movingSeconds, preview.rideSeconds);
+      expect(a.liftSeconds, preview.liftSeconds);
+      expect(a.restSeconds, preview.restSeconds);
+      expect(a.maxSpeedMps, preview.maxSpeedMps);
+      expect(a.route, preview.route);
+      expect(await stored(), isEmpty);
+    });
+
+    test('recover rebuilds the same snow state, pauses included', () async {
+      final f = buildSnowDay(const [
+        SnowLeg.stand(60),
+        ...snowCycle,
+        SnowLeg.lift(200),
+      ]);
+      await goSnow(f);
+      play(f.samples.take(500));
+      await ctl().pause();
+      play(f.samples.skip(500).take(100));
+      await ctl().resume();
+      play(f.samples.skip(600));
+      await settle();
+      final before = ui() as TrackingLive;
+      expect(before.snow!.kind, SnowKind.lift);
+      c.dispose();
+
+      c = makeContainer();
+      await ctl().recover();
+      final after = ui() as TrackingLive;
+      final a = before.snow!;
+      final b = after.snow!;
+      expect(b.count, a.count);
+      expect(b.kind, a.kind);
+      expect(b.segments.length, a.segments.length);
+      expect(b.rideSeconds, a.rideSeconds);
+      expect(b.liftSeconds, a.liftSeconds);
+      expect(b.restSeconds, a.restSeconds);
+      expect(b.rideMeters, closeTo(a.rideMeters, 1e-6));
+      expect(b.dropMeters, closeTo(a.dropMeters, 1e-6));
+      expect(snowRunCount(b), snowRunCount(a));
+      expect(after.liftSpans, before.liftSpans);
+      expect(after.points.length, before.points.length);
+    });
+
+    test('other activities have no snow state or preview', () async {
+      await goLive();
+      source.emit(_fix(1));
+      final live = ui() as TrackingLive;
+      expect(live.snow, isNull);
+      expect(live.liftSpans, isEmpty);
+      expect(ctl().previewSnowSummary(), isNull);
+    });
+
+    test('no preview without a session', () {
+      expect(ctl().previewSnowSummary(), isNull);
+    });
+
+    test('the live route stays within 2,000 points on a long day', () async {
+      final f = buildSnowDay(longDay(1));
+      expect(f.samples.length, greaterThan(3000));
+      c.dispose();
+      c = makeContainer(flush: const Duration(hours: 1), count: 100000);
+      await goSnow(f);
+      play(f.samples);
+      final live = ui() as TrackingLive;
+      expect(live.points.length, lessThanOrEqualTo(2000));
+      expect(live.points.length, greaterThan(500));
+      expect(snowRunCount(live.snow!), 4);
+      expect(live.liftSpans, hasLength(4));
+    });
   });
 
   group('location service and retry', () {

@@ -66,11 +66,23 @@ class HistoryActivityRow extends StatelessWidget {
     final minutes = activity.durationMinutes;
     final meters = activity.distanceMeters;
     final note = activity.notes;
+    final runs = activity.runCount;
+    final drop = activity.verticalDropMeters;
+    final snow =
+        activity.typeId == 'snowboarding' &&
+        activity.source == 'gps' &&
+        runs != null &&
+        drop != null;
     final subtitle = [
       label,
-      if (meters != null) formatDistanceKm(meters),
+      if (snow) ...[
+        if (runs == 1) '1 run' else '$runs runs',
+        '${formatMetersGrouped(drop)} ↓',
+      ] else ...[
+        if (meters != null) formatDistanceKm(meters),
+      ],
       if (minutes != null) formatActivityMinutes(minutes),
-      if (meters != null && minutes != null)
+      if (!snow && meters != null && minutes != null)
         ?switch (activity.typeId) {
           'running' => formatPace(meters, minutes),
           'cycling' => formatSpeed(meters, minutes),

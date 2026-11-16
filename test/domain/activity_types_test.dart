@@ -2,6 +2,14 @@ import 'package:fitapp/domain/activity_types.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('formatGrouped', () {
+    expect(formatGrouped(0), '0');
+    expect(formatGrouped(950), '950');
+    expect(formatGrouped(3240), '3,240');
+    expect(formatGrouped(1234567), '1,234,567');
+    expect(formatGrouped(-1500), '-1,500');
+  });
+
   test('initial types in order with stable ids', () {
     expect(activityTypes.map((t) => t.id), [
       'functional',
@@ -23,9 +31,10 @@ void main() {
     expect(activityTypes.map((t) => t.id).toSet(), hasLength(5));
   });
 
-  test('hasLiveTracking only for running and cycling', () {
+  test('hasLiveTracking only for running, cycling and snowboarding', () {
     expect(activityTypes.where((t) => t.hasLiveTracking).map((t) => t.id), [
       'cycling',
+      'snowboarding',
       'running',
     ]);
   });
@@ -134,9 +143,10 @@ void main() {
     });
   });
 
-  test('hasDistance only for running and cycling', () {
+  test('hasDistance only for running, cycling and snowboarding', () {
     expect(activityTypes.where((t) => t.hasDistance).map((t) => t.id), [
       'cycling',
+      'snowboarding',
       'running',
     ]);
   });
@@ -162,8 +172,13 @@ void main() {
     });
 
     test('rejected on known types without distance', () {
-      expect(() => v('snowboarding', 5000), throwsArgumentError);
+      expect(() => v('functional', 5000), throwsArgumentError);
       expect(() => v('pilates', 5000), throwsArgumentError);
+    });
+
+    test('accepted on snowboarding', () {
+      expect(v('snowboarding', 5000).distanceMeters, 5000);
+      expect(v('snowboarding', null).distanceMeters, isNull);
     });
 
     test('unknown types may keep a distance', () {
@@ -197,5 +212,23 @@ void main() {
     expect(formatPace(5200, 28), '5:23 /km');
     expect(formatPace(10000, 50), '5:00 /km');
     expect(formatSpeed(36750, 90), '24.5 km/h');
+  });
+
+  test('snowboarding has distance and live tracking', () {
+    final t = activityTypeById('snowboarding')!;
+    expect(t.hasDistance, isTrue);
+    expect(t.hasLiveTracking, isTrue);
+  });
+
+  test('formatSpeedKmh', () {
+    expect(formatSpeedKmh(17.4), '62.6 km/h');
+    expect(formatSpeedKmh(0), '0.0 km/h');
+  });
+
+  test('formatMetersGrouped', () {
+    expect(formatMetersGrouped(950), '950 m');
+    expect(formatMetersGrouped(3240), '3,240 m');
+    expect(formatMetersGrouped(12000), '12,000 m');
+    expect(formatMetersGrouped(1234567), '1,234,567 m');
   });
 }

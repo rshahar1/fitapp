@@ -65,3 +65,36 @@ begin
          > '2020-01-01', 'server_updated_at ignored';
 end $$;
 reset role;
+
+-- Feature 017: snowboarding metrics round-trip; an older client's push without them leaves them null.
+set role authenticated;
+select t_as('00000000-0000-0000-0000-00000000000a');
+
+do $$
+declare
+  r jsonb;
+begin
+  r := sync_push(jsonb_build_object('upserts', jsonb_build_object('activities', jsonb_build_array(
+    jsonb_build_object('id', '40000000-0000-4000-8000-000000000101', 'type_id', 'snowboarding',
+      'started_at', '2026-11-16T08:00:00Z', 'duration_minutes', 240, 'source', 'gps',
+      'vertical_drop_meters', 3200, 'run_count', 11, 'max_speed_mps', 22.5, 'lift_seconds', 5400,
+      'rest_seconds', 1800, 'segments', '[{"k":"run"}]', 'updated_at', '2026-11-16T12:00:00Z')))));
+  assert (r ->> 'applied')::int = 1 and jsonb_array_length(r -> 'rejected') = 0, 'snowboard row applied: ' || r::text;
+  assert (select vertical_drop_meters from activities where id = '40000000-0000-4000-8000-000000000101') = 3200, 'vertical drop stored';
+  assert (select run_count from activities where id = '40000000-0000-4000-8000-000000000101') = 11, 'run count stored';
+  assert (select max_speed_mps from activities where id = '40000000-0000-4000-8000-000000000101') = 22.5, 'max speed stored';
+  assert (select lift_seconds from activities where id = '40000000-0000-4000-8000-000000000101') = 5400, 'lift seconds stored';
+  assert (select rest_seconds from activities where id = '40000000-0000-4000-8000-000000000101') = 1800, 'rest seconds stored';
+  assert (select segments from activities where id = '40000000-0000-4000-8000-000000000101') = '[{"k":"run"}]', 'segments stored';
+
+  -- Older client: no snowboard keys, still accepted, columns stay null.
+  r := sync_push(jsonb_build_object('upserts', jsonb_build_object('activities', jsonb_build_array(
+    jsonb_build_object('id', '40000000-0000-4000-8000-000000000102', 'type_id', 'running',
+      'started_at', '2026-11-16T07:00:00Z', 'duration_minutes', 30, 'source', 'manual',
+      'updated_at', '2026-11-16T07:30:00Z')))));
+  assert (r ->> 'applied')::int = 1 and jsonb_array_length(r -> 'rejected') = 0, 'old-client row applied: ' || r::text;
+  assert (select vertical_drop_meters is null and run_count is null and max_speed_mps is null
+                 and lift_seconds is null and rest_seconds is null and segments is null
+          from activities where id = '40000000-0000-4000-8000-000000000102'), 'snowboard columns null';
+end $$;
+reset role;

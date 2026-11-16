@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/domain/activity_types.dart';
+import 'package:fitapp/domain/tracking/snow_reducer.dart';
+import 'package:fitapp/domain/tracking/snow_summary.dart';
 import 'package:fitapp/domain/tracking/track_profile.dart';
 import 'package:fitapp/domain/tracking/track_reducer.dart';
 import 'package:fitapp/domain/tracking/track_sample.dart';
@@ -182,8 +184,27 @@ class TrackingRepository {
     pauses: pausesOf(row, points),
   );
 
+  /// The fixes of [accepted] the snow reducer is fed: those not flagged
+  /// as received during a manual pause.
+  static List<TrackSample> snowFed(List<TrackSample> accepted) => [
+    for (final s in accepted)
+      if (!s.paused) s,
+  ];
+
+  /// The stored form of a snowboarding day made of the [accepted] fixes.
+  static SnowSummary snowSummary(
+    List<TrackSample> accepted, {
+    required DateTime startedAt,
+  }) => summarizeSnow(
+    replaySnow(accepted),
+    snowFed(accepted),
+    startedAt: startedAt.toUtc(),
+  );
+
   /// Turns the session into an activity (source 'gps') and deletes its
   /// points and the session, all in one transaction. Returns the activity id.
+  /// A snowboarding day stores its ride distance and time, the snowboarding
+  /// metrics and the segment list instead of climb and splits.
   Future<String> finish(
     String sessionId, {
     required DateTime endedAt,
@@ -197,8 +218,11 @@ class TrackingRepository {
     final state = replay(started, points, profile, pauses: pauses);
     final accepted = acceptedSamples(started, points, profile, pauses: pauses);
     final summary = summarize(state, accepted, endedAt: endedAt.toUtc());
+    final snow = row.typeId == 'snowboarding'
+        ? snowSummary(accepted, startedAt: started)
+        : null;
     final now = _db.now();
-    final distance = summary.distanceMeters;
+    final distance = snow?.rideMeters ?? summary.distanceMeters;
     final v = validateActivity(
       typeId: row.typeId,
       startedAt: started,
@@ -219,10 +243,20 @@ class TrackingRepository {
             distanceMeters: Value(v.distanceMeters),
             notes: Value(v.notes),
             source: const Value('gps'),
-            movingSeconds: Value(summary.movingSeconds),
-            elevationGainMeters: Value(summary.elevationGainMeters),
-            route: Value(summary.route),
-            splits: Value(jsonEncode(summary.splits)),
+            movingSeconds: Value(snow?.rideSeconds ?? summary.movingSeconds),
+            elevationGainMeters: Value(
+              snow == null ? summary.elevationGainMeters : null,
+            ),
+            route: Value(snow?.route ?? summary.route),
+            splits: Value(snow == null ? jsonEncode(summary.splits) : null),
+            verticalDropMeters: Value(snow?.dropMeters),
+            runCount: Value(snow?.runCount),
+            maxSpeedMps: Value(snow?.maxSpeedMps),
+            liftSeconds: Value(snow?.liftSeconds),
+            restSeconds: Value(snow?.restSeconds),
+            segments: Value(
+              snow == null ? null : encodeSnowRecords(snow.records),
+            ),
             updatedAt: now,
           ),
         );

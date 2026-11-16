@@ -1,5 +1,17 @@
 <!--
 Sync Impact Report
+- Version change: 1.7.0 → 1.8.0 (feature 017, live snowboarding tracking, owner request
+  2026-11-16)
+- Modified principles: VI (a saved snowboarding day's per-segment breakdown is backed up with its
+  route to the user's own account, like splits); VII (live GPS tracking for snowboarding with
+  automatic run / lift / rest detection, speed, vertical drop and run count is in scope, with a
+  speed heatmap, Winter and Satellite map styles, 2D run replay and run comparison for review;
+  barometer-based altitude, lift, resort or piste names, 3D replay, heart rate, friends and live
+  location sharing remain out of scope)
+- Added sections: none | Removed sections: none
+- Deferred TODOs: none
+
+Previous report (1.7.0)
 - Version change: 1.6.0 → 1.7.0 (feature 015, step totals per day in History, owner request
   2026-11-16)
 - Modified principles: VII (a selected day's step total in the History calendar is in scope, read
@@ -178,7 +190,7 @@ Rationale: the user is sweaty, distracted and between sets; mis-taps corrupt dat
 - Backend URL and anon key come from `--dart-define-from-file` (`env/dev.json`, git-ignored); the
   service-role key MUST never ship in the app or the repo.
 - Raw GPS fixes and in-progress tracking sessions never leave the device. A saved activity's
-  simplified route and splits are backed up only to the signed-in user's own account. Apart from
+  simplified route, splits and snowboarding segment breakdown are backed up only to the signed-in user's own account. Apart from
   sync, the only network traffic live tracking adds is map tile requests to the tile provider. The map key is read from `--dart-define-from-file`
   (`MAP_TILES_KEY` in `env/dev.json`, git-ignored); without it the app still works and draws routes
   on a plain background.
@@ -204,9 +216,14 @@ Rationale: a personal health log is private data; leaked keys are irreversible.
   2026-11-14) is in scope. Today's step total read from Android Health Connect (feature 014, owner
   approval 2026-11-15; this is how Google Fit data reaches the app) is in scope, on by default
   with a Settings switch, new data only; a selected day's total in the History calendar (feature
-  015, owner request 2026-11-16) is in scope for the last 30 days. Snowboarding tracking, HealthKit, writing to Health
-  Connect, other health data types, step goals and charts, GPX export, miles and offline tile
-  download remain out of scope until the owner requests them.
+  015, owner request 2026-11-16) is in scope for the last 30 days. Live GPS tracking for
+  snowboarding (feature 017, owner request 2026-11-16) with automatic run / lift / rest
+  detection, current / average / max speed, ride distance, vertical drop and run count is in
+  scope, using GPS altitude only, together with its review tools: speed heatmap on the route,
+  Winter and Satellite map styles from the same tile provider, 2D run replay, run comparison and
+  best-run badges. Barometer-based altitude, lift, resort or piste names, 3D maps and replay,
+  heart rate, HealthKit, writing to Health Connect, other health data types, step goals and charts, GPX
+  export, miles and offline tile download remain out of scope until the owner requests them.
 - Phase 2 cloud backup and sync with Google sign-in (feature 013, owner approval 2026-11-14) is in
   scope, Android only. Apple Sign-In, email magic link, live push between devices and any sharing
   between users remain out of scope until the owner requests them.
@@ -245,4 +262,4 @@ Rationale: the owner explicitly dropped these; speculative code is maintenance d
   version (MAJOR: principle removed/redefined; MINOR: principle/section added; PATCH: wording).
 - Reviews verify compliance with principles II, III and VI on every milestone.
 
-**Version**: 1.7.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-16
+**Version**: 1.8.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-16

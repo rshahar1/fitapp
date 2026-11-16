@@ -219,14 +219,23 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('Distance section only for running and cycling', (tester) async {
+  testWidgets('Distance section only for distance types', (tester) async {
     await pump(tester, const _Host());
     await openSheet(tester);
     expect(find.text('DISTANCE'), findsNothing);
-    await tester.tap(find.text('Snowboarding'));
+    await tester.tap(find.text('Functional training'));
     await tester.pump();
     expect(find.text('DISTANCE'), findsNothing);
     await tester.tap(find.text('Running'));
+    await tester.pump();
+    expect(find.text('DISTANCE'), findsOneWidget);
+    await unmount(tester);
+  });
+
+  testWidgets('Distance section is offered for Snowboarding', (tester) async {
+    await pump(tester, const _Host());
+    await openSheet(tester);
+    await tester.tap(find.text('Snowboarding'));
     await tester.pump();
     expect(find.text('DISTANCE'), findsOneWidget);
     await unmount(tester);

@@ -57,3 +57,23 @@ begin
   assert (select count(*) from sets) = 1, 'the valid set is stored';
 end $$;
 reset role;
+
+-- Feature 017: snowboarding columns are bounded.
+set role authenticated;
+select t_as('00000000-0000-0000-0000-00000000000a');
+
+do $$
+declare
+  r jsonb;
+begin
+  r := sync_push(jsonb_build_object('upserts', jsonb_build_object('activities', jsonb_build_array(
+    jsonb_build_object('id', '40000000-0000-4000-8000-000000000201', 'type_id', 'snowboarding',
+      'started_at', now(), 'source', 'gps', 'segments', repeat('s', 300000), 'run_count', 5, 'updated_at', now()),
+    jsonb_build_object('id', '40000000-0000-4000-8000-000000000202', 'type_id', 'snowboarding',
+      'started_at', now(), 'source', 'gps', 'segments', repeat('s', 300001), 'updated_at', now()),
+    jsonb_build_object('id', '40000000-0000-4000-8000-000000000203', 'type_id', 'snowboarding',
+      'started_at', now(), 'source', 'gps', 'run_count', -1, 'updated_at', now())))));
+  assert (r ->> 'applied')::int = 1, 'only the valid snowboard row applied: ' || r::text;
+  assert jsonb_array_length(r -> 'rejected') = 2, 'oversized segments and negative run_count rejected: ' || r::text;
+end $$;
+reset role;

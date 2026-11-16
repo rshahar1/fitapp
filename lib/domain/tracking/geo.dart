@@ -75,8 +75,13 @@ List<GeoPoint> decodePolyline(String encoded) {
 
 /// Douglas-Peucker simplification with [toleranceMeters], computed in a local
 /// equirectangular projection. Keeps the first and last point.
-List<GeoPoint> simplify(List<GeoPoint> points, double toleranceMeters) {
-  if (points.length < 3) return List.of(points);
+List<GeoPoint> simplify(List<GeoPoint> points, double toleranceMeters) => [
+  for (final i in simplifyIndices(points, toleranceMeters)) points[i],
+];
+
+/// The indices of the points [simplify] keeps, in order.
+List<int> simplifyIndices(List<GeoPoint> points, double toleranceMeters) {
+  if (points.length < 3) return [for (var i = 0; i < points.length; i++) i];
   final lat0 = points.map((p) => p.lat).reduce((a, b) => a + b) / points.length;
   final kx = _earthRadiusMeters * math.cos(_rad(lat0)) * math.pi / 180;
   const ky = _earthRadiusMeters * math.pi / 180;
@@ -123,7 +128,7 @@ List<GeoPoint> simplify(List<GeoPoint> points, double toleranceMeters) {
   }
   return [
     for (var i = 0; i < points.length; i++)
-      if (keep[i]) points[i],
+      if (keep[i]) i,
   ];
 }
 

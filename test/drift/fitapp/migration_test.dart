@@ -14,6 +14,7 @@ import 'generated/schema_v5.dart' as v5;
 import 'generated/schema_v6.dart' as v6;
 import 'generated/schema_v7.dart' as v7;
 import 'generated/schema_v8.dart' as v8;
+import 'generated/schema_v9.dart' as v9;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -458,6 +459,57 @@ void main() {
           )..where((t) => t.id.equals('c1'))).getSingle();
           expect(e.name, 'Zottman Curl');
           expect(await newDb.select(newDb.syncState).get(), isEmpty);
+        },
+      );
+    },
+  );
+
+  test(
+    'migration from v8 to v9 keeps activities; new columns are null',
+    () async {
+      const ts = '2026-11-14T18:00:00.000Z';
+      await verifier.testWithDataIntegrity(
+        oldVersion: 8,
+        newVersion: 9,
+        createOld: v8.DatabaseAtV8.new,
+        createNew: v9.DatabaseAtV9.new,
+        openTestedDatabase: AppDatabase.new,
+        createItems: (batch, oldDb) {
+          batch.insertAll(oldDb.activities, [
+            const v8.ActivitiesData(
+              updatedAt: ts,
+              dirty: 1,
+              id: 'a1',
+              typeId: 'running',
+              startedAt: ts,
+              durationMinutes: 30,
+              distanceMeters: 5000,
+              notes: 'easy',
+              source: 'gps',
+              movingSeconds: 1700,
+              elevationGainMeters: 40,
+              route: '[[1.0,2.0]]',
+              splits: '[300,301]',
+            ),
+          ]);
+        },
+        validateItems: (newDb) async {
+          final a = await newDb.select(newDb.activities).getSingle();
+          expect(a.typeId, 'running');
+          expect(a.durationMinutes, 30);
+          expect(a.distanceMeters, 5000);
+          expect(a.notes, 'easy');
+          expect(a.source, 'gps');
+          expect(a.movingSeconds, 1700);
+          expect(a.elevationGainMeters, 40);
+          expect(a.route, '[[1.0,2.0]]');
+          expect(a.splits, '[300,301]');
+          expect(a.verticalDropMeters, isNull);
+          expect(a.runCount, isNull);
+          expect(a.maxSpeedMps, isNull);
+          expect(a.liftSeconds, isNull);
+          expect(a.restSeconds, isNull);
+          expect(a.segments, isNull);
         },
       );
     },

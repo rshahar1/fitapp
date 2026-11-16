@@ -46,7 +46,9 @@ class ActivityRepository {
   }
 
   /// Replaces every field of an activity. An entry whose stored type is no
-  /// longer in the registry may keep that type.
+  /// longer in the registry may keep that type. A tracked (GPS) activity
+  /// cannot change to or from snowboarding: its stored metrics would not fit
+  /// the new type. Throws [ArgumentError] then.
   Future<void> update(
     String id, {
     required String typeId,
@@ -57,6 +59,15 @@ class ActivityRepository {
   }) => _db.transaction(() async {
     final existing = await activity(id);
     if (existing == null) throw StateError('Activity not found');
+    if (existing.source == 'gps' &&
+        typeId != existing.typeId &&
+        (typeId == 'snowboarding' || existing.typeId == 'snowboarding')) {
+      throw ArgumentError.value(
+        typeId,
+        'typeId',
+        'a tracked activity cannot change to or from snowboarding',
+      );
+    }
     final now = _db.now();
     final v = validateActivity(
       typeId: typeId,

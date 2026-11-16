@@ -135,7 +135,7 @@ void main() {
   test('distance is rejected for types without distance', () async {
     expect(
       () => activities.create(
-        typeId: 'snowboarding',
+        typeId: 'functional',
         startedAt: h.now,
         distanceMeters: 1000,
       ),

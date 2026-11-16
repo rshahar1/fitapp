@@ -61,7 +61,7 @@ description: "Task list for live snowboarding tracking"
 
 - [x] T026 Docs: PRD (v2.9: snowboarding tracking moves from LATER to done, glossary, changelog), README roadmap, docs/ARCHITECTURE.md (snow reducer, schema v9)
 - [x] T027 `dart format --set-exit-if-changed .`, `flutter analyze`, `flutter test`, `node tool/db_test.mjs` all green; domain coverage 100% for the new files
-- [ ] T028 Apply the Supabase migration to the project; build the phone-test APK (release build, debug signing, next `app-release-0.0.N`)
+- [x] T028 Apply the Supabase migration to the project; build the phone-test APK (release build, debug signing, next `app-release-0.0.N`)
 - [ ] T029 (owner) One real day on the mountain; report run count and anything misclassified; tune `SnowTuning` if needed
 
 ## Dependencies

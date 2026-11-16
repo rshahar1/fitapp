@@ -1,7 +1,10 @@
 name: CI
 
+# Branches are tested once through their pull request; main is tested after
+# each merge.
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:

@@ -30,7 +30,7 @@ class _Bar extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     final status = switch (sim.phase) {
-      SimPhase.parked => 'Val Thorens · waiting at Boismint',
+      SimPhase.parked => 'Val Thorens · at the base',
       SimPhase.replaying =>
         'Val Thorens · ${formatClock(sim.position)} / '
             '${formatClock(sim.duration)}',

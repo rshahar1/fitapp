@@ -7,6 +7,8 @@ import 'package:fitapp/core/rest_alerts.dart';
 import 'package:fitapp/core/step_source.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
+import 'package:fitapp/data/tracking/sim/simulation_switch.dart';
+import 'package:fitapp/features/tracking/simulation_driver.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -16,7 +18,10 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
-  final db = AppDatabase.open();
+  // Dev builds only: `--dart-define=SIMULATE_GPS=true` (feature 019). The
+  // simulation's clock then drives the app and the database alike.
+  final simulation = kSimulateGps ? (valThorensSimulation()..start()) : null;
+  final db = AppDatabase.open(clock: simulation?.now);
   final alerts = PlatformRestAlerts();
   final supabase = await _initSupabase();
   final container = ProviderContainer(
@@ -25,8 +30,10 @@ Future<void> main() async {
       restAlertsProvider.overrideWithValue(alerts),
       stepSourceProvider.overrideWithValue(HealthConnectStepSource()),
       supabaseClientProvider.overrideWithValue(supabase),
+      if (simulation != null) ...simulationOverrides(simulation),
     ],
   );
+  if (simulation != null) driveSimulation(container, simulation);
   await alerts.init(
     onOpenWorkout: () => container.read(routerProvider).go(Routes.workout),
   );

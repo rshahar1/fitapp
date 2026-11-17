@@ -11,6 +11,7 @@ import 'package:fitapp/features/activities/activity_sheet.dart';
 import 'package:fitapp/features/tracking/live_track_screen.dart' show toLatLng;
 import 'package:fitapp/features/tracking/tracking_controller.dart';
 import 'package:fitapp/features/tracking/widgets/route_map.dart';
+import 'package:fitapp/features/tracking/widgets/simulation_bar.dart';
 import 'package:fitapp/widgets/guard.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -344,6 +345,7 @@ class _Acquiring extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        const SimulationBar(),
         Expanded(
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: Sizes.mapMin),

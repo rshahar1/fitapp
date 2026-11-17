@@ -108,18 +108,25 @@ Future<void> runGpsFlow(
 }
 
 /// Shared snowboarding flow (feature 017): the `+` button → Snowboarding
-/// (setup) → Start → replay a synthetic day of three lifts and three runs →
-/// hold Finish → Save → History shows "3 runs" with a route thumbnail → the
-/// detail screen with the timeline → the replay of run 2.
+/// (setup) → Start → replay a day → hold Finish → Save → History shows
+/// [runsText] with a route thumbnail → the detail screen with the timeline →
+/// the replay of run 2. The day is [track], by default a synthetic day of
+/// three lifts and three runs (feature 019 passes the Val Thorens session).
 Future<void> runSnowFlow(
   WidgetTester tester, {
   required Future<void> Function() settle,
+  List<TrackSample>? track,
+  String runsText = '3 runs',
 }) async {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
-  final db = AppDatabase(DatabaseConnection(NativeDatabase.memory()));
   final source = FakeLocationSource();
-  final track = buildSnowDay(plainDay).samples;
-  var now = track.first.t;
+  final day = track ?? buildSnowDay(plainDay).samples;
+  // The database judges "in the future" by its own clock: the flow's.
+  var now = day.first.t;
+  final db = AppDatabase(
+    DatabaseConnection(NativeDatabase.memory()),
+    clock: () => now,
+  );
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -146,14 +153,14 @@ Future<void> runSnowFlow(
   await tap(find.text('Snowboarding'));
   expect(find.text('Searching for GPS'), findsOneWidget);
 
-  source.emit(track.first);
+  source.emit(day.first);
   await tester.pump();
   await tap(find.text('START'));
   expect(find.text('RUNS'), findsOneWidget);
 
-  for (var i = 1; i < track.length; i++) {
-    now = track[i].t;
-    source.emit(track[i]);
+  for (var i = 1; i < day.length; i++) {
+    now = day[i].t;
+    source.emit(day[i]);
     if (i % 100 == 0) {
       await tester.pump(const Duration(milliseconds: 50));
       await settle();
@@ -174,7 +181,7 @@ Future<void> runSnowFlow(
   expect(find.text('VERTICAL'), findsWidgets);
 
   await tap(find.text('SAVE'));
-  expect(find.textContaining('3 runs'), findsOneWidget);
+  expect(find.textContaining(runsText), findsOneWidget);
   expect(find.byType(RouteThumbnail), findsOneWidget);
 
   await tap(find.byType(RouteThumbnail));

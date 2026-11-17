@@ -5,7 +5,7 @@ Developed with GitHub Spec Kit (spec-driven development).
 
 - Product requirements: `docs/PRD-fitapp-flutter.md` (v2.9, authoritative)
 - Constitution: `.specify/memory/constitution.md`
-- Active feature: `specs/017-snowboard-live-tracking/` (spec, plan, tasks)
+- Active feature: `specs/019-snow-sim-val-thorens/` (spec, plan, tasks)
 
 Workflow: `/speckit-analyze` (optional) → `/speckit-implement`, phase by phase. After each milestone run
 `dart format --set-exit-if-changed .`, `flutter analyze`, `flutter test`, show the result, and commit.

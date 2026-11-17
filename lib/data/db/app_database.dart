@@ -26,8 +26,10 @@ part 'app_database.g.dart';
 class AppDatabase extends _$AppDatabase {
   new(super.e, {DateTime Function()? clock}) : _clock = clock ?? DateTime.now;
 
-  /// Opens the on-device database file.
-  factory open() => AppDatabase(driftDatabase(name: 'fitapp'));
+  /// Opens the on-device database file. [clock] replaces the wall clock
+  /// (the GPS simulation, feature 019, runs its own).
+  factory open({DateTime Function()? clock}) =>
+      AppDatabase(driftDatabase(name: 'fitapp'), clock: clock);
 
   final DateTime Function() _clock;
 

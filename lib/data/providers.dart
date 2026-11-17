@@ -19,6 +19,7 @@ import 'package:fitapp/data/sync/sync_remote.dart';
 import 'package:fitapp/data/sync/sync_service.dart';
 import 'package:fitapp/data/tracking/geolocator_location_source.dart';
 import 'package:fitapp/data/tracking/location_source.dart';
+import 'package:fitapp/data/tracking/sim/track_simulation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -181,6 +182,10 @@ final activeTrackingProvider = StreamProvider<TrackingSessionRow?>(
 final locationSourceProvider = Provider<LocationSource>(
   (ref) => GeolocatorLocationSource(),
 );
+
+/// The dev-only GPS simulation (feature 019), or null in a normal build.
+/// Set in main() only when `kSimulateGps` is true.
+final simulationProvider = Provider<TrackSimulation?>((ref) => null);
 
 // --- Cloud backup and sync (feature 013) -----------------------------------
 

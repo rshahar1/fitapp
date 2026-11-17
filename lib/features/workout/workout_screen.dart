@@ -324,6 +324,10 @@ class _WorkoutView extends ConsumerWidget {
     final session = liveSession?.workoutId == w.id ? liveSession : null;
     final now = ref.watch(clockProvider)();
     final shownDay = session?.day ?? dateOnly(w.startedAt.toLocal());
+    // A finished workout has no footer (feature 020): Resume lives in the
+    // options menu, Edit and Delete in the app bar, back leaves the screen.
+    final canResume =
+        !isLive && (ref.watch(canResumeProvider(w.id)).value ?? false);
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -346,13 +350,20 @@ class _WorkoutView extends ConsumerWidget {
               onPressed: () => _delete(context, ref),
             ),
           ],
-          if (isLive || detail.exercises.isNotEmpty)
+          if (isLive || detail.exercises.isNotEmpty || canResume)
             PopupMenuButton<String>(
               tooltip: 'Workout options',
-              onSelected: (v) => v == 'discard'
-                  ? _discard(context, ref, session)
-                  : _saveAsTemplate(context, ref),
+              onSelected: (v) => switch (v) {
+                'discard' => _discard(context, ref, session),
+                'resume' => _resume(context, ref),
+                _ => _saveAsTemplate(context, ref),
+              },
               itemBuilder: (_) => [
+                if (canResume)
+                  const PopupMenuItem(
+                    value: 'resume',
+                    child: Text('Resume workout'),
+                  ),
                 if (detail.exercises.isNotEmpty)
                   const PopupMenuItem(
                     value: 'template',
@@ -471,21 +482,22 @@ class _WorkoutView extends ConsumerWidget {
             ),
         ],
       ),
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          height: Sizes.footer,
-          padding: const EdgeInsets.symmetric(horizontal: Space.m),
-          decoration: const BoxDecoration(
-            color: AppColors.background,
-            border: Border(
-              top: BorderSide(
-                color: AppColors.surfaceHigh,
-                width: Sizes.hairline,
-              ),
-            ),
-          ),
-          child: isLive
-              ? Row(
+      bottomNavigationBar: !isLive
+          ? null
+          : SafeArea(
+              child: Container(
+                height: Sizes.footer,
+                padding: const EdgeInsets.symmetric(horizontal: Space.m),
+                decoration: const BoxDecoration(
+                  color: AppColors.background,
+                  border: Border(
+                    top: BorderSide(
+                      color: AppColors.surfaceHigh,
+                      width: Sizes.hairline,
+                    ),
+                  ),
+                ),
+                child: Row(
                   children: [
                     const Expanded(
                       child: Align(
@@ -498,29 +510,9 @@ class _WorkoutView extends ConsumerWidget {
                       onPressed: () => _finish(context, ref),
                     ),
                   ],
-                )
-              : Row(
-                  children: [
-                    Expanded(
-                      child: AppButton(
-                        label: 'Done',
-                        onPressed: () => context.canPop()
-                            ? context.pop()
-                            : context.go(Routes.history),
-                      ),
-                    ),
-                    if (ref.watch(canResumeProvider(w.id)).value ?? false) ...[
-                      const SizedBox(width: Space.s),
-                      AppButton(
-                        label: 'Resume',
-                        variant: AppButtonVariant.secondary,
-                        onPressed: () => _resume(context, ref),
-                      ),
-                    ],
-                  ],
                 ),
-        ),
-      ),
+              ),
+            ),
     );
   }
 }

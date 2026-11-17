@@ -207,7 +207,7 @@ Lowering `runConfirmDrop` to 6 m brings it to 36 s and 31 s with identical total
 session and on the synthetic `plainDay` and `longDay` scenarios. *Proposal (not applied):*
 `runConfirmDrop: 6`, after checking a real chairlift ride for dips between towers, which this
 threshold also guards against. The rest of the delay is inherent: nothing distinguishes a flat
-traverse from a level stretch of cable until height is lost.
+traverse from a level stretch of cable until height is lost. Applied in feature 021 (`runConfirmDrop: 6`).
 
 **2. A fast, level lift departure shows "Riding" for 7 s.** The Cime Caron cable car leaves the
 mid station at up to 8 m/s while the 15 s altitude median and the 30 s climb rate lag behind

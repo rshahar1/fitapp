@@ -24,7 +24,7 @@ class SnowTuning {
     this.restMaxSpeed = 1.0,
     this.liftConfirmGain = 15,
     this.runConfirm = const Duration(seconds: 10),
-    this.runConfirmDrop = 10,
+    this.runConfirmDrop = 6,
     this.runConfirmMeters = 60,
     this.restConfirm = const Duration(seconds: 10),
     this.liftRestConfirm = const Duration(seconds: 120),

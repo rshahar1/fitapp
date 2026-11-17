@@ -147,6 +147,41 @@ void main() {
   });
 
   group('edge cases', () {
+    test('a lift dipping 5 m between towers stays one lift (021)', () {
+      // 4 m/s along the cable, climbing 1 m/s except for 25 s that lose
+      // 5 m in all (runConfirmDrop is 6 m).
+      final samples = <TrackSample>[];
+      var alt = 1500.0;
+      for (var i = 0; i <= 400; i++) {
+        if (i > 0) alt += i > 150 && i <= 175 ? -0.2 : 1;
+        samples.add(
+          TrackSample(
+            t: snowStart.add(Duration(seconds: i + 60)),
+            lat: 46 + i * 4 / 111195,
+            lon: 7,
+            alt: alt,
+            accuracy: 5,
+            speed: 4,
+          ),
+        );
+      }
+      final standing = [
+        for (var i = 0; i < 60; i++)
+          TrackSample(
+            t: snowStart.add(Duration(seconds: i)),
+            lat: 46,
+            lon: 7,
+            alt: 1500,
+            accuracy: 5,
+            speed: 0,
+          ),
+      ];
+      final s = pauseSnow(fold([...standing, ...samples]));
+      final kinds = [for (final seg in s.segments) seg.kind];
+      expect(kinds.where((k) => k == SnowKind.lift), hasLength(1));
+      expect(kinds, isNot(contains(SnowKind.run)));
+    });
+
     test('a chairlift stopping for 90 s stays one lift', () {
       final f = buildSnowDay(const [
         SnowLeg.stand(60),

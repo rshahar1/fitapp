@@ -67,7 +67,7 @@ accumulated. Totals are always sums over segments, so backdating never leaves th
 | Candidate | Confirmed when |
 |---|---|
 | lift | net `altS` gain since it opened ≥ 15 m |
-| run | open ≥ 10 s and (`altS` drop ≥ 10 m or distance ≥ 60 m) |
+| run | open ≥ 10 s and (`altS` drop ≥ 6 m (10 m until feature 021) or distance ≥ 60 m) |
 | rest (from run) | open ≥ 10 s |
 | rest (from lift) | open ≥ 120 s (a stopped chairlift stays a lift) |
 

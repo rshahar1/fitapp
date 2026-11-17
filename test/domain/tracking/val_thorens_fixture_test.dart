@@ -115,6 +115,28 @@ void main() {
     expect(snowRunCount(resumed), 2);
   });
 
+  test('a run off a lift on a flat traverse shows within 40 s (021)', () {
+    // Both pistes start with about 40 s of near-level riding. With
+    // runConfirmDrop at 10 m the chip said "On lift" for 49 s and 63 s.
+    final runs = [
+      for (final l in legsOf(f))
+        if (l.kind == SnowKind.run && !l.name.endsWith('(part_2)')) l,
+    ];
+    expect(runs, hasLength(2));
+    var live = startSnow();
+    final shownAt = <int, int>{};
+    for (var i = 0; i < accepted.length; i++) {
+      live = accumulateSnow(live, accepted[i]);
+      for (final (n, r) in runs.indexed) {
+        if (i >= r.from && i <= r.to && live.kind == SnowKind.run) {
+          shownAt.putIfAbsent(n, () => i - r.from);
+        }
+      }
+    }
+    expect(shownAt[0], lessThanOrEqualTo(40), reason: 'Boismint');
+    expect(shownAt[1], lessThanOrEqualTo(40), reason: "Col de l'Audzin");
+  });
+
   test('known limit: the cable car start shows a run for under 10 s', () {
     // Leaving the mid station fast and nearly level, the cabin looks like
     // riding until the climb is confirmed; `falseRun` then folds it into

@@ -83,6 +83,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final rest =
         ref.watch(defaultRestProvider).value ??
         SettingsRepository.defaultRestSeconds;
+    final restBetween =
+        ref.watch(restBetweenExercisesProvider).value ??
+        SettingsRepository.defaultRestBetweenExercisesSeconds;
     final prefs = ref.watch(alertPrefsProvider).value ?? const RestAlertPrefs();
 
     final alerts = ref.read(restAlertsProvider);
@@ -107,7 +110,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Padding(
                 padding: const EdgeInsets.all(Space.m),
                 child: AppStepper(
-                  label: 'Default rest time',
+                  label: 'Rest between sets',
                   value: rest.toDouble(),
                   step: SettingsRepository.restStepSeconds.toDouble(),
                   min: SettingsRepository.minRestSeconds.toDouble(),
@@ -129,8 +132,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     const SizedBox(height: Space.s),
                     Text(
-                      'Applies to the next logged set. Exercises with their '
-                      'own rest time keep it.',
+                      'Applies between sets. Exercises with their own rest '
+                      'time keep it.',
+                      style: text.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(Space.m),
+                child: AppStepper(
+                  label: 'Rest between exercises',
+                  value: restBetween.toDouble(),
+                  step: SettingsRepository.restStepSeconds.toDouble(),
+                  min: SettingsRepository.minRestSeconds.toDouble(),
+                  max: SettingsRepository.maxRestSeconds.toDouble(),
+                  format: (v) => clock(v.round()),
+                  onChanged: (v) =>
+                      repo.setRestBetweenExercisesSeconds(v.round()),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(Space.m),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ChipSelector<int>(
+                      options: _presets,
+                      selected: restBetween,
+                      labelOf: clock,
+                      onSelected: repo.setRestBetweenExercisesSeconds,
+                    ),
+                    const SizedBox(height: Space.s),
+                    Text(
+                      'Starts after the last planned set of an exercise, '
+                      'before you move on.',
                       style: text.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),

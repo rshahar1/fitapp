@@ -95,6 +95,11 @@ final defaultRestProvider = StreamProvider<int>(
   (ref) => ref.watch(settingsRepositoryProvider).watchDefaultRestSeconds(),
 );
 
+final restBetweenExercisesProvider = StreamProvider<int>(
+  (ref) =>
+      ref.watch(settingsRepositoryProvider).watchRestBetweenExercisesSeconds(),
+);
+
 final alertPrefsProvider = StreamProvider<RestAlertPrefs>(
   (ref) => ref.watch(settingsRepositoryProvider).watchAlertPrefs(),
 );

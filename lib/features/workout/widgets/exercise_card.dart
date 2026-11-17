@@ -68,14 +68,33 @@ bool firstTwoSetsHit(WorkoutExerciseDetail d) => firstTwoSetsHitTarget(
   set2Reps: d.setNo(2)?.reps,
 );
 
+/// Whether logging set [setNo] completes all planned sets of [d], so the
+/// next rest is the one before moving to another exercise (feature 020).
+bool completesExercise(WorkoutExerciseDetail d, int setNo) {
+  final planned = d.effectivePlan?.targetSets;
+  if (planned == null || planned <= 0 || setNo < planned) return false;
+  for (var n = 1; n <= planned; n++) {
+    if (n != setNo && d.setNo(n) == null) return false;
+  }
+  return true;
+}
+
 /// Exercise card with the Hevy-style set table (PRD §5.3).
 class ExerciseCard extends ConsumerStatefulWidget {
-  const new({required this.detail, required this.isLive, super.key});
+  const new({
+    required this.detail,
+    required this.isLive,
+    this.readOnly = false,
+    super.key,
+  });
 
   final WorkoutExerciseDetail detail;
 
   /// Live workouts start the rest timer; edit mode doesn't.
   final bool isLive;
+
+  /// History review (feature 020): shows the data with no edit controls.
+  final bool readOnly;
 
   @override
   ConsumerState<ExerciseCard> createState() => _ExerciseCardState();
@@ -162,6 +181,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
           .startFor(
             exerciseRestSeconds: d.restSeconds,
             exerciseName: d.exercise.name,
+            betweenExercises: completesExercise(d, line.setNo),
           );
     }
     if (line.setNo > (d.effectivePlan?.targetSets ?? 0) && _extraRows > 0) {
@@ -221,7 +241,8 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
     final needsSetup = plan == null && d.sets.isEmpty && !orphan;
     Future<void> savePlan(StoredPlan p) =>
         ref.read(workoutRepositoryProvider).savePlan(d.row.id, p);
-    final lines = buildSetLines(d, extraRows: _extraRows);
+    final readOnly = widget.readOnly;
+    final lines = buildSetLines(d, extraRows: readOnly ? 0 : _extraRows);
     return AppCard(
       padding: const EdgeInsets.fromLTRB(Space.m, Space.s, Space.xs, Space.m),
       child: Column(
@@ -253,41 +274,48 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                   ],
                 ),
               ),
-              PopupMenuButton<String>(
-                tooltip: 'Exercise options for ${d.exercise.name}',
-                icon: const Icon(Icons.more_vert),
-                onSelected: (v) async {
-                  switch (v) {
-                    case 'plan':
-                      await showEditPlanSheet(
-                        context,
-                        exercise: d.exercise,
-                        plan: d.currentPlan,
-                        onSubmit: savePlan,
-                        title: d.planSource == PlanSourceKind.template
-                            ? 'Edit template plan · ${d.exercise.name}'
-                            : null,
-                      );
-                    case 'remove':
-                      await _remove();
-                  }
-                },
-                itemBuilder: (_) => [
-                  if (!needsSetup && !orphan)
+              if (!readOnly)
+                PopupMenuButton<String>(
+                  tooltip: 'Exercise options for ${d.exercise.name}',
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (v) async {
+                    switch (v) {
+                      case 'plan':
+                        await showEditPlanSheet(
+                          context,
+                          exercise: d.exercise,
+                          plan: d.currentPlan,
+                          onSubmit: savePlan,
+                          title: d.planSource == PlanSourceKind.template
+                              ? 'Edit template plan · ${d.exercise.name}'
+                              : null,
+                        );
+                      case 'remove':
+                        await _remove();
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    if (!needsSetup && !orphan)
+                      const PopupMenuItem(
+                        value: 'plan',
+                        child: Text('Edit plan'),
+                      ),
                     const PopupMenuItem(
-                      value: 'plan',
-                      child: Text('Edit plan'),
+                      value: 'remove',
+                      child: Text('Remove exercise'),
                     ),
-                  const PopupMenuItem(
-                    value: 'remove',
-                    child: Text('Remove exercise'),
-                  ),
-                ],
-              ),
+                  ],
+                ),
             ],
           ),
           const SizedBox(height: Space.s),
-          if (needsSetup)
+          if (readOnly && d.sets.isEmpty && plan == null)
+            Text(
+              'No sets logged',
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: AppColors.textSecondary),
+            )
+          else if (needsSetup)
             Padding(
               padding: const EdgeInsets.only(right: Space.s),
               child: PlanSetupCard(exercise: d.exercise, onSubmit: savePlan),
@@ -302,36 +330,48 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                   SetRowView(
                     key: ValueKey('set-${d.row.id}-${line.setNo}'),
                     line: line,
-                    onCheck: () => line.isLogged
-                        ? _edit(line)
-                        : _log(line, line.weight, line.reps),
-                    onTap: () => _edit(line),
+                    onCheck: readOnly
+                        ? null
+                        : () => line.isLogged
+                              ? _edit(line)
+                              : _log(line, line.weight, line.reps),
+                    onTap: readOnly ? null : () => _edit(line),
                   ),
               ],
             ),
-            Row(
-              children: [
-                TextButton.icon(
-                  onPressed: () {
-                    ref.read(hapticsProvider).tick();
-                    setState(() => _extraRows++);
-                  },
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Set'),
-                ),
-                if (firstTwoSetsHit(d)) ...[
-                  const SizedBox(width: Space.s),
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: TargetHitPill(visible: !_pillHeld),
+            if (!readOnly)
+              Row(
+                children: [
+                  TextButton.icon(
+                    onPressed: () {
+                      ref.read(hapticsProvider).tick();
+                      setState(() => _extraRows++);
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Set'),
+                  ),
+                  if (firstTwoSetsHit(d)) ...[
+                    const SizedBox(width: Space.s),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: TargetHitPill(visible: !_pillHeld),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: Space.s),
+                    const SizedBox(width: Space.s),
+                  ],
                 ],
-              ],
-            ),
-            _NotesField(detail: d),
+              ),
+            if (!readOnly)
+              _NotesField(detail: d)
+            else if (d.row.notes case final notes? when notes.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: Space.s, right: Space.s),
+                child: Text(
+                  notes,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
             if (d.sets.isNotEmpty) ...[
               const SizedBox(height: Space.s),
               Padding(

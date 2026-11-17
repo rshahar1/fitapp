@@ -38,6 +38,7 @@ class DeviceBinding {
   /// Settings keys removed when the phone's data is wiped.
   static const _wipedSettings = [
     'default_rest_seconds',
+    'rest_between_exercises_seconds',
     'rest_alert_haptic',
     'rest_alert_sound',
     'active_rest_started_at',

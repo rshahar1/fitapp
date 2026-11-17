@@ -83,12 +83,17 @@ class RestTimerController extends Notifier<ActiveRest?> {
     await _askPermissionOnce();
   }
 
-  /// Starts with the exercise's own rest time or the global default.
+  /// Starts with the exercise's own rest time or the global default; after
+  /// an exercise's last planned set ([betweenExercises]) it uses the global
+  /// rest between exercises instead.
   Future<void> startFor({
     int? exerciseRestSeconds,
     String? exerciseName,
+    bool betweenExercises = false,
   }) async {
-    final seconds = exerciseRestSeconds ?? await _settings.defaultRest();
+    final seconds = betweenExercises
+        ? await _settings.restBetweenExercises()
+        : exerciseRestSeconds ?? await _settings.defaultRest();
     await start(seconds, exerciseName: exerciseName);
   }
 

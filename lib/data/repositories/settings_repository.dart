@@ -55,11 +55,13 @@ class SettingsRepository {
   final AppDatabase _db;
 
   static const defaultRestSeconds = 60;
+  static const defaultRestBetweenExercisesSeconds = 120;
   static const minRestSeconds = 10;
   static const maxRestSeconds = 600;
   static const restStepSeconds = 5;
 
   static const _kDefaultRest = 'default_rest_seconds';
+  static const _kRestBetweenExercises = 'rest_between_exercises_seconds';
   static const _kHaptic = 'rest_alert_haptic';
   static const _kSound = 'rest_alert_sound';
   static const _kRestStart = 'active_rest_started_at';
@@ -96,6 +98,10 @@ class SettingsRepository {
   static int _rest(Map<String, String> m) =>
       int.tryParse(m[_kDefaultRest] ?? '') ?? defaultRestSeconds;
 
+  static int _restBetweenExercises(Map<String, String> m) =>
+      int.tryParse(m[_kRestBetweenExercises] ?? '') ??
+      defaultRestBetweenExercisesSeconds;
+
   static RestAlertPrefs _prefs(Map<String, String> m) => RestAlertPrefs(
     haptic: m[_kHaptic] != 'false',
     sound: m[_kSound] != 'false',
@@ -109,6 +115,18 @@ class SettingsRepository {
     await _put(_kDefaultRest, normalizeRest(seconds).toString());
     await _stamp();
   });
+
+  Stream<int> watchRestBetweenExercisesSeconds() =>
+      _watchAll().map(_restBetweenExercises).distinct();
+
+  Future<int> restBetweenExercises() async =>
+      _restBetweenExercises(await _all());
+
+  Future<void> setRestBetweenExercisesSeconds(int seconds) =>
+      _db.transaction(() async {
+        await _put(_kRestBetweenExercises, normalizeRest(seconds).toString());
+        await _stamp();
+      });
 
   Stream<RestAlertPrefs> watchAlertPrefs() =>
       _watchAll().map(_prefs).distinct();
@@ -191,8 +209,10 @@ class SettingsRepository {
   Future<Map<String, Object?>> syncedSettings() async {
     final m = await _all();
     final rest = int.tryParse(m[_kDefaultRest] ?? '');
+    final betweenExercises = int.tryParse(m[_kRestBetweenExercises] ?? '');
     return {
       _kDefaultRest: ?rest,
+      _kRestBetweenExercises: ?betweenExercises,
       if (m[_kHaptic] != null) _kHaptic: m[_kHaptic] != 'false',
       if (m[_kSound] != null) _kSound: m[_kSound] != 'false',
     };
@@ -228,6 +248,13 @@ class SettingsRepository {
     }
     final rest = data[_kDefaultRest];
     if (rest is int) await _put(_kDefaultRest, normalizeRest(rest).toString());
+    final betweenExercises = data[_kRestBetweenExercises];
+    if (betweenExercises is int) {
+      await _put(
+        _kRestBetweenExercises,
+        normalizeRest(betweenExercises).toString(),
+      );
+    }
     final haptic = data[_kHaptic];
     if (haptic is bool) await _put(_kHaptic, haptic.toString());
     final sound = data[_kSound];

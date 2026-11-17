@@ -98,6 +98,10 @@ emulator; the app shows the same lifts and runs as the in-app simulation at 1×.
   Known limitation: the developer deletes it afterwards.
 - Changing the speed, finishing or discarding while the app is in the background is not specified
   beyond "the clock never goes backwards".
+- After an accelerated replay the app clock stays ahead of the wall clock by the time saved (about
+  40 min for a whole session at 30×) until the app restarts; it never goes backwards.
+- If the app is killed mid-replay, recovery resumes the stored session but the replay restarts from
+  the first fix, so the recovered route jumps back to the base. Dev-only; not handled.
 
 ## Requirements *(mandatory)*
 
@@ -127,7 +131,8 @@ emulator; the app shows the same lifts and runs as the in-app simulation at 1×.
   clock and playhead) MUST provide the fixes; `TrackingController` MUST NOT change.
 - **FR-008**: `clockProvider` MUST be overridden with the simulation's virtual clock. The clock
   equals the real clock until a replay starts, then advances `speed` times faster; it never jumps
-  and never goes backwards. Fix timestamps are fixture time on that clock.
+  and never goes backwards. Fix timestamps are fixture time on that clock. The database clock
+  (used to validate saved dates) MUST follow the same clock.
 - **FR-009**: Before recording starts the source MUST emit the first position once a second
   ("parked"). The replay MUST start when the tracking controller goes live with a new session id and
   return to parked when the session is finished or discarded. After the last row the source MUST

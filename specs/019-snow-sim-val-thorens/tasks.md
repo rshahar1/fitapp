@@ -42,7 +42,7 @@ description: "Task list for the simulated Val Thorens snowboarding session"
 ## Phase 6: Polish
 
 - [x] T017 `dart format --set-exit-if-changed .`, `flutter analyze`, `flutter test` all green
-- [ ] T018 Check the release build contains neither the session data nor the bar (build with `--dart-define=SIMULATE_GPS=true` and look for the CSV text)
+- [x] T018 Check the release build contains neither the session data nor the bar (build with `--dart-define=SIMULATE_GPS=true` and look for the CSV text) — see plan.md Findings 5
 - [ ] T019 Run the simulation in an emulator and record what was seen (status changes, runs, map, speeds 1×–30×) in plan.md "Findings" — not possible on the development Mac (no emulator, AVD or iOS Simulator installed); the real widget tree was rendered at 30× instead (Findings, "On screen"). Open: check on a phone or emulator
 
 ## Dependencies

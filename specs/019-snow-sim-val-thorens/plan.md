@@ -228,6 +228,11 @@ is in the future": `TrackingRepository.finish` validates the date on the databas
 stayed the wall clock while the app clock ran ahead. The database now takes the simulation
 clock too (`AppDatabase.open(clock:)`).
 
+**5. Release builds cannot simulate.** Built with `--dart-define=SIMULATE_GPS=true` for
+android-arm64: the release `libapp.so` (10.2 MB) contains none of `reference_runs`,
+`Boismint_chairlift`, `SIMULATED GPS`, `waiting at Boismint`; the profile build of the same
+source (control, not `kReleaseMode`) contains all four and is 3.6 MB larger.
+
 **On screen.** No Android emulator, AVD or iOS Simulator is installed on the development Mac,
 so the app was not run on a device. Instead the real `FitApp` widget tree was rendered with the
 simulation running at 30× (Roboto loaded, map tiles off so the route painter draws) at seven

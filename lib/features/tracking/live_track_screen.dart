@@ -14,6 +14,7 @@ import 'package:fitapp/features/tracking/finish_sheet.dart';
 import 'package:fitapp/features/tracking/tracking_controller.dart';
 import 'package:fitapp/features/tracking/widgets/footer_controls.dart';
 import 'package:fitapp/features/tracking/widgets/route_map.dart';
+import 'package:fitapp/features/tracking/widgets/simulation_bar.dart';
 import 'package:fitapp/features/tracking/widgets/snow_live_panel.dart';
 import 'package:fitapp/features/workout/widgets/tick.dart';
 import 'package:fitapp/widgets/guard.dart';
@@ -120,6 +121,7 @@ class _LiveTrackScreenState extends ConsumerState<LiveTrackScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              const SimulationBar(),
               if (snow != null)
                 SnowLivePanel(
                   snow: snow,

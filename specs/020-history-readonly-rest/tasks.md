@@ -7,3 +7,4 @@
 - [x] T005 WorkoutScreen read-only default with Edit/Delete in app bar; ExerciseCard/SetRowView read-only
 - [x] T006 Widget test: finished workout opens read-only, Edit enables editing
 - [x] T007 format, analyze, test; PR and merge
+- [x] T008 Remove the finished-workout footer; Resume in the options menu (amendment)

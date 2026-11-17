@@ -6,6 +6,7 @@ import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/settings_repository.dart';
 import 'package:fitapp/features/train/steps_card.dart';
+import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -50,6 +51,30 @@ void main() {
   }
 
   Future<void> introSeen() => settings.markStepsIntroShown();
+
+  testWidgets('shows today km next to the steps', (tester) async {
+    source
+      ..steps = 12345
+      ..meters = 6213;
+    await pump(tester);
+    expect(find.text('12,345'), findsOneWidget);
+    expect(find.text('6.21 km'), findsOneWidget);
+    expect(find.byType(AppButton), findsNothing);
+    await unmount(tester);
+  });
+
+  testWidgets('without distance permission offers Show km', (tester) async {
+    source.distanceGranted = false;
+    await pump(tester);
+    expect(find.text('1,234'), findsOneWidget);
+    expect(find.textContaining(' km'), findsNothing);
+    expect(find.byType(AppButton), findsOneWidget);
+    source.meters = 2500;
+    await tester.tap(find.byType(AppButton));
+    await tester.pumpAndSettle();
+    expect(find.text('2.50 km'), findsOneWidget);
+    await unmount(tester);
+  });
 
   testWidgets('granted shows the formatted count', (tester) async {
     source.steps = 12345;
@@ -119,16 +144,16 @@ void main() {
   ) async {
     source.state = StepAccess.notGranted;
     await pump(tester);
-    expect(find.text('Show your daily steps?'), findsOneWidget);
+    expect(find.text('Show your daily steps and distance?'), findsOneWidget);
     await tester.tap(find.text('NOT NOW'));
     await tester.pumpAndSettle();
-    expect(find.text('Show your daily steps?'), findsNothing);
+    expect(find.text('Show your daily steps and distance?'), findsNothing);
     expect(source.calls, isEmpty);
     expect(await tester.runAsync(settings.stepsIntroShown), isTrue);
 
     await unmount(tester);
     await pump(tester);
-    expect(find.text('Show your daily steps?'), findsNothing);
+    expect(find.text('Show your daily steps and distance?'), findsNothing);
     await unmount(tester);
   });
 
@@ -144,7 +169,7 @@ void main() {
 
   testWidgets('no intro when access is granted', (tester) async {
     await pump(tester);
-    expect(find.text('Show your daily steps?'), findsNothing);
+    expect(find.text('Show your daily steps and distance?'), findsNothing);
     await unmount(tester);
   });
 }

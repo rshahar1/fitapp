@@ -124,6 +124,22 @@ final todayStepsProvider = FutureProvider.autoDispose<int?>((ref) async {
   return steps;
 });
 
+/// Whether the distance permission is granted (only asked once steps are).
+final distanceAccessProvider = FutureProvider.autoDispose<bool>((ref) async {
+  final access = await ref.watch(stepAccessProvider.future);
+  if (access != StepAccess.granted) return false;
+  return await ref.watch(stepSourceProvider).distanceAccess();
+});
+
+/// Today's distance in metres (midnight to now); null when unreadable.
+final todayDistanceProvider = FutureProvider.autoDispose<double?>((ref) async {
+  if (!await ref.watch(distanceAccessProvider.future)) return null;
+  final now = ref.read(clockProvider)();
+  return await ref
+      .read(stepSourceProvider)
+      .distanceBetween(todayStart(now), now);
+});
+
 final templateRepositoryProvider = Provider<TemplateRepository>(
   (ref) => TemplateRepository(ref.watch(databaseProvider)),
 );
@@ -266,4 +282,17 @@ final daySteps = FutureProvider.autoDispose.family<int?, DateTime>((
   return await ref
       .read(stepSourceProvider)
       .stepsBetween(window.start, window.end);
+});
+
+/// Distance in metres on one local day (same rules as [daySteps]).
+final dayDistance = FutureProvider.autoDispose.family<double?, DateTime>((
+  ref,
+  day,
+) async {
+  final window = stepWindow(day, ref.read(clockProvider)());
+  if (window == null) return null;
+  if (!await ref.watch(distanceAccessProvider.future)) return null;
+  return await ref
+      .read(stepSourceProvider)
+      .distanceBetween(window.start, window.end);
 });

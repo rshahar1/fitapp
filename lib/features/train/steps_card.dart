@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/app/theme/tokens.dart';
+import 'package:fitapp/core/format.dart';
 import 'package:fitapp/core/step_source.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/widgets/widgets.dart';
@@ -37,11 +38,18 @@ class _StepsCardState extends ConsumerState<StepsCard> {
   void _refresh() {
     ref
       ..invalidate(stepAccessProvider)
-      ..invalidate(todayStepsProvider);
+      ..invalidate(distanceAccessProvider)
+      ..invalidate(todayStepsProvider)
+      ..invalidate(todayDistanceProvider);
   }
 
   Future<void> _connect() async {
     await ref.read(stepSourceProvider).requestAccess();
+    if (mounted) _refresh();
+  }
+
+  Future<void> _connectDistance() async {
+    await ref.read(stepSourceProvider).requestDistanceAccess();
     if (mounted) _refresh();
   }
 
@@ -89,19 +97,46 @@ class _StepsCardState extends ConsumerState<StepsCard> {
         final value = steps == null
             ? '—'
             : NumberFormat.decimalPattern().format(steps);
+        final meters = ref.watch(todayDistanceProvider).value;
+        final distanceOk = ref.watch(distanceAccessProvider).value;
+        final km = meters == null ? null : formatKm(meters);
         body = Semantics(
           container: true,
-          label: 'Steps today: $value',
+          label: 'Steps today: $value${km == null ? '' : ', $km'}',
           excludeSemantics: true,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Steps today', style: text.labelSmall),
               const SizedBox(height: Space.xs),
-              Text(
-                value,
-                style: text.headlineMedium?.copyWith(fontFeatures: tabular),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    value,
+                    style: text.headlineMedium?.copyWith(fontFeatures: tabular),
+                  ),
+                  if (km != null) ...[
+                    const SizedBox(width: Space.s),
+                    Text(
+                      km,
+                      style: text.titleMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                        fontFeatures: tabular,
+                      ),
+                    ),
+                  ],
+                ],
               ),
+              if (distanceOk == false) ...[
+                const SizedBox(height: Space.xs),
+                AppButton(
+                  label: 'Show km',
+                  variant: AppButtonVariant.ghost,
+                  onPressed: _connectDistance,
+                ),
+              ],
               if (steps == 0) ...[
                 const SizedBox(height: Space.xs),
                 Text(
@@ -169,11 +204,11 @@ class StepsIntroSheet extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Show your daily steps?', style: text.titleLarge),
+            Text('Show your daily steps and distance?', style: text.titleLarge),
             const SizedBox(height: Space.s),
             Text(
               'FitApp reads your step count from Health Connect, where Google '
-              'Fit and other apps share it. Read-only, steps only, and it '
+              'Fit and other apps share it. Read-only, steps and distance only, and it '
               'stays on your phone. You can turn this off in Settings.',
               style: text.bodyMedium?.copyWith(color: AppColors.textSecondary),
             ),

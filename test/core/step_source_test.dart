@@ -1,3 +1,4 @@
+import 'package:fitapp/core/format.dart';
 import 'package:fitapp/core/health_connect_step_source.dart';
 import 'package:fitapp/core/step_source.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -70,5 +71,18 @@ void main() {
       expect(w.start, DateTime(2026, 3, 29));
       expect(w.end, DateTime(2026, 3, 30));
     });
+  });
+
+  test('distance is unavailable on Noop and off Android', () async {
+    final t = DateTime(2026);
+    expect(await const NoopStepSource().distanceBetween(t, t), isNull);
+    final s = HealthConnectStepSource(isAndroid: false);
+    expect(await s.distanceAccess(), isFalse);
+    expect(await s.distanceBetween(t, t), isNull);
+  });
+
+  test('formatKm shows kilometres with two decimals', () {
+    expect(formatKm(0), '0.00 km');
+    expect(formatKm(6213), '6.21 km');
   });
 }

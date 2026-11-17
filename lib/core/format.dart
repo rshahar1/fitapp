@@ -78,3 +78,7 @@ String formatActivityMinutes(int minutes) {
 /// "8,432 steps", "1 step".
 String formatSteps(int n) =>
     '${NumberFormat.decimalPattern().format(n)} ${n == 1 ? 'step' : 'steps'}';
+
+/// Metres as kilometres with two decimals: "6.21 km".
+String formatKm(double meters) =>
+    '${NumberFormat('0.00').format(meters / 1000)} km';

@@ -33,7 +33,8 @@ final canResumeProvider = FutureProvider.autoDispose.family<bool, String>((
   return ref.watch(workoutRepositoryProvider).canResume(id);
 });
 
-/// Live workout (no [workoutId]) or a finished workout in edit mode.
+/// Live workout (no [workoutId]) or a finished workout, shown read-only
+/// until Edit is tapped (feature 020).
 class WorkoutScreen extends ConsumerStatefulWidget {
   const new({this.workoutId, super.key});
 
@@ -87,31 +88,54 @@ class _Missing extends StatelessWidget {
   );
 }
 
-class _WorkoutBody extends ConsumerWidget {
+class _WorkoutBody extends ConsumerStatefulWidget {
   const new({required this.workoutId});
 
   final String workoutId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final detail = ref.watch(workoutDetailProvider(workoutId));
+  ConsumerState<_WorkoutBody> createState() => _WorkoutBodyState();
+}
+
+class _WorkoutBodyState extends ConsumerState<_WorkoutBody> {
+  /// A finished workout opens read-only; Edit switches this on.
+  bool _editing = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final detail = ref.watch(workoutDetailProvider(widget.workoutId));
     return detail.when(
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (_, _) => const _Missing(message: 'Could not load the workout.'),
       data: (d) => d == null
           ? const _Missing(message: 'This workout no longer exists.')
-          : _WorkoutView(detail: d),
+          : _WorkoutView(
+              detail: d,
+              editing: _editing,
+              onToggleEdit: () => setState(() => _editing = !_editing),
+            ),
     );
   }
 }
 
 class _WorkoutView extends ConsumerWidget {
-  const new({required this.detail});
+  const new({
+    required this.detail,
+    required this.editing,
+    required this.onToggleEdit,
+  });
 
   final WorkoutDetail detail;
 
+  /// Edit mode of a finished workout (ignored while live).
+  final bool editing;
+  final VoidCallback onToggleEdit;
+
   bool get isLive => !detail.isFinished;
+
+  /// A finished workout outside edit mode: review only.
+  bool get readOnly => !isLive && !editing;
 
   Future<void> _finish(BuildContext context, WidgetRef ref) async {
     // Capture everything before the first await: finishing changes the
@@ -306,6 +330,22 @@ class _WorkoutView extends ConsumerWidget {
           isLive ? 'Workout' : formatDateShort(w.startedAt.toLocal()),
         ),
         actions: [
+          if (!isLive) ...[
+            IconButton(
+              icon: Icon(editing ? Icons.check : Icons.edit_outlined),
+              tooltip: editing ? 'Done editing' : 'Edit workout',
+              onPressed: () {
+                ref.read(hapticsProvider).tick();
+                onToggleEdit();
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              color: AppColors.danger,
+              tooltip: 'Delete workout',
+              onPressed: () => _delete(context, ref),
+            ),
+          ],
           if (isLive || detail.exercises.isNotEmpty)
             PopupMenuButton<String>(
               tooltip: 'Workout options',
@@ -384,13 +424,15 @@ class _WorkoutView extends ConsumerWidget {
                     style: Theme.of(context).textTheme.bodyLarge
                         ?.copyWith(color: AppColors.accent),
                   ),
-                  showChevron: true,
-                  onTap: () => _pickDay(context, ref, shownDay),
+                  showChevron: !readOnly,
+                  onTap: readOnly
+                      ? null
+                      : () => _pickDay(context, ref, shownDay),
                 ),
               ],
             ),
           ),
-          if (!isLive)
+          if (!isLive && editing)
             Padding(
               padding: const EdgeInsets.only(bottom: Space.s),
               child: Text(
@@ -406,15 +448,27 @@ class _WorkoutView extends ConsumerWidget {
                 key: ValueKey(e.row.id),
                 detail: e,
                 isLive: isLive,
+                readOnly: readOnly,
               ),
             ),
-          AppButton(
-            label: 'Add Exercise',
-            icon: Icons.add,
-            variant: AppButtonVariant.secondary,
-            expand: true,
-            onPressed: () => context.push(Routes.addExercise(w.id)),
-          ),
+          if (readOnly && detail.exercises.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: Space.l),
+              child: Text(
+                'No exercises logged',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(color: AppColors.textSecondary),
+              ),
+            ),
+          if (!readOnly)
+            AppButton(
+              label: 'Add Exercise',
+              icon: Icons.add,
+              variant: AppButtonVariant.secondary,
+              expand: true,
+              onPressed: () => context.push(Routes.addExercise(w.id)),
+            ),
         ],
       ),
       bottomNavigationBar: SafeArea(
@@ -463,12 +517,6 @@ class _WorkoutView extends ConsumerWidget {
                         onPressed: () => _resume(context, ref),
                       ),
                     ],
-                    const SizedBox(width: Space.s),
-                    AppButton(
-                      label: 'Delete',
-                      variant: AppButtonVariant.danger,
-                      onPressed: () => _delete(context, ref),
-                    ),
                   ],
                 ),
         ),

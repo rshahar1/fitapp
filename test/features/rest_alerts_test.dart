@@ -273,4 +273,25 @@ void main() {
       expect(env.alerts.count('chime'), 1);
     });
   });
+
+  group('020: rest between exercises', () {
+    test('defaults: 1:00 between sets, 2:00 between exercises', () async {
+      await env.timer.startFor(exerciseName: 'Squat');
+      expect(env.container.read(restTimerProvider)?.targetSeconds, 60);
+      await env.timer.startFor(exerciseName: 'Squat', betweenExercises: true);
+      expect(env.container.read(restTimerProvider)?.targetSeconds, 120);
+    });
+
+    test('uses the saved setting, overriding the exercise rest', () async {
+      await env.settings.setRestBetweenExercisesSeconds(150);
+      await env.timer.startFor(
+        exerciseRestSeconds: 90,
+        exerciseName: 'Squat',
+        betweenExercises: true,
+      );
+      expect(env.container.read(restTimerProvider)?.targetSeconds, 150);
+      await env.timer.startFor(exerciseRestSeconds: 90, exerciseName: 'Squat');
+      expect(env.container.read(restTimerProvider)?.targetSeconds, 90);
+    });
+  });
 }

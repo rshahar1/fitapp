@@ -96,7 +96,7 @@ void main() {
 
   testWidgets('preset persists default rest', (tester) async {
     await pump(tester);
-    await tester.tap(find.text('1:30'));
+    await tester.tap(find.text('1:30').first);
     await tester.pumpAndSettle();
     expect(await tester.runAsync(settings.defaultRest), 90);
     await unmount(tester);
@@ -105,10 +105,19 @@ void main() {
   testWidgets('stepper plus adds 5 seconds', (tester) async {
     await pump(tester);
     expect(find.text('1:00'), findsWidgets);
-    await tester.tap(find.bySemanticsLabel('Increase Default rest time'));
+    await tester.tap(find.bySemanticsLabel('Increase Rest between sets'));
     await tester.pumpAndSettle();
     expect(await tester.runAsync(settings.defaultRest), 65);
     expect(find.text('1:05'), findsOneWidget);
+    await unmount(tester);
+  });
+
+  testWidgets('between-exercises preset persists', (tester) async {
+    await pump(tester);
+    await tester.tap(find.text('3:00').last);
+    await tester.pumpAndSettle();
+    expect(await tester.runAsync(settings.restBetweenExercises), 180);
+    expect(await tester.runAsync(settings.defaultRest), 60);
     await unmount(tester);
   });
 

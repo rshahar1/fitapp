@@ -91,10 +91,13 @@ class SetRowView extends StatelessWidget {
   });
 
   final SetLine line;
-  final VoidCallback onCheck;
-  final VoidCallback onTap;
+
+  /// Null makes the row read-only (history review, feature 020).
+  final VoidCallback? onCheck;
+  final VoidCallback? onTap;
 
   String get _semantics {
+    final opens = onTap == null ? '' : ' Opens editor.';
     final kind = line.isOverload ? ', overload' : '';
     if (line.logged case final s?) {
       final target = line.targetReps;
@@ -102,10 +105,10 @@ class SetRowView extends StatelessWidget {
           ? '${s.reps} of $target reps'
           : '${s.reps} reps';
       return 'Set ${line.setNo}$kind, logged: $reps at '
-          '${formatKg(s.weight)}. Opens editor.';
+          '${formatKg(s.weight)}.$opens';
     }
     return 'Set ${line.setNo}$kind: ${line.reps} reps at '
-        '${formatKg(line.weight)}. Opens editor.';
+        '${formatKg(line.weight)}.$opens';
   }
 
   @override
@@ -135,7 +138,7 @@ class SetRowView extends StatelessWidget {
         children: [
           Expanded(
             child: Semantics(
-              button: true,
+              button: onTap != null,
               label: _semantics,
               excludeSemantics: true,
               child: InkWell(
@@ -230,15 +233,18 @@ class _CheckBox extends StatelessWidget {
   const new({required this.line, required this.onCheck});
 
   final SetLine line;
-  final VoidCallback onCheck;
+  final VoidCallback? onCheck;
 
   @override
   Widget build(BuildContext context) {
     final logged = line.isLogged;
+    final readOnly = onCheck == null;
     return Semantics(
-      button: true,
+      button: !readOnly,
       checked: logged,
-      label: logged
+      label: readOnly
+          ? 'Set ${line.setNo} ${logged ? 'logged' : 'not logged'}'
+          : logged
           ? 'Set ${line.setNo} logged. Opens editor.'
           : 'Log set ${line.setNo} as prescribed',
       excludeSemantics: true,

@@ -53,6 +53,27 @@ void main() {
     expect(await h.settings.syncedSettings(), {'default_rest_seconds': 45});
   });
 
+  test('rest between exercises defaults to 120 and normalizes', () async {
+    expect(await h.settings.restBetweenExercises(), 120);
+    await h.settings.setRestBetweenExercisesSeconds(93);
+    expect(await h.settings.restBetweenExercises(), 95);
+    await h.settings.setRestBetweenExercisesSeconds(5000);
+    expect(await h.settings.restBetweenExercises(), 600);
+    expect(await h.settings.syncedSettingsDirty(), isTrue);
+  });
+
+  test('rest between exercises is synced and applied', () async {
+    expect(await h.settings.syncedSettings(), isEmpty);
+    await h.settings.setRestBetweenExercisesSeconds(150);
+    expect(await h.settings.syncedSettings(), {
+      'rest_between_exercises_seconds': 150,
+    });
+    await h.settings.applySyncedSettings({
+      'rest_between_exercises_seconds': 203,
+    }, h.now.add(const Duration(hours: 1)));
+    expect(await h.settings.restBetweenExercises(), 205);
+  });
+
   test('markClean clears dirty when the stamp is unchanged', () async {
     await h.settings.setDefaultRestSeconds(90);
     final sent = (await h.settings.syncedSettingsUpdatedAt())!;

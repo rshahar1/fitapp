@@ -43,7 +43,7 @@ description: "Task list for the simulated Val Thorens snowboarding session"
 
 - [x] T017 `dart format --set-exit-if-changed .`, `flutter analyze`, `flutter test` all green
 - [x] T018 Check the release build contains neither the session data nor the bar (build with `--dart-define=SIMULATE_GPS=true` and look for the CSV text) — see plan.md Findings 5
-- [ ] T019 Run the simulation in an emulator and record what was seen (status changes, runs, map, speeds 1×–30×) in plan.md "Findings" — not possible on the development Mac (no emulator, AVD or iOS Simulator installed); the real widget tree was rendered at 30× instead (Findings, "On screen"). Open: check on a phone or emulator
+- [x] T019 Run the simulation in an emulator and record what was seen (status changes, runs, map, speeds 1×–30×) in plan.md "Findings" — Pixel 7 AVD, API 35; see Findings "On screen"
 
 ## Dependencies
 

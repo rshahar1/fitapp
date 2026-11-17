@@ -233,11 +233,31 @@ android-arm64: the release `libapp.so` (10.2 MB) contains none of `reference_run
 `Boismint_chairlift`, `SIMULATED GPS`, `waiting at Boismint`; the profile build of the same
 source (control, not `kReleaseMode`) contains all four and is 3.6 MB larger.
 
-**On screen.** No Android emulator, AVD or iOS Simulator is installed on the development Mac,
-so the app was not run on a device. Instead the real `FitApp` widget tree was rendered with the
+**On screen (Android emulator, 2026-11-17).** Pixel 7 AVD, Android 15 (API 35, Google APIs,
+arm64), debug APK built with `--dart-define-from-file=env/dev.json --dart-define=SIMULATE_GPS=true`,
+driven with `adb`. Seen:
+
+- Setup: the bar, "GPS ready (±6 m)", the dot parked at the Boismint base on MapTiler tiles of Val
+  Thorens. No location permission prompt (the simulated source grants it).
+- 1×: after 50 s the bar shows 0:50 / 42:04 and Elapsed 0:50; "Resting" at the base as scripted.
+- 10×: 4:38 into the session, "On lift" at 17.9 km/h, grey lift line up the Boismint chair.
+- 30×: run 1 "Riding" with the green route (1 run, 440 m); run 2 "Riding" (2 runs); at the end
+  "session over", "Resting", 2 runs, 1,658 m, 8.80 km, max 59.5 km/h, the same numbers as the
+  tests. Speed changes took effect at once with no jump in Elapsed.
+- Finish: the summary sheet with the whole day on tiles, the ride / lift / rest bar; Save worked
+  (the database clock follows the simulation clock) and History shows "Snowboarding · 2 runs ·
+  1,658 m ↓ · 43 min" with the route thumbnail. No Flutter errors in logcat.
+- Opening Snowboarding again: parked at the base, the chosen 30× kept.
+- Fixed after this run: the bar's parked text was cut off at 1080 px ("waiting at Boi…"); it now
+  reads "Val Thorens · at the base".
+
+Not covered: the geolocator plugin and the foreground service (the simulation replaces them by
+design; the GPX route playback in the README is the way to exercise them at 1×), and a physical
+phone.
+
+**Rendered in tests.** Before the emulator was installed, the real `FitApp` widget tree was rendered with the
 simulation running at 30× (Roboto loaded, map tiles off so the route painter draws) at seven
 points of the session: setup (parked, GPS ready ±6 m), Boismint chair ("On lift", grey lift
 line), run 1 ("Riding", green route with turns), Caron break, cable car ("On lift" 29.8 km/h),
 run 2, and the end (2 runs, 1,658 m, 8.80 km, max 59.5 km/h, "Resting", elapsed 42:06 for a
-42:04 track). The geolocator plugin, the foreground service and tile rendering are not covered
-by that and remain to be checked on a phone or emulator.
+42:04 track). Tile rendering was then confirmed on the emulator (above).

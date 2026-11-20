@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:fitapp/app/router.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
@@ -54,6 +55,11 @@ class ActivityDetailScreen extends ConsumerWidget {
         title: Text(activity == null ? '' : activityLabel(activity.typeId)),
         actions: [
           if (activity != null) ...[
+            IconButton(
+              icon: const Icon(Icons.ios_share),
+              tooltip: 'Share activity',
+              onPressed: () => context.push(Routes.shareActivity(activity.id)),
+            ),
             IconButton(
               icon: const Icon(Icons.edit_outlined),
               tooltip: 'Edit activity',

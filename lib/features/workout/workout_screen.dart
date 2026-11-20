@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fitapp/app/router.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/app/theme/tokens.dart';
@@ -221,11 +223,11 @@ class _WorkoutView extends ConsumerWidget {
     requestSyncFrom(ref); // back up the finished workout (FR-013)
     await rest.dismiss();
     if (result!.outcomes.any((o) => o.toBase > o.fromBase)) haptics.success();
-    var resume = false;
+    var choice = FinishChoice.done;
     if (rootContext.mounted) {
-      resume = await showFinishSummary(rootContext, result!);
+      choice = await showFinishSummary(rootContext, result!);
     }
-    if (resume) {
+    if (choice == FinishChoice.resume) {
       try {
         await repo.resumeWorkout(detail.workout.id);
         router.go(Routes.workout);
@@ -244,6 +246,9 @@ class _WorkoutView extends ConsumerWidget {
       // The nudge is optional; never block leaving the screen.
     }
     router.go(Routes.train);
+    if (choice == FinishChoice.share) {
+      unawaited(router.push(Routes.shareWorkout(detail.workout.id)));
+    }
   }
 
   Future<void> _discard(
@@ -384,6 +389,12 @@ class _WorkoutView extends ConsumerWidget {
         ),
         actions: [
           if (!isLive) ...[
+            if (!editing)
+              IconButton(
+                icon: const Icon(Icons.ios_share),
+                tooltip: 'Share workout',
+                onPressed: () => context.push(Routes.shareWorkout(w.id)),
+              ),
             IconButton(
               icon: Icon(editing ? Icons.check : Icons.edit_outlined),
               tooltip: editing ? 'Done editing' : 'Edit workout',

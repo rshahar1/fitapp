@@ -9,12 +9,25 @@ String outcomeText(FinishOutcome o) => o.toBase > o.fromBase
     ? '${o.exerciseName}: ${formatKg(o.fromBase)} → ${formatKg(o.toBase)}'
     : '${o.exerciseName}: stays at ${formatKg(o.toBase)}';
 
-/// Shows the summary; resolves true when the user chose "Resume workout".
-Future<bool> showFinishSummary(
+/// What the user chose on the finish summary.
+enum FinishChoice {
+  /// Leave the workout.
+  done,
+
+  /// Reopen the workout.
+  resume,
+
+  /// Open the share preview (feature 027).
+  share,
+}
+
+/// Shows the summary; resolves to the user's [FinishChoice]
+/// ([FinishChoice.done] when dismissed).
+Future<FinishChoice> showFinishSummary(
   BuildContext context,
   FinishResult result,
 ) async {
-  final resume = await showModalBottomSheet<bool>(
+  final choice = await showModalBottomSheet<FinishChoice>(
     context: context,
     useSafeArea: true,
     isScrollControlled: true,
@@ -55,18 +68,26 @@ Future<bool> showFinishSummary(
           AppButton(
             label: 'Done',
             expand: true,
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.of(context).pop(FinishChoice.done),
+          ),
+          const SizedBox(height: Space.s),
+          AppButton(
+            label: 'Share workout',
+            icon: Icons.ios_share,
+            expand: true,
+            variant: AppButtonVariant.secondary,
+            onPressed: () => Navigator.of(context).pop(FinishChoice.share),
           ),
           const SizedBox(height: Space.s),
           AppButton(
             label: 'Resume workout',
             expand: true,
             variant: AppButtonVariant.secondary,
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.of(context).pop(FinishChoice.resume),
           ),
         ],
       ),
     ),
   );
-  return resume ?? false;
+  return choice ?? FinishChoice.done;
 }

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.12, 20 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.13, 20 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -35,7 +35,8 @@ activities that count toward consistency; running, cycling and snowboarding can 
 
 ### 1.2 Non-goals (explicitly out of scope)
 - **Social features, friends, feed and leaderboards were dropped by the owner.** Do not build friend tables,
-  feeds, sharing or leaderboards. Do not add `visibility` or friendship columns "for later".
+  feeds or leaderboards, and no sharing between users or accounts. Exporting a finished session as an image through
+  the OS share sheet is allowed (section 5.11). Do not add `visibility` or friendship columns "for later".
 - Exercise videos or "How to" content.
 - AI-generated workouts.
 - **Warm-up sets, and set types in general, in v1.** The owner dropped warm-up sets. Do not add a set-type column,
@@ -386,6 +387,18 @@ back to the exercise plan.
   "<Workout|Running|Cycling|Snowboarding> in progress. Finish it first." with **Open**. Logging a past session is never blocked.
 - Train stats and Recent are unchanged (a later slice reworks them). Details: `specs/011-start-hub/` and `docs/ux/unified-start-proposal.md`.
 
+### 5.11 Sharing a session as an image (feature 027)
+- **Share action:** every finished gym workout and every activity (running, cycling, snowboarding, functional training, Pilates; GPS and manual)
+  has a Share icon in the app bar of `/activity/:id` and `/workout/:id`, plus **Share workout** on the gym finish summary.
+- **Preview screen** (`/share/workout/:id`, `/share/activity/:id`) shows a 1080×1350 PNG card in the dark style, tailored per type:
+  run and ride: route drawing (no map tiles) with distance, pace, speed, duration, moving time, climb and best km; snowboarding day: speed-heat route,
+  ride / lift / rest time breakdown, top speed, vertical, runs, distance and longest run; gym: totals plus one compressed line per exercise, capped at 7
+  with "+N more exercises"; other activities: duration, distance and pace when present.
+- **Share image** hands the PNG to the OS share sheet (`share_plus`). The app sends nothing over the network; the image is a temporary cache file.
+  Notes are never printed on the image.
+- Pure logic lives in `lib/domain/share/` (`share_card.dart`, `route_projection.dart`), the sharer in `lib/core/image_sharer.dart`, UI in `lib/features/share/`.
+  No schema change. Details: `specs/027-workout-share/`.
+
 ## 6. Navigation and screens
 
 ```
@@ -403,6 +416,8 @@ Full-screen routes
 ├── /workout               live workout (active)
 ├── /workout/:id           finished workout in edit mode
 ├── /activity/:id          activity detail (map, metrics, splits)
+├── /share/workout/:id     share preview of a finished gym workout (image card, Share image)
+├── /share/activity/:id    share preview of an activity (image card, Share image)
 ├── /exercise/:id          exercise detail (Summary / History)
 ├── /exercises             exercise library (from You)
 ├── /add-exercise?workout= exercise picker (modal)
@@ -508,6 +523,7 @@ settings           key PK, value                                   -- local-only
 | Haptics | Flutter's built-in `HapticFeedback` (no package needed) |
 | Dates and formatting | `intl` |
 | Backend (feature 013) | `supabase_flutter`, `google_sign_in` |
+| Sharing (feature 027) | `share_plus` (OS share sheet for the rendered PNG) |
 | Lints | `flutter_lints` minimum; prefer `very_good_analysis` (strict) |
 | Tests | `flutter_test`, `mocktail` if needed, drift's in-memory database |
 
@@ -696,6 +712,7 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 | Activities count toward This week, Week streak and the weekly bars; Total workouts stays gym only; never volume or progression | Owner's decision (13 Nov 2026); consistency covers all training, "workouts" stays gym. Total workouts part superseded by feature 025 |
 | Train weeks run Sunday to Saturday (local); Train tiles are This week, Week streak, All time (gym plus activities); a By type list shows per-type counts. Progress chart stays ISO weeks; superseded by feature 026 (Progress bars also Sunday weeks) | Owner's decision (20 Nov 2026, feature 025); supersedes the gym-only Total workouts of feature 006 |
 | Progress bars use the same Sunday-to-Saturday weeks as Train, labelled by the week's Sunday date instead of ISO week numbers | Owner's decision (20 Nov 2026, feature 026, "Yes, align it"); one week definition across the app |
+| Share a finished session as a 1080×1350 image through the OS share sheet; no social features, nothing sent by the app, notes never on the image | Owner's decision (20 Nov 2026, feature 027); image export is not a social feature |
 | Distinct icons per row in History, including a dumbbell for gym workouts | Owner's decision (13 Nov 2026); tell sports and gym apart at a glance |
 | Resume any finished workout, discard live workouts, backdate gym sessions | Owner's decision (13 Nov 2026); a backdated or older session never rewrites a plan's base |
 | Exercises library with custom categories; History calendar | Owner's decision (13 Nov 2026); browse and edit exercises, review training by day |
@@ -758,3 +775,4 @@ resolved on 12 Nov 2026; see the decisions log.
 - **2.10 (20 Nov 2026):** feature 024, template-only gym start. The Train hero's empty "Start gym workout" is removed; gym workouts start only from a template's START, and the hero shows only while a session is in progress (section 5.5).
 - **2.11 (20 Nov 2026):** feature 025, Train stats by type (owner request of 20 Nov 2026). Train weeks run Sunday to Saturday; tiles become This week, Week streak, All time (gym plus activities, replacing gym-only Total workouts); new By type list (section 5.5). Progress chart keeps ISO weeks (changed in 2.12).
 - **2.12 (20 Nov 2026):** feature 026, Progress bars on Sunday weeks (owner request "Yes, align it"). The Workouts per week chart uses the same Sunday-to-Saturday weeks as Train and is labelled by each week's Sunday date (`18 Oct`, `25`, `1 Nov`) instead of ISO week numbers (section 5.6).
+- **2.13 (20 Nov 2026):** feature 027, Share a workout as an image (owner request of 20 Nov 2026). Gym workouts and activities get a Share action opening a preview of a 1080×1350 PNG card, handed to the OS share sheet via `share_plus` (section 5.11). Non-goals reworded: social features stay out, image export is allowed.

@@ -132,6 +132,15 @@ only), a run comparison with best-run badges (fastest, longest, most vertical), 
 counts as a run, a slow uphill walk counts as rest, and a very flat conveyor lift may count as rest; thresholds
 will be tuned after a real day on the mountain. No new packages.
 
+## Share a workout as an image (feature 027)
+
+Every finished gym workout and every activity has a Share icon (activity detail and finished-workout screens; the gym
+finish summary has "Share workout"). It opens a preview of a 1080x1350 dark PNG card tailored to the type: route
+drawing (no map tiles) with distance, pace, speed, duration and best km for runs and rides; ride / lift / rest time,
+top speed, vertical and runs for snowboarding days; totals and up to 7 exercise lines ("+N more exercises") for gym;
+duration, distance and pace for other activities. "Share image" hands the PNG to the OS share sheet. The app sends
+nothing itself, the image is a temporary cache file and notes are never printed on it. New package: `share_plus`.
+
 ## Workout flow and exercise library
 
 - **Resume** any finished workout (while none is live), from History or the finish summary; a resumed workout
@@ -162,8 +171,8 @@ dart run drift_dev make-migrations
 lib/
   main.dart
   app/                 app.dart, backdrop.dart, router.dart, theme/ (app_theme.dart, tokens.dart)
-  core/                format.dart, haptics.dart, rest_alerts.dart, platform_rest_alerts.dart
-  domain/              pure Dart: progression.dart, stats.dart, activity_types.dart (sport registry), workout_dates.dart, calendar.dart, tracking/ (GPS and snowboarding reducers)
+  core/                format.dart, haptics.dart, rest_alerts.dart, platform_rest_alerts.dart, image_sharer.dart (OS share sheet)
+  domain/              pure Dart: progression.dart, stats.dart, activity_types.dart (sport registry), workout_dates.dart, calendar.dart, tracking/ (GPS and snowboarding reducers), share/ (share card and route projection)
   data/
     db/                app_database.dart, tables.dart, seed_library.dart (+ generated *.g.dart)
     repositories/      WorkoutRepository, ExerciseRepository, SettingsRepository, TemplateRepository (template_repository.dart), ActivityRepository (activity_repository.dart), plan_store.dart (PlanStore: validated plan reads/writes), live_session_store.dart (device-local live workout record)
@@ -181,6 +190,7 @@ lib/
     exercises/         exercise library screen, exercise picker and custom exercise sheet
     templates/         template editor screen (create/edit/reorder/delete)
     settings/          settings screen
+    share/             share preview screen and card renderer
   widgets/             shared UI kit (buttons, cards, charts, guard.dart, ...)
 supabase/              migrations, SQL tests, Edge Function delete-account
 drift_schemas/         drift schema dumps (v1 to v9)

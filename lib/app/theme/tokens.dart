@@ -92,6 +92,31 @@ abstract final class Sizes {
   static const mapMin = 120.0;
 }
 
+/// The shared workout image (feature 027): a fixed 4:5 canvas rendered at
+/// [pixelRatio], giving a 1080 × 1350 PNG.
+abstract final class ShareCardSize {
+  static const width = 360.0;
+  static const height = 450.0;
+  static const pixelRatio = 3.0;
+
+  /// Height of the route drawing on route and snow cards.
+  static const routeHeight = 168.0;
+
+  /// Height of the ride/lift/rest bar.
+  static const barHeight = 10.0;
+
+  /// Smallest text on the card (≥ 30 px on the image).
+  static const minText = 11.0;
+  static const title = 22.0;
+  static const statValue = 22.0;
+  static const statValueLarge = 30.0;
+
+  /// Header icon, one exercise line, the icon of a card without stats.
+  static const icon = 22.0;
+  static const exerciseRow = 30.0;
+  static const emptyIcon = 88.0;
+}
+
 abstract final class Motion {
   static const fast = Duration(milliseconds: 150);
 }

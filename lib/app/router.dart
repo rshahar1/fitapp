@@ -7,6 +7,7 @@ import 'package:fitapp/features/progress/exercise_detail_screen.dart';
 import 'package:fitapp/features/progress/progress_screen.dart';
 import 'package:fitapp/features/settings/privacy_screen.dart';
 import 'package:fitapp/features/settings/settings_screen.dart';
+import 'package:fitapp/features/share/share_preview_screen.dart';
 import 'package:fitapp/features/shell/shell_scaffold.dart';
 import 'package:fitapp/features/templates/template_editor_screen.dart';
 import 'package:fitapp/features/tracking/live_track_screen.dart';
@@ -42,6 +43,10 @@ abstract final class Routes {
   static String finishedWorkout(String id) => '/workout/$id';
   static String activity(String id) => '/activity/$id';
   static String exercise(String id) => '/exercise/$id';
+
+  /// Share image previews (feature 027).
+  static String shareWorkout(String id) => '/share/workout/$id';
+  static String shareActivity(String id) => '/share/activity/$id';
   static const newTemplate = '/template/new';
   static String template(String id) => '/template/$id';
 
@@ -127,6 +132,22 @@ GoRouter buildRouter() => GoRouter(
       builder: (_, state) => SnowReplayScreen(
         activityId: state.pathParameters['id']!,
         runNumber: int.tryParse(state.pathParameters['run']!) ?? 1,
+      ),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootKey,
+      path: '/share/workout/:id',
+      builder: (_, state) => SharePreviewScreen(
+        subject: ShareSubject.workout,
+        id: state.pathParameters['id']!,
+      ),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootKey,
+      path: '/share/activity/:id',
+      builder: (_, state) => SharePreviewScreen(
+        subject: ShareSubject.activity,
+        id: state.pathParameters['id']!,
       ),
     ),
     GoRoute(

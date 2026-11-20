@@ -66,6 +66,12 @@ Implementation in `WorkoutRepository`:
 - Review tools (Activity detail): speed heatmap on the route, map style switch (Dark `dataviz-dark`, Winter `winter-v2`, Satellite `satellite`; MapTiler map ids, same key; `mapStyleProvider` stored in local settings, not synced), `snow_compare.dart` (run comparison with badges), `snow_timeline.dart` (runs and lifts), and `snow_replay_screen.dart` at `/activity/:id/replay/:run` (marker driven by a `Ticker` through `replayAt`, play / pause, scrubber, 1x / 4x / 16x).
 - No new package dependencies. Raw fixes stay on the device; only the route and segment list sync.
 
+## Sharing a session as an image (feature 027)
+
+- Domain (pure Dart, `lib/domain/share/`): `share_card.dart` builds an immutable card model from a finished workout or activity (per-type metric lists, gym totals and exercise lines capped at 7 with "+N more exercises"; notes are never included) and `route_projection.dart` projects route points to a unit box for drawing without map tiles.
+- UI (`lib/features/share/`): preview screens at `/share/workout/:id` and `/share/activity/:id` render the 1080x1350 card with a `RepaintBoundary` and encode it to PNG; Share icons sit on the activity detail and finished-workout app bars, and "Share workout" on the gym finish summary.
+- `lib/core/image_sharer.dart` writes the PNG to a temporary cache file and hands it to the OS share sheet through `share_plus`; widgets reach it through a Riverpod provider so tests use a fake. No schema change and no network use by the app.
+
 ## Workout flow and exercise library
 
 - Live session: a device-local record in settings under the key `live_workout` (`lib/data/repositories/live_session_store.dart`, exposed as `liveSessionProvider`) holds the live workout id and the duration already accumulated, so any finished workout can be resumed (while none is live) and keeps its earlier duration. Start, finish, discard and delete clear it. No schema change (v4).

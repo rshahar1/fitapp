@@ -1,5 +1,17 @@
 <!--
 Sync Impact Report
+- Version change: 1.8.0 → 1.9.0 (feature 027, share a workout as an image, owner request
+  2026-11-20)
+- Modified principles: VI (sharing is a user-initiated export of a rendered image through the
+  operating system share sheet; the app sends nothing itself, writes only a temporary file and
+  never puts notes on the image); VII (sharing a finished session as an image through the OS share
+  sheet is in scope; social/friends/feed/leaderboards stay non-goals and sharing between
+  users/accounts inside the app stays out of scope)
+- Added sections: none (Technology & Platform Constraints adds `share_plus`)
+- Removed sections: none
+- Deferred TODOs: none
+
+Previous report (1.8.0)
 - Version change: 1.7.0 → 1.8.0 (feature 017, live snowboarding tracking, owner request
   2026-11-16)
 - Modified principles: VI (a saved snowboarding day's per-segment breakdown is backed up with its
@@ -197,6 +209,9 @@ Rationale: the user is sweaty, distracted and between sets; mis-taps corrupt dat
 - Step counts (feature 014) are read on device from Health Connect with a read-only steps
   permission. They are shown, never written to the app database, never synced and never sent
   anywhere; the user can turn the feature off in Settings, after which nothing is read.
+- Sharing (feature 027) is a user-initiated export of a rendered image through the operating
+  system share sheet. The app sends nothing itself, writes only a temporary cache file, and never
+  puts notes on the image.
 - The app MUST never crash on bad data: DB errors are caught, logged, and shown as a short message;
   sync errors are silent and retried.
 
@@ -225,8 +240,11 @@ Rationale: a personal health log is private data; leaked keys are irreversible.
   heart rate, HealthKit, writing to Health Connect, other health data types, step goals and charts, GPX
   export, miles and offline tile download remain out of scope until the owner requests them.
 - Phase 2 cloud backup and sync with Google sign-in (feature 013, owner approval 2026-11-14) is in
-  scope, Android only. Apple Sign-In, email magic link, live push between devices and any sharing
-  between users remain out of scope until the owner requests them.
+  scope, Android only. Apple Sign-In, email magic link and live push between devices remain out of scope
+  until the owner requests them.
+- Sharing a finished session (gym workout or activity) as an image through the OS share sheet
+  (feature 027, owner request 2026-11-20) is in scope. Sharing between users or accounts inside
+  the app remains out of scope, as do social/friends/feed/leaderboards.
 
 Rationale: the owner explicitly dropped these; speculative code is maintenance debt.
 
@@ -235,7 +253,7 @@ Rationale: the owner explicitly dropped these; speculative code is maintenance d
 - Flutter stable (latest) + Dart with sound null safety; Android first (APK), iOS later.
 - Packages: `flutter_riverpod`, `go_router`, `drift` (+ SQLite libs), `fl_chart` or `CustomPainter`,
   `uuid`, `intl`, `geolocator` (location), `flutter_map` + `latlong2` (map), `supabase_flutter` +
-  `google_sign_in` (sync, auth), `health` (Health Connect steps); tests with `flutter_test`, `mocktail` if needed.
+  `google_sign_in` (sync, auth), `health` (Health Connect steps), `share_plus` (OS share sheet); tests with `flutter_test`, `mocktail` if needed.
 - Backend schema, triggers and row-level security live as Supabase CLI migrations in
   `supabase/migrations/`, tested by SQL tests on PGlite (`node tool/db_test.mjs`, also in CI).
 - Android application id `com.fitapp.app`; app name **FitApp**; kg only internally and in the UI.
@@ -262,4 +280,4 @@ Rationale: the owner explicitly dropped these; speculative code is maintenance d
   version (MAJOR: principle removed/redefined; MINOR: principle/section added; PATCH: wording).
 - Reviews verify compliance with principles II, III and VI on every milestone.
 
-**Version**: 1.8.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-16
+**Version**: 1.9.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-20

@@ -192,6 +192,10 @@ void main() {
     expect(find.byTooltip(RegExp('^Exercise options')), findsNothing);
     expect(find.byTooltip('Edit workout'), findsOneWidget);
     expect(find.byTooltip('Delete workout'), findsOneWidget);
+    // No footer: no Done, Resume or Delete buttons at the bottom.
+    expect(find.text('DONE'), findsNothing);
+    expect(find.text('RESUME'), findsNothing);
+    expect(find.text('DELETE'), findsNothing);
     await tester.tap(find.bySemanticsLabel(RegExp('Set 2, logged')));
     await _settle(tester);
     expect(find.text('UPDATE'), findsNothing);
@@ -219,7 +223,9 @@ void main() {
       () => env.finished([(22.5, 10), (22.5, 10), (25, 5)]),
     );
     await _open(tester, env, first);
-    expect(find.text('RESUME'), findsOneWidget);
+    await tester.tap(find.byTooltip('Workout options'));
+    await _settle(tester);
+    expect(find.text('Resume workout'), findsOneWidget);
     expect(find.byTooltip('Delete workout'), findsOneWidget);
     await _dispose(tester, env);
   });
@@ -232,7 +238,9 @@ void main() {
       () => env.finished([(20, 10), (20, 10), (22.5, 6)]),
     ))!;
     await _open(tester, env, id);
-    await tester.tap(find.text('RESUME'));
+    await tester.tap(find.byTooltip('Workout options'));
+    await _settle(tester);
+    await tester.tap(find.text('Resume workout'));
     await _settle(tester);
     expect(await tester.runAsync(env.base), 20);
     expect(find.text('live workout'), findsOneWidget);

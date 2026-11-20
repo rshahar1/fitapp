@@ -23,6 +23,9 @@ Delete icons sit in the app bar's top-right, like the activity detail screen.
 3. **Given** either mode, **When** Delete is tapped and confirmed, **Then** the workout is deleted
    (same confirmation and weight roll-back as before).
 4. The live workout screen is unchanged.
+5. **(Amended 2026-11-17)** A finished workout has no bottom bar: no Done, Resume or Delete buttons
+   there. Back leaves the screen; "Resume workout" is in the app bar's options menu (shown only
+   when resuming is possible), next to "Save as template".
 
 ### User Story 2 - Longer rest before the next exercise (Priority: P1)
 
@@ -37,7 +40,8 @@ Delete icons sit in the app bar's top-right, like the activity detail screen.
 
 ## Requirements
 - **FR-001**: Finished workouts open read-only; edit mode only after tapping Edit.
-- **FR-002**: Edit and Delete actions in the app bar top-right; Delete leaves the bottom bar.
+- **FR-002**: Edit and Delete actions in the app bar top-right; finished workouts have no bottom
+  bar (Resume moves to the options menu, Done is replaced by back).
 - **FR-003**: New setting `rest_between_exercises_seconds`, default 120, same bounds/steps as the
   default rest; part of the synced settings whitelist and wiped with the other rest settings.
 - **FR-004**: Logging the set that completes an exercise's planned sets starts the between-exercises

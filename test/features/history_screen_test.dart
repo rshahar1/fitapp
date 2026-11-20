@@ -1,14 +1,18 @@
 import 'package:drift/drift.dart' show DatabaseConnection, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/core/step_source.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/exercise_repository.dart';
 import 'package:fitapp/data/repositories/workout_repository.dart';
+import 'package:fitapp/features/history/history_calendar.dart';
 import 'package:fitapp/features/history/history_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+
+import 'fake_step_source.dart';
 
 const _incline = '00000000-0000-4000-8000-000000000002';
 const _lat = '00000000-0000-4000-8000-000000000009';
@@ -49,15 +53,29 @@ void main() {
     await repo.finishWorkout(w.id);
   }
 
-  Future<void> pumpScreen(WidgetTester tester) async {
+  Future<void> pumpScreen(WidgetTester tester, {HistoryView? view}) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [databaseProvider.overrideWithValue(db)],
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          if (view != null) ...[
+            stepSourceProvider.overrideWithValue(FakeStepSource()),
+            clockProvider.overrideWithValue(() => DateTime(2026, 10, 10, 18)),
+          ],
+          if (view != null)
+            historyViewProvider.overrideWith(() => _FixedView(view)),
+        ],
         child: MaterialApp(theme: buildAppTheme(), home: const HistoryScreen()),
       ),
     );
     await tester.runAsync(() => Future<void>.delayed(Duration.zero));
-    await tester.pumpAndSettle();
+    if (view == null) {
+      await tester.pumpAndSettle();
+    } else {
+      // The calendar keeps loading step data, so it never fully settles.
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
   }
 
   testWidgets('groups workouts by month with exercises and volume', (
@@ -89,4 +107,31 @@ void main() {
       findsOneWidget,
     );
   });
+
+  group('history view provider', () {
+    testWidgets('calendar view shows the calendar', (tester) async {
+      await tester.runAsync(() => finished(_incline, [(20, 10)]));
+      await pumpScreen(tester, view: HistoryView.calendar);
+      expect(find.byType(HistoryCalendar), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pump(const Duration(milliseconds: 10));
+    });
+
+    testWidgets('defaults to the list view', (tester) async {
+      await tester.runAsync(() => finished(_incline, [(20, 10)]));
+      await pumpScreen(tester);
+      expect(find.byType(HistoryCalendar), findsNothing);
+    });
+  });
+}
+
+class _FixedView extends HistoryViewNotifier {
+  new(this.initial);
+
+  final HistoryView initial;
+
+  @override
+  HistoryView build() => initial;
 }

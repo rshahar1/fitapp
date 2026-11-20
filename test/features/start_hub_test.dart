@@ -9,6 +9,7 @@ import 'package:fitapp/data/repositories/template_repository.dart';
 import 'package:fitapp/data/repositories/tracking_repository.dart';
 import 'package:fitapp/data/repositories/workout_repository.dart';
 import 'package:fitapp/domain/activity_types.dart';
+import 'package:fitapp/features/activities/activity_icons.dart';
 import 'package:fitapp/features/start/start_hub_sheet.dart';
 import 'package:fitapp/features/tracking/widgets/route_map.dart';
 import 'package:fitapp/widgets/widgets.dart';
@@ -286,6 +287,24 @@ void main() {
         );
         expect(row, findsOneWidget, reason: t.label);
       }
+      await unmount(tester);
+    });
+
+    testWidgets('Functional training shows the weightlifter emoji', (
+      tester,
+    ) async {
+      await pumpApp(tester);
+      await openHub(tester);
+      await tester.scrollUntilVisible(
+        find.text(functionalEmoji),
+        100,
+        scrollable: find.descendant(
+          of: find.byType(StartHubSheet),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      expect(find.text(functionalEmoji), findsOneWidget);
+      expect(find.byIcon(Icons.sports_gymnastics), findsNothing);
       await unmount(tester);
     });
 

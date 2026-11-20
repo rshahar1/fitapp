@@ -31,12 +31,19 @@ class HistoryEntryRow extends StatelessWidget {
 class HistoryIconBadge extends StatelessWidget {
   const new({
     super.key,
-    required this.icon,
     required this.color,
     required this.bg,
-  });
+    this.icon,
+    this.typeId,
+  }) : assert(
+         icon != null || typeId != null,
+         'HistoryIconBadge needs an icon or a typeId',
+       );
 
-  final IconData icon;
+  final IconData? icon;
+
+  /// Activity type id; rendered with [ActivityIcon] when [icon] is null.
+  final String? typeId;
   final Color color;
   final Color bg;
 
@@ -49,7 +56,9 @@ class HistoryIconBadge extends StatelessWidget {
         color: bg,
         borderRadius: BorderRadius.circular(Radii.chip),
       ),
-      child: Icon(icon, size: 22, color: color),
+      child: icon != null
+          ? Icon(icon, size: 22, color: color)
+          : ActivityIcon(typeId!, size: 22, color: color),
     );
   }
 }
@@ -100,7 +109,7 @@ class HistoryActivityRow extends StatelessWidget {
         leading: thumbnail != null
             ? RouteThumbnail(points: thumbnail)
             : HistoryIconBadge(
-                icon: activityIcon(activity.typeId),
+                typeId: activity.typeId,
                 color: context.metrics.volume,
                 bg: AppColors.surfaceHigh,
               ),

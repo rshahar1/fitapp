@@ -2,7 +2,22 @@ import 'package:fitapp/app/theme/tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Visual style of an [AppButton].
-enum AppButtonVariant { primary, secondary, danger, ghost }
+enum AppButtonVariant {
+  /// Green accent: start something.
+  primary,
+
+  /// Neutral raised surface.
+  secondary,
+
+  /// Destructive.
+  danger,
+
+  /// Transparent, accent text.
+  ghost,
+
+  /// Amber: continue a session in progress (feature 022).
+  live,
+}
 
 /// Pill-shaped bold uppercase button.
 class AppButton extends StatelessWidget {
@@ -40,6 +55,7 @@ class AppButton extends StatelessWidget {
         AppColors.textPrimary,
       ),
       AppButtonVariant.danger => (AppColors.surfaceHigh, AppColors.danger),
+      AppButtonVariant.live => (AppColors.live, AppColors.onAccent),
       AppButtonVariant.ghost => (const Color(0x00000000), AppColors.accent),
     };
     final enabled = onPressed != null;

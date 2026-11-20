@@ -39,25 +39,36 @@ class HistoryScreen extends ConsumerWidget {
   }
 }
 
-enum _HistoryView { list, calendar }
+/// History screen view: grouped list or month calendar.
+enum HistoryView { list, calendar }
 
-class _HistoryList extends StatefulWidget {
+/// Which History view is showing; the Train steps card sets it to calendar.
+class HistoryViewNotifier extends Notifier<HistoryView> {
+  @override
+  HistoryView build() => HistoryView.list;
+
+  /// The view being shown.
+  HistoryView get view => state;
+
+  /// Shows [value].
+  set view(HistoryView value) => state = value;
+}
+
+final historyViewProvider = NotifierProvider<HistoryViewNotifier, HistoryView>(
+  HistoryViewNotifier.new,
+);
+
+class _HistoryList extends ConsumerWidget {
   const new({required this.items});
 
   final List<HistoryEntry> items;
 
   @override
-  State<_HistoryList> createState() => _HistoryListState();
-}
-
-class _HistoryListState extends State<_HistoryList> {
-  _HistoryView _view = _HistoryView.list;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final view = ref.watch(historyViewProvider);
     final months = <String, List<HistoryEntry>>{};
-    if (_view == _HistoryView.list) {
-      for (final item in widget.items) {
+    if (view == HistoryView.list) {
+      for (final item in items) {
         months
             .putIfAbsent(formatMonth(_startedAt(item).toLocal()), () => [])
             .add(item);
@@ -74,25 +85,26 @@ class _HistoryListState extends State<_HistoryList> {
           ),
         ),
         const SizedBox(height: Space.s),
-        SegmentedButton<_HistoryView>(
+        SegmentedButton<HistoryView>(
           segments: const [
             ButtonSegment(
-              value: _HistoryView.list,
+              value: HistoryView.list,
               icon: Icon(Icons.view_list),
               label: Text('List'),
             ),
             ButtonSegment(
-              value: _HistoryView.calendar,
+              value: HistoryView.calendar,
               icon: Icon(Icons.calendar_month),
               label: Text('Calendar'),
             ),
           ],
-          selected: {_view},
+          selected: {view},
           showSelectedIcon: false,
-          onSelectionChanged: (s) => setState(() => _view = s.first),
+          onSelectionChanged: (s) =>
+              ref.read(historyViewProvider.notifier).view = s.first,
         ),
-        if (_view == _HistoryView.calendar)
-          HistoryCalendar(entries: widget.items)
+        if (view == HistoryView.calendar)
+          HistoryCalendar(entries: items)
         else
           for (final entry in months.entries) ...[
             SectionHeader(entry.key),

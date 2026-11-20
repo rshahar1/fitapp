@@ -1,12 +1,15 @@
 import 'dart:async';
 
+import 'package:fitapp/app/router.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/core/step_source.dart';
 import 'package:fitapp/data/providers.dart';
+import 'package:fitapp/features/history/history_screen.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -58,6 +61,16 @@ class _StepsCardState extends ConsumerState<StepsCard> {
     if (mounted) _refresh();
   }
 
+  void _openCalendar() {
+    ref.read(historyViewProvider.notifier).view = HistoryView.calendar;
+    final shell = StatefulNavigationShell.maybeOf(context);
+    if (shell != null) {
+      shell.goBranch(1);
+    } else {
+      context.go(Routes.history);
+    }
+  }
+
   void _maybeShowIntro() {
     if (_introChecked) return;
     _introChecked = true;
@@ -102,6 +115,8 @@ class _StepsCardState extends ConsumerState<StepsCard> {
         final km = meters == null ? null : formatKm(meters);
         body = Semantics(
           container: true,
+          button: true,
+          hint: 'Opens the history calendar',
           label: 'Steps today: $value${km == null ? '' : ', $km'}',
           excludeSemantics: true,
           child: Column(
@@ -175,6 +190,7 @@ class _StepsCardState extends ConsumerState<StepsCard> {
     return Padding(
       padding: const EdgeInsets.only(top: Space.s),
       child: AppCard(
+        onTap: access == StepAccess.granted ? _openCalendar : null,
         child: SizedBox(width: double.infinity, child: body),
       ),
     );

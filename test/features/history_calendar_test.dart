@@ -101,6 +101,16 @@ void main() {
     expect(find.byTooltip('Previous week'), findsNothing);
   });
 
+  testWidgets('weekday header starts on Sunday', (tester) async {
+    await pumpCalendar(tester);
+    final sun = tester.getTopLeft(find.text('Sun').first).dx;
+    final mon = tester.getTopLeft(find.text('Mon').first).dx;
+    final sat = tester.getTopLeft(find.text('Sat').first).dx;
+    expect(sun, lessThan(mon));
+    expect(mon, lessThan(sat));
+    expect(sun, lessThan(sat));
+  });
+
   testWidgets('shows month, icons, +N and the selected day sessions', (
     tester,
   ) async {

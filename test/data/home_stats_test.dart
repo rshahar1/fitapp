@@ -10,15 +10,20 @@ void main() {
   test('homeStats: thisWeek, allTime, streak, recent 3', () async {
     await h.plan();
     // h.now starts Mon 2026-11-02 18:00; each session starts a day later.
-    h.now = DateTime.utc(2026, 10, 20, 12); // -> Oct 21 (W43)
+    h.now = DateTime.utc(
+      2026,
+      10,
+      20,
+      12,
+    ); // -> Wed Oct 21 (week of Sun Oct 18)
     await h.session([(20, 10)]);
-    h.now = DateTime.utc(2026, 10, 27, 12); // -> Oct 28 (W44)
+    h.now = DateTime.utc(2026, 10, 27, 12); // -> Wed Oct 28 (week of Oct 25)
     await h.session([(20, 10)]);
-    h.now = DateTime.utc(2026, 11, 3, 12); // -> Nov 4 (W45)
+    h.now = DateTime.utc(2026, 11, 3, 12); // -> Wed Nov 4 (week of Nov 1)
     await h.session([(20, 10)]);
-    h.now = DateTime.utc(2026, 11, 9, 12); // -> Nov 10 (W46)
+    h.now = DateTime.utc(2026, 11, 9, 12); // -> Tue Nov 10 (week of Nov 8)
     await h.session([(20, 10)]);
-    await h.session([(20, 10)]); // Nov 11 (W46)
+    await h.session([(20, 10)]); // Wed Nov 11 (week of Nov 8)
 
     final now = DateTime.utc(2026, 11, 12, 12);
     final s = await h.workouts.homeStats(now);
@@ -50,6 +55,6 @@ void main() {
         .watchWorkoutsPerWeek(() => DateTime.utc(2026, 11, 12, 12))
         .first;
     expect(m, hasLength(8));
-    expect(m.keys.last, '2026-W46');
+    expect(m.keys.last, DateTime(2026, 11, 8)); // Thu 12 Nov's Sunday
   });
 }

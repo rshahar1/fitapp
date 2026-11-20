@@ -233,47 +233,44 @@ SummaryDiff? diffSummary(SessionSummary current, SessionSummary? previous) {
 }
 
 // ---------------------------------------------------------------------------
-// ISO weeks (Monday start). Dates are treated as calendar dates: only
-// year/month/day of the given DateTime are used, so callers pass local time.
+// Weeks run Sunday to Saturday on local calendar days (features 025, 026),
+// the same weeks as the History calendar ([startOfWeek]).
 // ---------------------------------------------------------------------------
 
-DateTime _dateOnly(DateTime d) => DateTime.utc(d.year, d.month, d.day);
+const _months = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
 
-/// The Monday (UTC date) of the ISO week containing [date].
-DateTime isoWeekMonday(DateTime date) {
-  final d = _dateOnly(date);
-  return d.subtract(Duration(days: d.weekday - DateTime.monday));
-}
-
-/// ISO week key such as `2026-W46`.
-String isoWeekKey(DateTime date) {
-  final d = _dateOnly(date);
-  // The Thursday of this week decides the ISO year.
-  final thursday = d.add(Duration(days: DateTime.thursday - d.weekday));
-  final isoYear = thursday.year;
-  final dayOfYear = thursday.difference(DateTime.utc(isoYear)).inDays;
-  final week = dayOfYear ~/ 7 + 1;
-  return '$isoYear-W${week.toString().padLeft(2, '0')}';
-}
-
-/// Workouts per ISO week for the last [weeks] weeks ending with the week of
-/// [now], ordered oldest first, zero-filled.
-Map<String, int> workoutsPerWeek(
+/// Workouts per Sunday-to-Saturday week for the last [weeks] weeks ending
+/// with the week of [now], keyed by each week's Sunday (date only), oldest
+/// first, zero-filled.
+Map<DateTime, int> workoutsPerWeek(
   Iterable<DateTime> workoutDates, {
   required DateTime now,
   int weeks = 8,
 }) {
-  final currentMonday = isoWeekMonday(now);
-  final result = <String, int>{
+  final current = startOfWeek(now);
+  final result = <DateTime, int>{
     for (var i = weeks - 1; i >= 0; i--)
-      isoWeekKey(currentMonday.subtract(Duration(days: 7 * i))): 0,
+      DateTime(current.year, current.month, current.day - 7 * i): 0,
   };
   for (final d in workoutDates) {
-    final key = isoWeekKey(d);
+    final key = startOfWeek(d);
     if (result.containsKey(key)) result[key] = result[key]! + 1;
   }
   return result;
 }
+
+/// Bar labels for week starts: the day of month, with the short month name
+/// on the first bar and whenever the month changes (`18 Oct`, `25`, `1 Nov`).
+List<String> weekBarLabels(List<DateTime> sundays) => [
+  for (var i = 0; i < sundays.length; i++)
+    if (i == 0 || sundays[i].month != sundays[i - 1].month)
+      '${sundays[i].day} ${_months[sundays[i].month - 1]}'
+    else
+      '${sundays[i].day}',
+];
 
 /// Number of consecutive Sunday-to-Saturday weeks (local calendar days,
 /// feature 025) with at least one workout, ending with the week of [now] or

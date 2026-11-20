@@ -1,6 +1,5 @@
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/repositories/activity_repository.dart';
-import 'package:fitapp/domain/stats.dart';
 import 'package:fitapp/domain/training_breakdown.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -25,7 +24,7 @@ void main() {
     expect(stats.thisWeek, 3);
     expect(stats.allTime, 3);
     final bars = await h.workouts.watchWorkoutsPerWeek(() => h.now).first;
-    expect(bars[isoWeekKey(h.now)], 3);
+    expect(bars.values.last, 3);
   });
 
   test('a week with only an activity keeps the streak', () async {

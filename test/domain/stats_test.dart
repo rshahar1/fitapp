@@ -114,43 +114,42 @@ void main() {
     });
   });
 
-  group('ISO weeks', () {
-    test('9 Nov 2026 -> 2026-W46', () {
-      expect(isoWeekKey(DateTime(2026, 11, 9)), '2026-W46');
+  group('workoutsPerWeek (Sunday-based weeks)', () {
+    test('last 8 weeks keyed by Sunday, zero-filled, oldest first', () {
+      final now = DateTime(2026, 11, 12); // week of Sun 8 Nov
+      final m = workoutsPerWeek([
+        DateTime(2026, 11, 8), // Sunday: this week
+        DateTime(2026, 11, 11),
+        DateTime(2026, 11, 7, 23), // Saturday: last week
+        DateTime(2026, 9, 20), // first bar's Sunday
+        DateTime(2026, 9, 19), // out of range
+      ], now: now);
+      expect(m.length, 8);
+      expect(m.keys.first, DateTime(2026, 9, 20));
+      expect(m.keys.last, DateTime(2026, 11, 8));
+      expect(m[DateTime(2026, 11, 8)], 2);
+      expect(m[DateTime(2026, 11)], 1);
+      expect(m[DateTime(2026, 9, 20)], 1);
+      expect(m.values.reduce((a, b) => a + b), 4);
     });
-    test('1 Jan 2027 -> 2026-W53', () {
-      expect(isoWeekKey(DateTime(2027)), '2026-W53');
-    });
-    test('other boundaries', () {
-      expect(isoWeekKey(DateTime(2026, 12, 31)), '2026-W53');
-      expect(isoWeekKey(DateTime(2027, 1, 4)), '2027-W01');
-      expect(isoWeekKey(DateTime(2026)), '2026-W01');
-      expect(isoWeekKey(DateTime(2024, 12, 30)), '2025-W01');
-    });
-    test('monday', () {
-      expect(
-        isoWeekMonday(DateTime(2026, 11, 15, 23)),
-        DateTime.utc(2026, 11, 9),
-      );
+    test('across the year boundary', () {
+      final m = workoutsPerWeek([DateTime(2027)], now: DateTime(2027, 1, 6));
+      expect(m.keys.last, DateTime(2027, 1, 3));
+      expect(m[DateTime(2026, 12, 27)], 1);
     });
   });
 
-  group('workoutsPerWeek', () {
-    test('last 8 weeks, zero-filled, oldest first', () {
-      final now = DateTime(2026, 11, 12);
-      final m = workoutsPerWeek([
-        DateTime(2026, 11, 9),
-        DateTime(2026, 11, 11),
-        DateTime(2026, 10),
-        DateTime(2025), // out of range
-      ], now: now);
-      expect(m.length, 8);
-      expect(m.keys.first, '2026-W39');
-      expect(m.keys.last, '2026-W46');
-      expect(m['2026-W46'], 2);
-      expect(m['2026-W40'], 1);
-      expect(m.values.reduce((a, b) => a + b), 3);
-    });
+  test('weekBarLabels: day, with the month on the first bar and on change', () {
+    expect(
+      weekBarLabels([
+        DateTime(2026, 10, 18),
+        DateTime(2026, 10, 25),
+        DateTime(2026, 11),
+        DateTime(2026, 11, 8),
+      ]),
+      ['18 Oct', '25', '1 Nov', '8'],
+    );
+    expect(weekBarLabels(const []), isEmpty);
   });
 
   group('weeklyStreak (Sunday-based weeks)', () {

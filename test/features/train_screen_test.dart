@@ -5,6 +5,7 @@ import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/core/step_source.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
+import 'package:fitapp/data/repositories/activity_repository.dart';
 import 'package:fitapp/data/repositories/workout_repository.dart';
 import 'package:fitapp/features/train/train_screen.dart';
 import 'package:fitapp/widgets/app_button.dart';
@@ -122,6 +123,38 @@ void main() {
     await pump(tester);
     expect(find.byType(AppButton), findsNothing);
     expect(find.textContaining('LIVE'), findsNothing);
+    await unmount(tester);
+  });
+
+  testWidgets('empty db: ALL TIME tile, no BY TYPE section', (tester) async {
+    await pump(tester);
+    expect(find.text('ALL TIME'), findsOneWidget);
+    expect(find.text('TOTAL WORKOUTS'), findsNothing);
+    expect(find.text('BY TYPE'), findsNothing);
+    await unmount(tester);
+  });
+
+  testWidgets('BY TYPE lists gym and activity rows with counts', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      final repo = WorkoutRepository(db);
+      final w = await repo.startWorkout();
+      final we = await repo.addExercise(w.id, _inclineId);
+      await repo.logSet(we.id, setNo: 1, weight: 20, reps: 10);
+      await repo.finishWorkout(w.id);
+      await ActivityRepository(db)
+          .create(typeId: 'cycling', startedAt: DateTime.now());
+    });
+    await pump(tester);
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pumpAndSettle();
+    expect(find.text('BY TYPE'), findsOneWidget);
+    expect(find.text('Gym'), findsOneWidget);
+    expect(find.text('Cycling'), findsOneWidget);
+    expect(find.text('1 this week'), findsNWidgets(2));
+    expect(find.text('1 all time'), findsNWidgets(2));
+    expect(find.text('2'), findsNWidgets(2)); // THIS WEEK and ALL TIME tiles
     await unmount(tester);
   });
 }

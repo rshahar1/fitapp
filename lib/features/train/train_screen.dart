@@ -6,6 +6,8 @@ import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/domain/start_guard.dart';
 import 'package:fitapp/domain/tracking/track_reducer.dart' show elapsedAt;
+import 'package:fitapp/domain/training_breakdown.dart';
+import 'package:fitapp/features/activities/activity_icons.dart';
 import 'package:fitapp/features/start/start_actions.dart';
 import 'package:fitapp/features/tracking/tracking_controller.dart';
 import 'package:fitapp/features/train/steps_card.dart';
@@ -16,8 +18,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Home tab: continue a session in progress, start a template, stats and
-/// recent workouts.
+/// Home tab: continue a session in progress, start a template, stats (this
+/// week, week streak, all time), a per-type breakdown and recent workouts.
 class TrainScreen extends ConsumerWidget {
   const new({super.key});
 
@@ -28,6 +30,7 @@ class TrainScreen extends ConsumerWidget {
     final now = ref.watch(clockProvider)();
     final templates = ref.watch(templatesProvider).value ?? const [];
     final recent = stats?.recent.take(3).toList() ?? const [];
+    final byType = stats?.byType ?? const <TypeCount>[];
 
     final actions = ref.read(startActionsProvider);
 
@@ -90,12 +93,43 @@ class TrainScreen extends ConsumerWidget {
                 const SizedBox(width: Space.s),
                 Expanded(
                   child: MetricTile(
-                    label: 'Total workouts',
-                    value: '${stats?.total ?? 0}',
+                    label: 'All time',
+                    value: '${stats?.allTime ?? 0}',
                   ),
                 ),
               ],
             ),
+            if (byType.isNotEmpty) ...[
+              const SectionHeader('By type'),
+              Group(
+                children: [
+                  for (final t in byType)
+                    GroupRow(
+                      leading: t.typeId == gymTypeId
+                          ? const Icon(
+                              gymWorkoutIcon,
+                              size: 22,
+                              color: AppColors.accent,
+                            )
+                          : ActivityIcon(
+                              t.typeId,
+                              size: 22,
+                              color: AppColors.accent,
+                            ),
+                      title: trainingTypeLabel(t.typeId),
+                      subtitle: '${t.allTime} all time',
+                      trailing: Text(
+                        '${t.thisWeek} this week',
+                        style: TextStyle(
+                          color: t.thisWeek == 0
+                              ? AppColors.textSecondary
+                              : AppColors.accent,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
             const SectionHeader('Recent'),
             if (recent.isEmpty)
               const EmptyState(

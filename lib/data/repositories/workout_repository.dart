@@ -8,6 +8,7 @@ import 'package:fitapp/data/repositories/plan_store.dart';
 import 'package:fitapp/data/watch.dart';
 import 'package:fitapp/domain/progression.dart';
 import 'package:fitapp/domain/stats.dart';
+import 'package:fitapp/domain/training_breakdown.dart';
 import 'package:fitapp/domain/workout_dates.dart';
 import 'package:uuid/uuid.dart';
 
@@ -537,15 +538,20 @@ class WorkoutRepository {
       watchQuery(_db, () => homeStats(now()));
 
   Future<HomeStats> homeStats(DateTime now) async {
-    final workouts = await _finishedStartDates();
-    // Activities count toward the week and the streak, not toward Total
-    // workouts (owner decision, feature 006).
-    final dates = [...workouts, ...await _activityDates()];
-    final thisWeek = isoWeekKey(now);
+    // Gym workouts and activities all count, per type (feature 025). Weeks
+    // run Sunday to Saturday on local calendar days.
+    final local = now.toLocal();
+    final sessions = [
+      for (final d in await _finishedStartDates())
+        TrainingSession(gymTypeId, d),
+      for (final a in await _db.select(_db.activities).get())
+        TrainingSession(a.typeId, a.startedAt.toLocal()),
+    ];
     return HomeStats(
-      thisWeek: dates.where((d) => isoWeekKey(d) == thisWeek).length,
-      streak: weeklyStreak(dates, now: now),
-      total: workouts.length,
+      thisWeek: sessions.where((s) => isSameWeek(s.startedAt, local)).length,
+      streak: weeklyStreak([for (final s in sessions) s.startedAt], now: local),
+      allTime: sessions.length,
+      byType: trainingBreakdown(sessions, now: local),
       recent: await history(limit: 3),
     );
   }

@@ -6,6 +6,7 @@ library;
 
 import 'dart:math' as math;
 
+import 'package:fitapp/domain/calendar.dart';
 import 'package:fitapp/domain/progression.dart';
 
 double _round1(double x) => (x * 10).round() / 10;
@@ -274,19 +275,19 @@ Map<String, int> workoutsPerWeek(
   return result;
 }
 
-/// Number of consecutive ISO weeks with at least one workout, ending with the
-/// week of [now] or the week before. An empty current week does not break the
-/// streak.
+/// Number of consecutive Sunday-to-Saturday weeks (local calendar days,
+/// feature 025) with at least one workout, ending with the week of [now] or
+/// the week before. An empty current week does not break the streak.
 int weeklyStreak(Iterable<DateTime> workoutDates, {required DateTime now}) {
-  final weeksWithWorkouts = {for (final d in workoutDates) isoWeekMonday(d)};
-  var monday = isoWeekMonday(now);
-  if (!weeksWithWorkouts.contains(monday)) {
-    monday = monday.subtract(const Duration(days: 7));
-  }
+  final weeksWithWorkouts = {for (final d in workoutDates) startOfWeek(d)};
+  DateTime previous(DateTime sunday) =>
+      DateTime(sunday.year, sunday.month, sunday.day - 7);
+  var sunday = startOfWeek(now);
+  if (!weeksWithWorkouts.contains(sunday)) sunday = previous(sunday);
   var streak = 0;
-  while (weeksWithWorkouts.contains(monday)) {
+  while (weeksWithWorkouts.contains(sunday)) {
     streak++;
-    monday = monday.subtract(const Duration(days: 7));
+    sunday = previous(sunday);
   }
   return streak;
 }

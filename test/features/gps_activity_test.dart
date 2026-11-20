@@ -3,11 +3,13 @@ import 'package:drift/drift.dart'
 import 'package:drift/native.dart';
 import 'package:fitapp/app/router.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/activity_repository.dart';
 import 'package:fitapp/domain/tracking/geo.dart';
 import 'package:fitapp/features/activities/activity_detail_screen.dart';
+import 'package:fitapp/features/activities/activity_icons.dart';
 import 'package:fitapp/features/history/route_thumbnail.dart';
 import 'package:fitapp/features/tracking/widgets/route_map.dart';
 import 'package:fitapp/widgets/widgets.dart';
@@ -104,7 +106,7 @@ void main() {
   });
 
   group('history rows', () {
-    testWidgets('GPS row shows a thumbnail, manual row an icon', (
+    testWidgets('GPS and manual rows show their activity icon in accent', (
       tester,
     ) async {
       await tester.runAsync(() async {
@@ -115,15 +117,43 @@ void main() {
         );
       });
       await pumpApp(tester);
-      expect(find.byType(RouteThumbnail), findsOneWidget);
+      // Same icons and colour as the History calendar (feature 022).
+      expect(find.byType(RouteThumbnail), findsNothing);
       expect(find.byIcon(Icons.directions_bike), findsOneWidget);
-      expect(find.byIcon(Icons.directions_run), findsNothing);
+      expect(find.byIcon(Icons.directions_run), findsOneWidget);
+      for (final icon in [Icons.directions_bike, Icons.directions_run]) {
+        expect(tester.widget<Icon>(find.byIcon(icon)).color, AppColors.accent);
+      }
       expect(find.byIcon(Icons.location_on), findsOneWidget);
       expect(find.bySemanticsLabel(RegExp('GPS tracked')), findsOneWidget);
       await unmount(tester);
     });
 
-    testWidgets('a GPS row with a broken route falls back to the icon', (
+    testWidgets('the functional icon keeps its size inside the row badge', (
+      tester,
+    ) async {
+      await tester.runAsync(
+        () =>
+            ActivityRepository(db)
+                .create(typeId: 'functional', startedAt: started),
+      );
+      await pumpApp(tester);
+      final icon = find.byType(FunctionalIcon);
+      expect(icon, findsOneWidget);
+      // 22 like the Material icons, not stretched to the badge tile (022).
+      final paint = find.descendant(
+        of: icon,
+        matching: find.byType(CustomPaint),
+      );
+      expect(tester.getSize(paint), const Size.square(22));
+      expect(
+        (tester.widget<CustomPaint>(paint).painter! as LifterPainter).color,
+        AppColors.accent,
+      );
+      await unmount(tester);
+    });
+
+    testWidgets('a GPS row with a broken route still shows its icon', (
       tester,
     ) async {
       await tester.runAsync(() async {
@@ -149,7 +179,7 @@ void main() {
         );
       });
       await pumpApp(tester);
-      await tester.tap(find.byType(RouteThumbnail));
+      await tester.tap(find.byIcon(Icons.directions_run));
       await settle(tester);
       expect(find.text('Easy loop'), findsOneWidget);
       expect(find.text('SPLITS'), findsOneWidget);
@@ -269,7 +299,7 @@ void main() {
     testWidgets('Delete confirms, deletes and pops', (tester) async {
       final id = (await tester.runAsync(addGps))!;
       await pumpApp(tester);
-      await tester.tap(find.byType(RouteThumbnail));
+      await tester.tap(find.byIcon(Icons.directions_run));
       await settle(tester);
       await tester.tap(find.byTooltip('Delete activity'));
       await settle(tester);

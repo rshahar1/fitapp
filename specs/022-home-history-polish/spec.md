@@ -22,6 +22,10 @@ on Train should open History in Calendar view.
   the 24-unit Material icon grid with the same thin limbs and colour as the other activity icons,
   wherever activity-type icons appear. Other types keep their icons. (Owner feedback: the
   full-colour emoji did not match the app colours, and its silhouette looked too bold.)
+- Q: History list icons? → A: Same as the calendar (owner request after the first build): every
+  row shows its workout or activity-type icon in the accent colour on a soft accent tile. The
+  blue tint on hand-logged activities and the route-map thumbnail on GPS rows are gone from the
+  list (the map stays on the detail screen); GPS rows keep the pin on the right.
 - Q: Sunday start scope? → A: History calendar view only (grid and weekday header). Weekly stats
   keep ISO (Monday) weeks.
 - Q: Which steps state is tappable? → A: Only when steps are shown. The Connect / Get Health Connect
@@ -49,6 +53,13 @@ Continue button) and cannot be mistaken for the green Start action.
 1. **Given** functional training in the start hub, activity sheet, History list or calendar,
    **Then** it shows the weightlifter icon in the same colour and weight as the other activities.
 
+### User Story 2b - List icons match the calendar (Priority: P2)
+
+**Acceptance Scenarios**:
+
+1. **Given** gym, hand-logged and GPS sessions in the History list, **Then** each row shows its
+   type icon in the accent colour on the same soft accent tile as the calendar, and no route map.
+
 ### User Story 3 - Calendar weeks start on Sunday (Priority: P2)
 
 **Acceptance Scenarios**:
@@ -69,6 +80,7 @@ Continue button) and cannot be mistaken for the green Start action.
   starting stays the green primary style.
 - **FR-002**: Functional training shows a weightlifter icon (barbell overhead) everywhere activity icons appear, with the same
   accessible labels as before.
+- **FR-002b**: History list rows use the calendar's icons and accent colour for every session.
 - **FR-003**: History calendar weeks start on Sunday; stats weeks are unchanged.
 - **FR-004**: The steps card (steps shown) is a button that opens History in Calendar view; it is
   announced as a button to screen readers.

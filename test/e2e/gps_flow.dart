@@ -6,10 +6,11 @@ import 'package:fitapp/core/rest_alerts.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/domain/tracking/track_sample.dart';
-import 'package:fitapp/features/history/route_thumbnail.dart';
+import 'package:fitapp/features/history/history_rows.dart';
 import 'package:fitapp/features/tracking/widgets/route_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../data/fake_location_source.dart';
 import '../domain/tracking/snow_fixtures.dart';
@@ -99,9 +100,10 @@ Future<void> runGpsFlow(
 
   await tap(find.text('SAVE'));
   expect(find.textContaining('Running · 5'), findsOneWidget);
-  expect(find.byType(RouteThumbnail), findsOneWidget);
+  final runRow = find.widgetWithIcon(HistoryIconBadge, Icons.directions_run);
+  expect(runRow, findsOneWidget);
 
-  await tap(find.byType(RouteThumbnail));
+  await tap(runRow);
   expect(find.text('SPLITS'), findsOneWidget);
   expect(find.text('AVG PACE'), findsOneWidget);
   expect(find.byType(RouteMap), findsOneWidget);
@@ -182,9 +184,10 @@ Future<void> runSnowFlow(
 
   await tap(find.text('SAVE'));
   expect(find.textContaining(runsText), findsOneWidget);
-  expect(find.byType(RouteThumbnail), findsOneWidget);
+  final snowRow = find.widgetWithIcon(HistoryIconBadge, Icons.snowboarding);
+  expect(snowRow, findsOneWidget);
 
-  await tap(find.byType(RouteThumbnail));
+  await tap(snowRow);
   expect(find.byType(RouteMap), findsOneWidget);
   expect(find.text('Run 1'), findsWidgets);
   expect(find.text('Compare runs'), findsOneWidget);

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.10, 20 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.11, 20 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -134,7 +134,7 @@ Numbers use tabular figures.
 | **Overload set** | Set N (the last set), prescribed at `baseWeight + increment`, **always**. It is a stretch target only: it never affects the result. |
 | **Session** | One exercise inside one finished workout. |
 | **Volume** | Σ weight × reps (× 2 if per hand). |
-| **Activity** | A logged non-gym sport session: type, date, optional duration and note. Optional distance (whole metres, 1 to 1,000,000) only for running, cycling and snowboarding; live tracked snowboarding days also carry run, lift and rest metrics (section 5.10); no other sport-specific metrics. Counts toward This week, Week streak and the weekly bars; never toward volume, exercise stats or progression. |
+| **Activity** | A logged non-gym sport session: type, date, optional duration and note. Optional distance (whole metres, 1 to 1,000,000) only for running, cycling and snowboarding; live tracked snowboarding days also carry run, lift and rest metrics (section 5.10); no other sport-specific metrics. Counts toward This week, Week streak, All time, By type and the weekly bars; never toward volume, exercise stats or progression. |
 | **Activity type** | One entry of the code-level registry (`id`, `label`): `functional`, `cycling`, `snowboarding`, `running`, `pilates`. Running, cycling and snowboarding have `hasDistance` and live GPS tracking. |
 | **Est. 1RM** | Epley formula: `w × (1 + reps / 30)`, rounded to 0.1. 1 rep gives `w`, 0 reps gives 0. |
 
@@ -280,7 +280,7 @@ back to the exercise plan.
 - Tapping an activity row opens the activity sheet to edit it or delete it (delete asks for confirmation).
 
 ### 5.5 Home / Train tab
-- Date kicker, title, a hero card and stat tiles: *This week*, *Week streak*, *Total workouts*. Below them, the 3
+- Date kicker, title, a hero card and stat tiles: *This week*, *Week streak*, *All time*, then a **By type** list. Below them, the 3
   most recent workouts (gym workouts only). There is no empty gym start: gym workouts start only from a
   template's **START**. The hero shows only while a session is in progress: **Continue workout** for a gym workout, or
   "<Sport> in progress" with the ticking `mm:ss · km` and **Continue <sport>** for a GPS session (no separate tracking banner).
@@ -290,10 +290,14 @@ back to the exercise plan.
   duration in minutes (1 to 1440), for running, cycling and snowboarding an optional **distance** (None/Set, typed in km with
   `.` or `,`, rounded to 10 m, 0.01 to 1000 km; stored as whole metres) and optional note (max 200 chars). Types come from the registry
   (`lib/domain/activity_types.dart`); adding a sport is one registry entry plus one icon.
-- *This week* and *Week streak* count gym workouts **and** activities. *Total workouts* counts gym workouts only.
-- **Weekly streak:** consecutive ISO weeks (Monday start) with at least 1 workout, ending this week or last week.
-  The current week doesn't break the streak while it's in progress. It must work across year boundaries
-  (2026 has an ISO week 53).
+- *This week*, *Week streak* and *All time* count gym workouts **and** activities. *All time* is every finished gym workout plus every activity.
+- **Weeks** on Train run Sunday to Saturday on local calendar days (feature 025). The Progress chart keeps ISO weeks.
+- **Weekly streak:** consecutive Sunday-start weeks with at least 1 workout, ending this week or last week.
+  The current week doesn't break the streak while it's in progress. It must work across year boundaries.
+- **By type** list under the tiles: one row per training type ever logged (Gym, or an activity type; unknown activity ids
+  group as "Activity"), with type icon, "N all time" subtitle and "N this week" trailing. Ordered by this-week count, then
+  all-time count, then Gym first and registry order. Hidden when nothing is logged.
+- The one-time backup nudge still triggers after the 3rd finished gym workout.
 
 ### 5.6 Progress / analytics
 - **Workouts per week** bar chart for the last 8 ISO weeks (current week highlighted in the accent color);
@@ -630,7 +634,7 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
   while another workout is active or when the workout is not the most recent; recalculation after clearing a set;
   legacy workouts without snapshots.
 - Template progression (feature 005): per-template plans seeded on create, edit, save-from-workout and upgrade; finish, edit, resume and delete touch only the linked template plan; two templates with the same exercise progress independently; orphan sessions and unlinked live sessions; v2 to v3 migration.
-- Sport activities (feature 006): registry (known ids, `activityLabel` fallback "Activity", `validateActivity`: unknown type, future day, duration outside 1 to 1440, note over 200 chars trimmed); `ActivityRepository` create, update, delete (queues `pending_deletes`), list, watch; merged `historyEntries` newest first; stats where activities count toward This week, Week streak and weekly bars but not Total workouts, volume or progression; v3 to v4 migration keeps existing data; widget tests for the activity sheet, History icons and edit/delete with confirmation.
+- Sport activities (feature 006): registry (known ids, `activityLabel` fallback "Activity", `validateActivity`: unknown type, future day, duration outside 1 to 1440, note over 200 chars trimmed); `ActivityRepository` create, update, delete (queues `pending_deletes`), list, watch; merged `historyEntries` newest first; stats where activities count toward This week, Week streak, All time, By type and weekly bars but not volume or progression (feature 025: Sunday-based weeks, All time includes activities, per-type breakdown tests); v3 to v4 migration keeps existing data; widget tests for the activity sheet, History icons and edit/delete with confirmation.
 - `previousSession` lookup; workout list with volume (per-hand ×2) and exercise names.
 - (Phase 2) Sync ordering: deletes before upserts; dirty cleared only if unchanged; failure keeps rows dirty;
   library exercises are never pushed; deleting a workout queues one server delete.
@@ -689,7 +693,8 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 | Each template exercise has its own plan; template workouts progress the template plan, never the exercise's own plan | Owner's decision (13 Nov 2026); the same exercise can progress differently in different templates. Ad-hoc workouts keep using the exercise plan |
 | Log other sports from the Train tab ("Log activity"; since 2.7 via the [+] hub, "Log a past session") and show them in History | Owner's decision (13 Nov 2026); one place to log, one list to review |
 | Activities can be edited and deleted from History | Owner's decision (13 Nov 2026); same expectation as workouts, delete is confirmed |
-| Activities count toward This week, Week streak and the weekly bars; Total workouts stays gym only; never volume or progression | Owner's decision (13 Nov 2026); consistency covers all training, "workouts" stays gym |
+| Activities count toward This week, Week streak and the weekly bars; Total workouts stays gym only; never volume or progression | Owner's decision (13 Nov 2026); consistency covers all training, "workouts" stays gym. Total workouts part superseded by feature 025 |
+| Train weeks run Sunday to Saturday (local); Train tiles are This week, Week streak, All time (gym plus activities); a By type list shows per-type counts. Progress chart stays ISO weeks | Owner's decision (20 Nov 2026, feature 025); supersedes the gym-only Total workouts of feature 006 |
 | Distinct icons per row in History, including a dumbbell for gym workouts | Owner's decision (13 Nov 2026); tell sports and gym apart at a glance |
 | Resume any finished workout, discard live workouts, backdate gym sessions | Owner's decision (13 Nov 2026); a backdated or older session never rewrites a plan's base |
 | Exercises library with custom categories; History calendar | Owner's decision (13 Nov 2026); browse and edit exercises, review training by day |
@@ -722,7 +727,7 @@ resolved on 12 Nov 2026; see the decisions log.
   - Lightweight logging of Functional training, Cycling, Snowboarding and Running; no sport-specific metrics.
   - Code-level registry `lib/domain/activity_types.dart`, `ActivityRepository`, new `activities` table (schema v4,
     `from3To4`), merged History list with icons, edit and delete.
-  - Activities count toward This week, Week streak and the weekly bars; Total workouts stays gym only.
+  - Activities count toward This week, Week streak and the weekly bars; Total workouts stays gym only (superseded by 2.11).
 - **2.4 (13 Nov 2026):** feature 007, workout flow and exercise library (owner decisions of 13 Nov 2026).
   - Resume any finished workout (also from the finish summary), keeping earlier duration; Discard workout; Date row to backdate sessions.
   - Exercises library screen with create/edit custom exercises and a category selector; History List/Calendar switch.
@@ -750,3 +755,4 @@ resolved on 12 Nov 2026; see the decisions log.
   - Schema v9 (`from8To9`): six nullable columns on `activities`; server migration `20261116000001_activities_snowboard.sql`; all six sync. No new packages. Constitution 1.8.0.
   - Barometer altitude, lift and piste names, 3D maps and replay, heart rate, GPX, miles, offline tiles stay LATER.
 - **2.10 (20 Nov 2026):** feature 024, template-only gym start. The Train hero's empty "Start gym workout" is removed; gym workouts start only from a template's START, and the hero shows only while a session is in progress (section 5.5).
+- **2.11 (20 Nov 2026):** feature 025, Train stats by type (owner request of 20 Nov 2026). Train weeks run Sunday to Saturday; tiles become This week, Week streak, All time (gym plus activities, replacing gym-only Total workouts); new By type list (section 5.5). Progress chart keeps ISO weeks.

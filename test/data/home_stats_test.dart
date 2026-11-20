@@ -7,7 +7,7 @@ void main() {
   setUp(() => h = Harness());
   tearDown(() => h.close());
 
-  test('homeStats: thisWeek, total, streak, recent 3', () async {
+  test('homeStats: thisWeek, allTime, streak, recent 3', () async {
     await h.plan();
     // h.now starts Mon 2026-11-02 18:00; each session starts a day later.
     h.now = DateTime.utc(2026, 10, 20, 12); // -> Oct 21 (W43)
@@ -22,7 +22,7 @@ void main() {
 
     final now = DateTime.utc(2026, 11, 12, 12);
     final s = await h.workouts.homeStats(now);
-    expect(s.total, 5);
+    expect(s.allTime, 5);
     expect(s.thisWeek, 2);
     expect(s.streak, 4);
     expect(s.recent, hasLength(3));
@@ -32,7 +32,7 @@ void main() {
     );
   });
 
-  test('streak across ISO year boundary (W52, W53, W01)', () async {
+  test('streak across the year boundary (Sunday weeks)', () async {
     await h.plan();
     h.now = DateTime.utc(2026, 12, 21, 12);
     await h.session([(20, 10)]); // 2026-12-22 W52
@@ -42,7 +42,7 @@ void main() {
     await h.session([(20, 10)]); // 2027-01-05 W01
     final s = await h.workouts.homeStats(DateTime.utc(2027, 1, 6, 12));
     expect(s.streak, 3);
-    expect(s.total, 3);
+    expect(s.allTime, 3);
   });
 
   test('watchWorkoutsPerWeek has 8 keys', () async {

@@ -153,36 +153,42 @@ void main() {
     });
   });
 
-  group('weeklyStreak', () {
+  group('weeklyStreak (Sunday-based weeks)', () {
+    // Thu 12 Nov 2026; its week runs Sun 8 Nov to Sat 14 Nov.
+    final now = DateTime(2026, 11, 12);
     test('in-progress current week does not break the streak', () {
-      final now = DateTime(2026, 11, 12); // W46, nothing yet this week
-      final dates = [DateTime(2026, 11, 3), DateTime(2026, 10, 28)]; // W45,W44
+      final dates = [DateTime(2026, 11, 3), DateTime(2026, 10, 28)];
       expect(weeklyStreak(dates, now: now), 2);
     });
     test('current week counts', () {
-      final now = DateTime(2026, 11, 12);
       final dates = [DateTime(2026, 11, 10), DateTime(2026, 11, 3)];
       expect(weeklyStreak(dates, now: now), 2);
     });
+    test('Sunday belongs to the week it starts', () {
+      // Sun 8 Nov is this week; Sat 7 Nov is last week.
+      expect(weeklyStreak([DateTime(2026, 11, 8)], now: now), 1);
+      expect(
+        weeklyStreak([DateTime(2026, 11, 8), DateTime(2026, 11, 7)], now: now),
+        2,
+      );
+    });
     test('gap breaks the streak', () {
-      final now = DateTime(2026, 11, 12);
       final dates = [
-        DateTime(2026, 11, 10), // W46
-        DateTime(2026, 10, 27), // W44 (W45 missing)
+        DateTime(2026, 11, 10), // week of 8 Nov
+        DateTime(2026, 10, 27), // week of 25 Oct (week of 1 Nov missing)
       ];
       expect(weeklyStreak(dates, now: now), 1);
     });
     test('nothing this or last week -> 0', () {
-      final now = DateTime(2026, 11, 12);
       expect(weeklyStreak([DateTime(2026, 10, 20)], now: now), 0);
       expect(weeklyStreak(const [], now: now), 0);
     });
-    test('across the year boundary with ISO week 53', () {
-      final now = DateTime(2027, 1, 6); // 2027-W01
+    test('across the year boundary', () {
+      final now = DateTime(2027, 1, 6); // week of Sun 3 Jan
       final dates = [
-        DateTime(2027, 1, 5), // 2027-W01
-        DateTime(2027), // 2026-W53
-        DateTime(2026, 12, 22), // 2026-W52
+        DateTime(2027, 1, 5), // week of 3 Jan
+        DateTime(2027), // week of 27 Dec
+        DateTime(2026, 12, 22), // week of 20 Dec
       ];
       expect(weeklyStreak(dates, now: now), 3);
     });

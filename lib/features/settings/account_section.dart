@@ -317,7 +317,7 @@ Future<void> maybeShowBackupNudge(
   final stats = await ref
       .read(workoutRepositoryProvider)
       .homeStats(ref.read(clockProvider)());
-  if (stats.total < nudgeAfterWorkouts) return;
+  if (stats.gymWorkouts < nudgeAfterWorkouts) return;
   await settings.writeFlag(nudgeShownKey, 'true');
   messenger.showSnackBar(
     SnackBar(

@@ -6,7 +6,6 @@ import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/domain/activity_types.dart';
 import 'package:fitapp/features/activities/activity_icons.dart';
-import 'package:fitapp/features/history/route_thumbnail.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -28,24 +27,22 @@ class HistoryEntryRow extends StatelessWidget {
   };
 }
 
+/// Leading badge of a History row: the workout or activity-type icon in the
+/// accent colour on a soft accent tile, the same icons and colour as the
+/// History calendar (feature 022).
 class HistoryIconBadge extends StatelessWidget {
-  const new({
-    super.key,
-    required this.color,
-    required this.bg,
-    this.icon,
-    this.typeId,
-  }) : assert(
-         icon != null || typeId != null,
-         'HistoryIconBadge needs an icon or a typeId',
-       );
+  /// Creates a badge for a Material [icon] or an activity [typeId].
+  const new({super.key, this.icon, this.typeId})
+    : assert(
+        icon != null || typeId != null,
+        'HistoryIconBadge needs an icon or a typeId',
+      );
 
+  /// Material icon (gym workouts).
   final IconData? icon;
 
   /// Activity type id; rendered with [ActivityIcon] when [icon] is null.
   final String? typeId;
-  final Color color;
-  final Color bg;
 
   @override
   Widget build(BuildContext context) {
@@ -53,12 +50,12 @@ class HistoryIconBadge extends StatelessWidget {
       width: Sizes.tap - Space.s,
       height: Sizes.tap - Space.s,
       decoration: BoxDecoration(
-        color: bg,
+        color: AppColors.accentSoft,
         borderRadius: BorderRadius.circular(Radii.chip),
       ),
       child: icon != null
-          ? Icon(icon, size: 22, color: color)
-          : ActivityIcon(typeId!, size: 22, color: color),
+          ? Icon(icon, size: 22, color: AppColors.accent)
+          : ActivityIcon(typeId!, size: 22, color: AppColors.accent),
     );
   }
 }
@@ -100,19 +97,12 @@ class HistoryActivityRow extends StatelessWidget {
       ?note,
     ].join(' · ');
     final isGps = activity.source == 'gps';
-    final thumbnail = isGps ? decodeRouteOrNull(activity.route) : null;
     return Semantics(
       button: true,
       label: '$date, $subtitle${isGps ? ', GPS tracked' : ''}',
       excludeSemantics: true,
       child: GroupRow(
-        leading: thumbnail != null
-            ? RouteThumbnail(points: thumbnail)
-            : HistoryIconBadge(
-                typeId: activity.typeId,
-                color: context.metrics.volume,
-                bg: AppColors.surfaceHigh,
-              ),
+        leading: HistoryIconBadge(typeId: activity.typeId),
         title: date,
         subtitle: subtitle,
         trailing: isGps
@@ -158,11 +148,7 @@ class HistoryWorkoutRow extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const HistoryIconBadge(
-                  icon: gymWorkoutIcon,
-                  color: AppColors.accent,
-                  bg: AppColors.accentSoft,
-                ),
+                const HistoryIconBadge(icon: gymWorkoutIcon),
                 const SizedBox(width: Space.m),
                 Expanded(
                   child: Column(

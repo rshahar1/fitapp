@@ -52,10 +52,17 @@ class FunctionalIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = IconTheme.of(context);
     final box = size ?? theme.size ?? 24;
-    return SizedBox.square(
-      dimension: box,
-      child: CustomPaint(
-        painter: LifterPainter(color ?? theme.color ?? AppColors.textSecondary),
+    // Centred like [Icon], so a tight parent (a badge tile) cannot stretch it.
+    return Center(
+      widthFactor: 1,
+      heightFactor: 1,
+      child: SizedBox.square(
+        dimension: box,
+        child: CustomPaint(
+          painter: LifterPainter(
+            color ?? theme.color ?? AppColors.textSecondary,
+          ),
+        ),
       ),
     );
   }

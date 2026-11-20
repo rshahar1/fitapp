@@ -23,9 +23,12 @@ History calendar. No schema, dependency or data change.
    (live fill, `onAccent` text). `lib/features/train/train_screen.dart` `_HeroCard`: when a session
    is in progress, live border, a "● LIVE" pill next to the title, `variant: live`,
    `icon: Icons.play_arrow`. Start stays `primary`.
-2. **Functional emoji** — `lib/features/activities/activity_icons.dart`: an `ActivityIcon` widget
-   (emoji `🏋️` for `functional`, otherwise `Icon(activityIcon(id))`), used by the start hub, the
-   activity sheet chips, History rows (`HistoryIconBadge`) and the calendar day marker.
+2. **Functional icon** — `lib/features/activities/activity_icons.dart`: `ActivityIcon` renders
+   `FunctionalIcon` for `functional` (a `CustomPaint` weightlifter on the 24-unit grid, limbs
+   about 1.9 units like the Material sport icons, painted in the icon colour), otherwise
+   `Icon(activityIcon(id))`. Used by the start hub, the activity sheet chips, History rows
+   (`HistoryIconBadge`) and the calendar day marker. Replaced the first 🏋️ emoji after owner
+   feedback (colour, then weight).
 3. **Sunday weeks** — `lib/domain/calendar.dart`: `startOfWeek` returns the Sunday on or before the
    day (`d.day - d.weekday % 7`). `weekDays` and `monthGrid` follow; the calendar header follows
    `weekDays`. `lib/domain/stats.dart` (ISO weeks) not touched.

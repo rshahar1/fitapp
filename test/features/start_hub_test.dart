@@ -291,32 +291,29 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('Functional training shows the weightlifter emoji', (
+    testWidgets('Functional training shows the weightlifter icon', (
       tester,
     ) async {
       await pumpApp(tester);
       await openHub(tester);
       await tester.scrollUntilVisible(
-        find.text(functionalEmoji),
+        find.byType(FunctionalIcon),
         100,
         scrollable: find.descendant(
           of: find.byType(StartHubSheet),
           matching: find.byType(Scrollable),
         ),
       );
-      expect(find.text(functionalEmoji), findsOneWidget);
+      expect(find.byType(FunctionalIcon), findsOneWidget);
       expect(find.byIcon(Icons.sports_gymnastics), findsNothing);
-      // Painted as a one-colour silhouette in the row's icon colour (022).
-      final filter = tester.widget<ColorFiltered>(
-        find.ancestor(
-          of: find.text(functionalEmoji),
-          matching: find.byType(ColorFiltered),
+      // Drawn in the row's icon colour, like the other activities (022).
+      final paint = tester.widget<CustomPaint>(
+        find.descendant(
+          of: find.byType(FunctionalIcon),
+          matching: find.byType(CustomPaint),
         ),
       );
-      expect(
-        filter.colorFilter,
-        const ColorFilter.mode(AppColors.textSecondary, BlendMode.srcIn),
-      );
+      expect((paint.painter! as LifterPainter).color, AppColors.textSecondary);
       await unmount(tester);
     });
 

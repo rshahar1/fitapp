@@ -24,7 +24,7 @@ description: "Task list for home and history polish"
 - [x] T006 `_HeroCard` live border, LIVE pill, live Continue button with play icon — train_screen.dart
 - [x] T007 Widget test: Start is primary, Continue is live with LIVE pill — test/features/train_screen_test.dart
 
-## Phase 4: Functional emoji (US2)
+## Phase 4: Functional icon (US2)
 
 - [x] T008 [P] `ActivityIcon` widget; use in start hub, activity sheet, history rows, calendar — lib/features/…
 - [x] T009 Widget test: functional shows 🏋️ — test/features/start_hub_test.dart

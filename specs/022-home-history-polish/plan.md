@@ -4,7 +4,7 @@
 
 ## Summary
 
-Four small UI changes: a "live" style for a session in progress on Train, the 🏋️ emoji for
+Four small UI changes: a "live" style for a session in progress on Train, a weightlifter icon for
 functional training, Sunday-first History calendar weeks, and a tappable steps card that opens the
 History calendar. No schema, dependency or data change.
 

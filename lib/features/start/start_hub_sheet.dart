@@ -85,12 +85,9 @@ class StartHubSheet extends ConsumerWidget {
                   GroupRow(
                     title: session.continueLabel,
                     subtitle: 'In progress',
-                    leading: _icon(
-                      session.kind == SessionKind.gym
-                          ? gymWorkoutIcon
-                          : activityIcon(session.typeId!),
-                      accent: true,
-                    ),
+                    leading: session.kind == SessionKind.gym
+                        ? _icon(gymWorkoutIcon, accent: true)
+                        : _activityIcon(session.typeId!, accent: true),
                     showChevron: true,
                     onTap: () => pick(ContinueChoice(session)),
                   ),
@@ -98,14 +95,14 @@ class StartHubSheet extends ConsumerWidget {
                   GroupRow(
                     title: t.label,
                     subtitle: 'Live GPS',
-                    leading: _icon(activityIcon(t.id)),
+                    leading: _activityIcon(t.id),
                     onTap: () => pick(TrackChoice(t.id)),
                   ),
                 for (final t in other)
                   GroupRow(
                     title: t.label,
                     subtitle: 'Log for today',
-                    leading: _icon(activityIcon(t.id)),
+                    leading: _activityIcon(t.id),
                     onTap: () => pick(LogPastChoice(typeId: t.id)),
                   ),
               ],
@@ -126,6 +123,12 @@ class StartHubSheet extends ConsumerWidget {
       ),
     );
   }
+
+  static Widget _activityIcon(String typeId, {bool accent = false}) =>
+      ActivityIcon(
+        typeId,
+        color: accent ? AppColors.accent : AppColors.textSecondary,
+      );
 
   static Widget _icon(IconData icon, {bool accent = false}) =>
       Icon(icon, color: accent ? AppColors.accent : AppColors.textSecondary);

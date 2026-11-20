@@ -5,10 +5,12 @@ import 'package:fitapp/core/step_source.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/settings_repository.dart';
+import 'package:fitapp/features/history/history_screen.dart';
 import 'package:fitapp/features/train/steps_card.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../fake_step_source.dart';
@@ -171,5 +173,72 @@ void main() {
     await pump(tester);
     expect(find.text('Show your daily steps and distance?'), findsNothing);
     await unmount(tester);
+  });
+
+  group('opens History calendar', () {
+    Future<ProviderContainer> pumpShell(WidgetTester tester) async {
+      final router = GoRouter(
+        initialLocation: '/train',
+        routes: [
+          StatefulShellRoute.indexedStack(
+            builder: (_, _, shell) => Scaffold(body: shell),
+            branches: [
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(path: '/train', builder: (_, _) => const StepsCard()),
+                ],
+              ),
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: '/history',
+                    builder: (_, _) => const Text('history-branch'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            stepSourceProvider.overrideWithValue(source),
+            clockProvider.overrideWithValue(() => DateTime(2026, 11, 15, 12)),
+          ],
+          child: MaterialApp.router(
+            theme: buildAppTheme(),
+            routerConfig: router,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return ProviderScope.containerOf(tester.element(find.byType(StepsCard)));
+    }
+
+    testWidgets('tapping the granted card shows the calendar on History', (
+      tester,
+    ) async {
+      final container = await pumpShell(tester);
+      expect(container.read(historyViewProvider), HistoryView.list);
+      await tester.tap(find.text('Steps today'));
+      await tester.pumpAndSettle();
+      expect(container.read(historyViewProvider), HistoryView.calendar);
+      expect(find.text('history-branch'), findsOneWidget);
+      await unmount(tester);
+    });
+
+    testWidgets('prompt cards are not tappable', (tester) async {
+      await tester.runAsync(introSeen);
+      source.state = StepAccess.notGranted;
+      final container = await pumpShell(tester);
+      await tester.tap(find.text('See your daily steps from Google Fit'));
+      await tester.pumpAndSettle();
+      expect(container.read(historyViewProvider), HistoryView.list);
+      expect(find.text('history-branch'), findsNothing);
+      await unmount(tester);
+    });
   });
 }

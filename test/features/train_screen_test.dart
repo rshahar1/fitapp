@@ -7,6 +7,7 @@ import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/workout_repository.dart';
 import 'package:fitapp/features/train/train_screen.dart';
+import 'package:fitapp/widgets/app_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -110,6 +111,18 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Workout in progress'), findsOneWidget);
     expect(find.text('CONTINUE WORKOUT'), findsOneWidget);
+    expect(find.text('● LIVE'), findsOneWidget);
+    final button = tester.widget<AppButton>(find.byType(AppButton));
+    expect(button.variant, AppButtonVariant.live);
+    expect(button.icon, Icons.play_arrow);
+    await unmount(tester);
+  });
+
+  testWidgets('no session: green Start button, no LIVE pill', (tester) async {
+    await pump(tester);
+    final button = tester.widget<AppButton>(find.byType(AppButton));
+    expect(button.variant, AppButtonVariant.primary);
+    expect(find.textContaining('LIVE'), findsNothing);
     await unmount(tester);
   });
 }

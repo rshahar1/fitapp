@@ -356,7 +356,7 @@ class _TypeTile extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(activityIcon(type.id), size: 20, color: fg),
+                  ActivityIcon(type.id, size: 20, color: fg),
                   const SizedBox(width: Space.s),
                   Text(
                     type.label,

@@ -278,9 +278,15 @@ class _DayCell extends StatelessWidget {
     final icon = n == 0
         ? null
         : switch (entries.first) {
-            WorkoutHistoryEntry() => gymWorkoutIcon,
-            ActivityHistoryEntry(:final activity) => activityIcon(
+            WorkoutHistoryEntry() => Icon(
+              gymWorkoutIcon,
+              size: 16,
+              color: iconColor,
+            ),
+            ActivityHistoryEntry(:final activity) => ActivityIcon(
               activity.typeId,
+              size: 16,
+              color: iconColor,
             ),
           };
     return Semantics(
@@ -318,7 +324,7 @@ class _DayCell extends StatelessWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(icon, size: 16, color: iconColor),
+                        icon,
                         if (n > 1)
                           Text(
                             '+${n - 1}',

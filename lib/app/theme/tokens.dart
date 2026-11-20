@@ -11,6 +11,11 @@ abstract final class AppColors {
   static const accent = Color(0xFF11D16C);
   static const onAccent = Color(0xFF000000);
   static const accentSoft = Color(0x2611D16C); // accent at 15 %
+  /// Session in progress (feature 022).
+  static const live = Color(0xFFFF9F0A);
+
+  /// [live] at 15 %.
+  static const liveSoft = Color(0x26FF9F0A); // live at 15 %
   static const danger = Color(0xFFFF453A);
   static const metricSets = Color(0xFFFF453A);
   static const metricReps = Color(0xFF11D16C);

@@ -238,20 +238,41 @@ class _HeroCard extends ConsumerWidget {
     }
 
     return AppCard(
-      borderColor: inProgress?.kind == SessionKind.tracking
-          ? AppColors.accent
-          : null,
+      borderColor: inProgress != null ? AppColors.live : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: text.titleLarge),
+          Row(
+            children: [
+              Flexible(child: Text(title, style: text.titleLarge)),
+              if (inProgress != null) ...[
+                const SizedBox(width: Space.s),
+                Semantics(
+                  label: 'In progress',
+                  excludeSemantics: true,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: Space.s),
+                    decoration: const ShapeDecoration(
+                      color: AppColors.liveSoft,
+                      shape: StadiumBorder(),
+                    ),
+                    child: Text(
+                      '● LIVE',
+                      style: text.labelSmall?.copyWith(color: AppColors.live),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
           if (line != null) ...[const SizedBox(height: Space.xs), line],
           const SizedBox(height: Space.m),
           AppButton(
             label: inProgress?.continueLabel ?? 'Start gym workout',
-            icon: inProgress?.kind == SessionKind.tracking
-                ? Icons.my_location
-                : null,
+            icon: inProgress != null ? Icons.play_arrow : null,
+            variant: inProgress != null
+                ? AppButtonVariant.live
+                : AppButtonVariant.primary,
             expand: true,
             onPressed: inProgress == null
                 ? () => actions.startGym(context)

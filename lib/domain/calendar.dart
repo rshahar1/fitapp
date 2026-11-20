@@ -1,4 +1,4 @@
-/// Calendar helpers for the History calendar view: local-day keys, Monday-
+/// Calendar helpers for the History calendar view: local-day keys, Sunday-
 /// based weeks and month grids.
 ///
 /// Pure Dart. No Flutter, database or I/O imports (constitution principle II).
@@ -17,11 +17,11 @@ String dayKey(DateTime d) {
   return '$y-$m-$day';
 }
 
-/// The Monday on or before [d] (date only).
+/// The Sunday on or before [d] (date only).
 DateTime startOfWeek(DateTime d) =>
-    DateTime(d.year, d.month, d.day - (d.weekday - 1));
+    DateTime(d.year, d.month, d.day - (d.weekday % 7));
 
-/// The 7 days (Monday to Sunday, date only) of the week containing [d].
+/// The 7 days (Sunday to Saturday, date only) of the week containing [d].
 List<DateTime> weekDays(DateTime d) {
   final start = startOfWeek(d);
   return [
@@ -30,7 +30,7 @@ List<DateTime> weekDays(DateTime d) {
   ];
 }
 
-/// Weeks shown for a month: each a list of 7 date-only days, Monday first,
+/// Weeks shown for a month: each a list of 7 date-only days, Sunday first,
 /// from the week containing the 1st to the week containing the last day.
 /// Days outside the month are included.
 List<List<DateTime>> monthGrid(int year, int month) {

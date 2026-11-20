@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.13, 20 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.14, 21 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -135,7 +135,7 @@ Numbers use tabular figures.
 | **Overload set** | Set N (the last set), prescribed at `baseWeight + increment`, **always**. It is a stretch target only: it never affects the result. |
 | **Session** | One exercise inside one finished workout. |
 | **Volume** | Σ weight × reps (× 2 if per hand). |
-| **Activity** | A logged non-gym sport session: type, date, optional duration and note. Optional distance (whole metres, 1 to 1,000,000) only for running, cycling and snowboarding; live tracked snowboarding days also carry run, lift and rest metrics (section 5.10); no other sport-specific metrics. Counts toward This week, Week streak, All time, By type and the weekly bars; never toward volume, exercise stats or progression. |
+| **Activity** | A logged non-gym sport session: type, date, optional duration and note. Optional distance (whole metres, 1 to 1,000,000) only for running, cycling and snowboarding; live tracked snowboarding days also carry run, lift and rest metrics (section 5.10); no other sport-specific metrics. Counts toward This week, This month (Week streak before feature 028), All time, By type, Recent and the weekly bars; never toward volume, exercise stats or progression. |
 | **Activity type** | One entry of the code-level registry (`id`, `label`): `functional`, `cycling`, `snowboarding`, `running`, `pilates`. Running, cycling and snowboarding have `hasDistance` and live GPS tracking. |
 | **Est. 1RM** | Epley formula: `w × (1 + reps / 30)`, rounded to 0.1. 1 rep gives `w`, 0 reps gives 0. |
 
@@ -281,8 +281,9 @@ back to the exercise plan.
 - Tapping an activity row opens the activity sheet to edit it or delete it (delete asks for confirmation).
 
 ### 5.5 Home / Train tab
-- Date kicker, title, a hero card and stat tiles: *This week*, *Week streak*, *All time*, then a **By type** list. Below them, the 3
-  most recent workouts (gym workouts only). There is no empty gym start: gym workouts start only from a
+- Date kicker, title, a hero card, the templates list (each with **START**; no *New* button, templates are created under
+  You → **Gym Templates**, feature 028) and stat tiles: *This week*, *This month*, *All time*, then a **By type** list. Below them,
+  **Recent**: the 3 newest sessions of any type (gym workouts and activities, History rows), newest first. There is no empty gym start: gym workouts start only from a
   template's **START**. The hero shows only while a session is in progress: **Continue workout** for a gym workout, or
   "<Sport> in progress" with the ticking `mm:ss · km` and **Continue <sport>** for a GPS session (no separate tracking banner).
   The Train header has no icons and there is no *Log activity* button (feature 011, section 5.9).
@@ -291,21 +292,22 @@ back to the exercise plan.
   duration in minutes (1 to 1440), for running, cycling and snowboarding an optional **distance** (None/Set, typed in km with
   `.` or `,`, rounded to 10 m, 0.01 to 1000 km; stored as whole metres) and optional note (max 200 chars). Types come from the registry
   (`lib/domain/activity_types.dart`); adding a sport is one registry entry plus one icon.
-- *This week*, *Week streak* and *All time* count gym workouts **and** activities. *All time* is every finished gym workout plus every activity.
+- *This week*, *This month* (current local calendar month) and *All time* count gym workouts **and** activities. *All time* is every finished gym workout plus every activity.
 - **Weeks** on Train run Sunday to Saturday on local calendar days (feature 025), and so do the Progress bars (feature 026).
-- **Weekly streak:** consecutive Sunday-start weeks with at least 1 workout, ending this week or last week.
-  The current week doesn't break the streak while it's in progress. It must work across year boundaries.
-- **By type** list under the tiles: one row per training type ever logged (Gym, or an activity type; unknown activity ids
+- The *Week streak* tile was replaced by *This month* (feature 028); `weeklyStreak` stays in the domain, unused by the UI.
+- **By type** list under the tiles: one row per training type with at least one session **this week** (feature 028; Gym, or an activity type; unknown activity ids
   group as "Activity"), with type icon, "N all time" subtitle and "N this week" trailing. Ordered by this-week count, then
-  all-time count, then Gym first and registry order. Hidden when nothing is logged.
+  all-time count, then Gym first and registry order. Hidden when nothing was logged this week.
 - The one-time backup nudge still triggers after the 3rd finished gym workout.
 
 ### 5.6 Progress / analytics
 - **Workouts per week** bar chart for the last 8 Sunday-to-Saturday weeks, the same weeks as Train (feature 026), each bar labelled with the week's Sunday (day of month, plus short month on the first bar and when the month changes, e.g. `18 Oct`, `25`, `1 Nov`, `8`); current week highlighted in the accent color;
   activities count as well as gym workouts. Volume, exercise stats and progression ignore activities.
-- List of trained exercises (most recent first) showing the **current base weight** (metric-weight color).
+- List of trained exercises (most recent first) showing the **current weight** (metric-weight color, feature 028): the base of
+  the plan the latest finished session with sets used (the template exercise's plan for a template session, else the
+  exercise's own plan), else that session's working weight; `—` only when nothing was lifted.
 - **Exercise detail** (tabs *Summary* / *History*):
-  - Metric tiles: Current base, Heaviest set, Est. 1RM, Sessions.
+  - Metric tiles: Current weight (same value as the list), Heaviest set, Est. 1RM, Sessions.
   - **Line chart** (smooth curve, glow, gradient fill, highlighted last point), with chips
     **Working weight · Volume · Est. 1RM** (Hevy-style). Working weight = heaviest non-overload set of the
     session. Show the last 20 sessions.
@@ -379,7 +381,8 @@ back to the exercise plan.
 
 ### 5.9 Start/Log hub and You tab (feature 011)
 - **[+] action** in the middle of the bottom bar (accent circle, label "Start or log a session"); opens the hub sheet from any
-  tab and is never a selected tab. **You** tab (`/you`) lists **Exercise library** (`/exercises`) and **Settings** (`/settings`).
+  tab and is never a selected tab. **You** tab (`/you`) lists **Exercise library** (`/exercises`), **Gym Templates** (`/templates`:
+  template list, tap to edit, *New template*; feature 028) and **Settings** (`/settings`).
 - **Hub sheet:** *START NOW*: **Continue <session>** (only when a session is in progress), **Gym workout**,
   **Running** / **Cycling** / **Snowboarding** (→ `/track/new?type=<id>`), **More sports** (non-live sports open the past-session form
   prefilled with the sport and today), gym templates. *EARLIER*: **Log a past session**.
@@ -711,6 +714,7 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 | Activities can be edited and deleted from History | Owner's decision (13 Nov 2026); same expectation as workouts, delete is confirmed |
 | Activities count toward This week, Week streak and the weekly bars; Total workouts stays gym only; never volume or progression | Owner's decision (13 Nov 2026); consistency covers all training, "workouts" stays gym. Total workouts part superseded by feature 025 |
 | Train weeks run Sunday to Saturday (local); Train tiles are This week, Week streak, All time (gym plus activities); a By type list shows per-type counts. Progress chart stays ISO weeks; superseded by feature 026 (Progress bars also Sunday weeks) | Owner's decision (20 Nov 2026, feature 025); supersedes the gym-only Total workouts of feature 006 |
+| Train tiles become This week, This month, All time; By type shows only types trained this week; Recent mixes gym workouts and activities; template creation moves to You → Gym Templates; Progress shows a weight for every exercise (template plan base, else latest working weight) | Owner request (21 Nov 2026, feature 028) |
 | Progress bars use the same Sunday-to-Saturday weeks as Train, labelled by the week's Sunday date instead of ISO week numbers | Owner's decision (20 Nov 2026, feature 026, "Yes, align it"); one week definition across the app |
 | Share a finished session as a 1080×1350 image through the OS share sheet; no social features, nothing sent by the app, notes never on the image | Owner's decision (20 Nov 2026, feature 027); image export is not a social feature |
 | Distinct icons per row in History, including a dumbbell for gym workouts | Owner's decision (13 Nov 2026); tell sports and gym apart at a glance |
@@ -776,3 +780,8 @@ resolved on 12 Nov 2026; see the decisions log.
 - **2.11 (20 Nov 2026):** feature 025, Train stats by type (owner request of 20 Nov 2026). Train weeks run Sunday to Saturday; tiles become This week, Week streak, All time (gym plus activities, replacing gym-only Total workouts); new By type list (section 5.5). Progress chart keeps ISO weeks (changed in 2.12).
 - **2.12 (20 Nov 2026):** feature 026, Progress bars on Sunday weeks (owner request "Yes, align it"). The Workouts per week chart uses the same Sunday-to-Saturday weeks as Train and is labelled by each week's Sunday date (`18 Oct`, `25`, `1 Nov`) instead of ISO week numbers (section 5.6).
 - **2.13 (20 Nov 2026):** feature 027, Share a workout as an image (owner request of 20 Nov 2026). Gym workouts and activities get a Share action opening a preview of a 1080×1350 PNG card, handed to the OS share sheet via `share_plus` (section 5.11). Non-goals reworded: social features stay out, image export is allowed.
+- **2.14 (21 Nov 2026):** feature 028, Home, Progress and You polish.
+  - Progress shows a weight for every trained exercise, including template-only ones (template plan base, else the
+    latest working weight); the detail tile is renamed *Current weight*.
+  - Train: *By type* lists only types trained this week; *Week streak* replaced by *This month*; *Recent* shows all
+    session types; the *New* template button moved to You → **Gym Templates** (`/templates`).

@@ -71,4 +71,29 @@ void main() {
     expect(trainingTypeLabel('pilates'), 'Pilates');
     expect(trainingTypeLabel(unknownActivityTypeId), 'Activity');
   });
+
+  test('isSameMonth uses local calendar months', () {
+    expect(
+      isSameMonth(DateTime(2026, 11, 2), DateTime(2026, 11, 30, 23)),
+      isTrue,
+    );
+    expect(
+      isSameMonth(DateTime(2026, 10, 31, 23), DateTime(2026, 11, 2)),
+      isFalse,
+    );
+    expect(isSameMonth(DateTime(2025, 11, 5), DateTime(2026, 11, 5)), isFalse);
+  });
+
+  test('activeTypes keeps only types with sessions this week, in order', () {
+    const all = [
+      TypeCount(gymTypeId, thisWeek: 2, allTime: 9),
+      TypeCount('running', thisWeek: 1, allTime: 3),
+      TypeCount('cycling', thisWeek: 0, allTime: 7),
+    ];
+    expect(activeTypes(all).map((t) => t.typeId), [gymTypeId, 'running']);
+    expect(
+      activeTypes(const [TypeCount('cycling', thisWeek: 0, allTime: 1)]),
+      isEmpty,
+    );
+  });
 }

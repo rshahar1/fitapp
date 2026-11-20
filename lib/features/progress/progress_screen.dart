@@ -80,12 +80,12 @@ class _ExerciseRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final plan = item.plan;
-    final weight = plan == null ? '—' : formatKg(plan.baseWeight);
+    final current = item.currentWeight;
+    final weight = current == null ? '—' : formatKg(current);
     final last = formatDateShort(item.lastTrained.toLocal());
     return Semantics(
       button: true,
-      label: '${item.exercise.name}, last $last, base $weight',
+      label: '${item.exercise.name}, last $last, weight $weight',
       excludeSemantics: true,
       child: GroupRow(
         title: item.exercise.name,

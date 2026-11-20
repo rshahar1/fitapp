@@ -27,14 +27,20 @@ void main() {
     expect(bars.values.last, 3);
   });
 
-  test('a week with only an activity keeps the streak', () async {
+  test('This month counts activities; Recent mixes types', () async {
     await h.plan();
     await h.session(const [(20, 10)]); // week of 2 Nov
     h.advance(const Duration(days: 7)); // week of 9 Nov
     await activities.create(typeId: 'snowboarding', startedAt: h.now);
     h.advance(const Duration(days: 7)); // week of 16 Nov
     await h.session(const [(20, 10)]);
-    expect((await h.workouts.homeStats(h.now)).streak, 3);
+    final stats = await h.workouts.homeStats(h.now);
+    expect(stats.thisMonth, 3);
+    expect(stats.recent.map((e) => e.runtimeType), [
+      WorkoutHistoryEntry,
+      ActivityHistoryEntry,
+      WorkoutHistoryEntry,
+    ]);
   });
 
   test('history entries merge workouts and activities newest first', () async {

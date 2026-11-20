@@ -382,4 +382,35 @@ void main() {
       expect(await h.base(_fly), 20);
     });
   });
+
+  group('currentWeight on Progress (feature 028)', () {
+    test('template-only exercise shows the template base', () async {
+      final id = await chest();
+      await h.exercises.savePlan(
+        _fly,
+        baseWeight: 50,
+        targetReps: 10,
+        targetSets: 3,
+        increment: 2.5,
+      );
+      await run(id, _hit);
+      final w = await h.exercises.currentWeight(_fly);
+      expect(w, await tplBase(id));
+      expect(w, isNot(50));
+      final trained = await h.exercises.trainedExercises();
+      expect(trained.single.currentWeight, w);
+    });
+
+    test('ad-hoc session uses the exercise plan', () async {
+      await h.plan(base: 30);
+      await h.session(const [(30, 10)]);
+      expect(await h.exercises.currentWeight(inclineId), await h.base());
+    });
+
+    test('no plan -> latest working weight; none -> null', () async {
+      expect(await h.exercises.currentWeight(latId), isNull);
+      await h.session(const [(30, 10), (35, 8)], exerciseId: latId);
+      expect(await h.exercises.currentWeight(latId), 35);
+    });
+  });
 }

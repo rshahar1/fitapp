@@ -83,6 +83,11 @@ final planProvider = StreamProvider.family<PlanRow?, String>(
   (ref, id) => ref.watch(exerciseRepositoryProvider).watchPlan(id),
 );
 
+/// Weight shown for an exercise on Progress (feature 028).
+final currentWeightProvider = StreamProvider.family<double?, String>(
+  (ref, id) => ref.watch(exerciseRepositoryProvider).watchCurrentWeight(id),
+);
+
 final trainedExercisesProvider = StreamProvider<List<TrainedExercise>>(
   (ref) => ref.watch(exerciseRepositoryProvider).watchTrainedExercises(),
 );

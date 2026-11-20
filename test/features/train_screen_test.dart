@@ -151,10 +151,31 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('BY TYPE'), findsOneWidget);
     expect(find.text('Gym'), findsOneWidget);
-    expect(find.text('Cycling'), findsOneWidget);
+    // By type row plus the activity's Recent row (feature 028).
+    expect(find.text('Cycling'), findsNWidgets(2));
     expect(find.text('1 this week'), findsNWidgets(2));
     expect(find.text('1 all time'), findsNWidgets(2));
-    expect(find.text('2'), findsNWidgets(2)); // THIS WEEK and ALL TIME tiles
+    // THIS WEEK, THIS MONTH and ALL TIME tiles; no streak tile.
+    expect(find.text('2'), findsNWidgets(3));
+    expect(
+      find.textContaining(RegExp('streak', caseSensitive: false)),
+      findsNothing,
+    );
+    await unmount(tester);
+  });
+
+  testWidgets('BY TYPE hides types with no session this week', (tester) async {
+    await tester.runAsync(() async {
+      await ActivityRepository(db).create(
+        typeId: 'cycling',
+        startedAt: DateTime.now().subtract(const Duration(days: 30)),
+      );
+    });
+    await pump(tester);
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pumpAndSettle();
+    expect(find.text('BY TYPE'), findsNothing);
+    expect(find.text('0 this week'), findsNothing);
     await unmount(tester);
   });
 }

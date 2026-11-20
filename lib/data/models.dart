@@ -255,7 +255,7 @@ class WorkoutListItem {
 class HomeStats {
   const new({
     required this.thisWeek,
-    required this.streak,
+    required this.thisMonth,
     required this.allTime,
     required this.byType,
     required this.recent,
@@ -264,8 +264,9 @@ class HomeStats {
   /// Gym workouts and activities in the current Sunday-to-Saturday week.
   final int thisWeek;
 
-  /// Consecutive Sunday-based weeks with at least one session.
-  final int streak;
+  /// Gym workouts and activities in the current local calendar month
+  /// (feature 028).
+  final int thisMonth;
 
   /// Every finished gym workout and activity (feature 025).
   final int allTime;
@@ -273,7 +274,8 @@ class HomeStats {
   /// Per-type counts, see [trainingBreakdown].
   final List<TypeCount> byType;
 
-  final List<WorkoutListItem> recent;
+  /// The 3 newest sessions of any type, newest first (feature 028).
+  final List<HistoryEntry> recent;
 
   /// Finished gym workouts ever.
   int get gymWorkouts => [
@@ -287,10 +289,15 @@ class TrainedExercise {
     required this.exercise,
     required this.plan,
     required this.lastTrained,
+    this.currentWeight,
   });
 
   final ExerciseRow exercise;
   final PlanRow? plan;
+
+  /// Weight shown on Progress (feature 028), see
+  /// `ExerciseRepository.currentWeight`; null when nothing was lifted.
+  final double? currentWeight;
   final DateTime lastTrained;
 }
 

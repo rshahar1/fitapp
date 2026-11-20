@@ -549,10 +549,10 @@ class WorkoutRepository {
     ];
     return HomeStats(
       thisWeek: sessions.where((s) => isSameWeek(s.startedAt, local)).length,
-      streak: weeklyStreak([for (final s in sessions) s.startedAt], now: local),
+      thisMonth: sessions.where((s) => isSameMonth(s.startedAt, local)).length,
       allTime: sessions.length,
       byType: trainingBreakdown(sessions, now: local),
-      recent: await history(limit: 3),
+      recent: (await historyEntries()).take(3).toList(),
     );
   }
 

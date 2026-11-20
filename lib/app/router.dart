@@ -10,6 +10,7 @@ import 'package:fitapp/features/settings/settings_screen.dart';
 import 'package:fitapp/features/share/share_preview_screen.dart';
 import 'package:fitapp/features/shell/shell_scaffold.dart';
 import 'package:fitapp/features/templates/template_editor_screen.dart';
+import 'package:fitapp/features/templates/templates_screen.dart';
 import 'package:fitapp/features/tracking/live_track_screen.dart';
 import 'package:fitapp/features/tracking/track_setup_screen.dart';
 import 'package:fitapp/features/train/train_screen.dart';
@@ -47,6 +48,9 @@ abstract final class Routes {
   /// Share image previews (feature 027).
   static String shareWorkout(String id) => '/share/workout/$id';
   static String shareActivity(String id) => '/share/activity/$id';
+
+  /// Gym templates list (feature 028), under You.
+  static const templates = '/templates';
   static const newTemplate = '/template/new';
   static String template(String id) => '/template/$id';
 
@@ -178,6 +182,11 @@ GoRouter buildRouter() => GoRouter(
       parentNavigatorKey: _rootKey,
       path: Routes.exercises,
       builder: (_, _) => const ExerciseLibraryScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootKey,
+      path: Routes.templates,
+      builder: (_, _) => const TemplatesScreen(),
     ),
     GoRoute(
       parentNavigatorKey: _rootKey,

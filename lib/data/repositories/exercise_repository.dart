@@ -6,6 +6,7 @@ import 'package:fitapp/data/repositories/plan_store.dart';
 import 'package:fitapp/data/repositories/template_repository.dart';
 import 'package:fitapp/data/watch.dart';
 import 'package:fitapp/domain/progression.dart';
+import 'package:fitapp/domain/stats.dart' show displayWeight;
 import 'package:uuid/uuid.dart';
 
 /// Thrown when a custom exercise name already exists (case-insensitive).
@@ -264,12 +265,57 @@ class ExerciseRepository {
         TrainedExercise(
           exercise: (await exercise(id))!,
           plan: await plan(id),
+          currentWeight: await currentWeight(id),
           lastTrained: r.read(last)!,
         ),
       );
     }
     result.sort((a, b) => b.lastTrained.compareTo(a.lastTrained));
     return result;
+  }
+
+  Stream<double?> watchCurrentWeight(String exerciseId) =>
+      watchQuery(_db, () => currentWeight(exerciseId));
+
+  /// Weight shown for [exerciseId] on Progress (feature 028): the base of the
+  /// plan its latest finished session with sets used (the template exercise
+  /// plan for a template session, else the exercise's own plan), else that
+  /// session's working weight. Null when it has no such session.
+  Future<double?> currentWeight(String exerciseId) async {
+    final ex = await exercise(exerciseId);
+    if (ex == null) return null;
+    final w = _db.workouts;
+    final we = _db.workoutExercises;
+    final q = _db.select(we).join([innerJoin(w, w.id.equalsExp(we.workoutId))])
+      ..where(we.exerciseId.equals(exerciseId) & w.endedAt.isNotNull())
+      ..orderBy([OrderingTerm.desc(w.startedAt), OrderingTerm.desc(w.id)]);
+    for (final row in await q.get()) {
+      final session = row.readTable(we);
+      final sets = await (_db.select(
+        _db.sets,
+      )..where((s) => s.workoutExerciseId.equals(session.id))).get();
+      if (sets.isEmpty) continue;
+      final teId = session.templateExerciseId;
+      final StoredPlan? plan;
+      if (teId == null) {
+        plan = await _db.exercisePlan(exerciseId);
+      } else {
+        final te = await _db.templateExercise(teId);
+        plan = te == null ? null : StoredPlan.ofTemplate(te);
+      }
+      final summary = ExerciseSession(
+        workoutId: session.workoutId,
+        date: row.readTable(w).startedAt,
+        sets: sets,
+        perHand: ex.isPerHand,
+      ).summary;
+      return displayWeight(
+        planBase: plan?.baseWeight,
+        workingWeight: summary.workingWeight,
+        topWeight: summary.topWeight,
+      );
+    }
+    return null;
   }
 
   Stream<List<ExerciseSession>> watchHistory(String exerciseId, {int? limit}) =>

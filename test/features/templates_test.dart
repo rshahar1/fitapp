@@ -81,7 +81,9 @@ void main() {
   testWidgets('Train shows empty hint, then templates', (tester) async {
     await pumpApp(tester, const TrainScreen());
     expect(
-      find.text('Create a template to start a routine in one tap.'),
+      find.text(
+        'Create a template in You → Gym Templates to start a routine in one tap.',
+      ),
       findsOneWidget,
     );
     await tester.runAsync(
@@ -91,7 +93,9 @@ void main() {
     expect(find.text('Push'), findsOneWidget);
     expect(find.text('Incline Dumbbell Bench Press'), findsOneWidget);
     expect(
-      find.text('Create a template to start a routine in one tap.'),
+      find.text(
+        'Create a template in You → Gym Templates to start a routine in one tap.',
+      ),
       findsNothing,
     );
     await unmount(tester);

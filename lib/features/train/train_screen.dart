@@ -1,5 +1,4 @@
 import 'package:fitapp/app/router.dart';
-import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/data/models.dart';
@@ -8,6 +7,7 @@ import 'package:fitapp/domain/start_guard.dart';
 import 'package:fitapp/domain/tracking/track_reducer.dart' show elapsedAt;
 import 'package:fitapp/domain/training_breakdown.dart';
 import 'package:fitapp/features/activities/activity_icons.dart';
+import 'package:fitapp/features/history/history_rows.dart';
 import 'package:fitapp/features/start/start_actions.dart';
 import 'package:fitapp/features/tracking/tracking_controller.dart';
 import 'package:fitapp/features/train/steps_card.dart';
@@ -19,7 +19,8 @@ import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Home tab: continue a session in progress, start a template, stats (this
-/// week, week streak, all time), a per-type breakdown and recent workouts.
+/// week, this month, all time), the types trained this week and the newest
+/// sessions of any type (feature 028). Templates are created under You.
 class TrainScreen extends ConsumerWidget {
   const new({super.key});
 
@@ -30,7 +31,7 @@ class TrainScreen extends ConsumerWidget {
     final now = ref.watch(clockProvider)();
     final templates = ref.watch(templatesProvider).value ?? const [];
     final recent = stats?.recent.take(3).toList() ?? const [];
-    final byType = stats?.byType ?? const <TypeCount>[];
+    final byType = activeTypes(stats?.byType ?? const <TypeCount>[]);
 
     final actions = ref.read(startActionsProvider);
 
@@ -46,18 +47,12 @@ class TrainScreen extends ConsumerWidget {
             Text('Train', style: text.headlineLarge),
             const SizedBox(height: Space.m),
             const _HeroCard(),
-            SectionHeader(
-              'Templates',
-              trailing: TextButton(
-                onPressed: () => context.push(Routes.newTemplate),
-                child: const Text('New'),
-              ),
-            ),
+            const SectionHeader('Templates'),
             if (templates.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: Space.m),
                 child: Text(
-                  'Create a template to start a routine in one tap.',
+                  'Create a template in You → Gym Templates to start a routine in one tap.',
                   style: text.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -85,9 +80,8 @@ class TrainScreen extends ConsumerWidget {
                 const SizedBox(width: Space.s),
                 Expanded(
                   child: MetricTile(
-                    label: 'Week streak',
-                    value: '${stats?.streak ?? 0}',
-                    caption: 'weeks',
+                    label: 'This month',
+                    value: '${stats?.thisMonth ?? 0}',
                   ),
                 ),
                 const SizedBox(width: Space.s),
@@ -120,11 +114,7 @@ class TrainScreen extends ConsumerWidget {
                       subtitle: '${t.allTime} all time',
                       trailing: Text(
                         '${t.thisWeek} this week',
-                        style: TextStyle(
-                          color: t.thisWeek == 0
-                              ? AppColors.textSecondary
-                              : AppColors.accent,
-                        ),
+                        style: const TextStyle(color: AppColors.accent),
                       ),
                     ),
                 ],
@@ -139,19 +129,7 @@ class TrainScreen extends ConsumerWidget {
               )
             else
               Group(
-                children: [
-                  for (final w in recent)
-                    GroupRow(
-                      title: formatDateShort(w.startedAt.toLocal()),
-                      subtitle: w.exerciseNames.join(', '),
-                      trailing: Text(
-                        formatVolume(w.volume),
-                        style: TextStyle(color: context.metrics.volume),
-                      ),
-                      showChevron: true,
-                      onTap: () => context.push(Routes.finishedWorkout(w.id)),
-                    ),
-                ],
+                children: [for (final e in recent) HistoryEntryRow(entry: e)],
               ),
           ],
         ),

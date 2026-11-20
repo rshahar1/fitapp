@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.11, 20 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.12, 20 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -291,7 +291,7 @@ back to the exercise plan.
   `.` or `,`, rounded to 10 m, 0.01 to 1000 km; stored as whole metres) and optional note (max 200 chars). Types come from the registry
   (`lib/domain/activity_types.dart`); adding a sport is one registry entry plus one icon.
 - *This week*, *Week streak* and *All time* count gym workouts **and** activities. *All time* is every finished gym workout plus every activity.
-- **Weeks** on Train run Sunday to Saturday on local calendar days (feature 025). The Progress chart keeps ISO weeks.
+- **Weeks** on Train run Sunday to Saturday on local calendar days (feature 025), and so do the Progress bars (feature 026).
 - **Weekly streak:** consecutive Sunday-start weeks with at least 1 workout, ending this week or last week.
   The current week doesn't break the streak while it's in progress. It must work across year boundaries.
 - **By type** list under the tiles: one row per training type ever logged (Gym, or an activity type; unknown activity ids
@@ -300,7 +300,7 @@ back to the exercise plan.
 - The one-time backup nudge still triggers after the 3rd finished gym workout.
 
 ### 5.6 Progress / analytics
-- **Workouts per week** bar chart for the last 8 ISO weeks (current week highlighted in the accent color);
+- **Workouts per week** bar chart for the last 8 Sunday-to-Saturday weeks, the same weeks as Train (feature 026), each bar labelled with the week's Sunday (day of month, plus short month on the first bar and when the month changes, e.g. `18 Oct`, `25`, `1 Nov`, `8`); current week highlighted in the accent color;
   activities count as well as gym workouts. Volume, exercise stats and progression ignore activities.
 - List of trained exercises (most recent first) showing the **current base weight** (metric-weight color).
 - **Exercise detail** (tabs *Summary* / *History*):
@@ -519,7 +519,7 @@ metric colors) over third-party UI kits.
 lib/
   main.dart
   app/                 app widget, router, theme (tokens, ThemeData, ThemeExtension), backdrop painter
-  core/                formatting (formatKg), ISO-week utils, haptics wrapper, result types
+  core/                formatting (formatKg), haptics wrapper, result types
   domain/              PURE Dart, no Flutter imports:
     progression.dart   prescribe, evaluate, roundWeight, canRewriteBase
     stats.dart         volume, Epley 1RM, PRs, summarizeSession, diffSummary, weekly streak
@@ -623,7 +623,7 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 - `roundWeight`: removes float drift (`0.1 + 0.2 + 22.2 → 22.5`).
 - `canRewriteBase(isLatestSessionForPlan, currentBase, resultBaseWeight)`: latest and matching → true; plan edited since, not latest, or never applied → false.
 - Stats: per-hand volume; Epley (100×10 → 133.3, ×1 → 100, ×0 → 0); PRs and `newPRTypes`; session summary and
-  diff; ISO week keys (9 Nov 2026 → 2026-W46, 1 Jan 2027 → 2026-W53); workouts per week; streak with an
+  diff; workouts per week keyed by Sunday (last 8 Sunday-to-Saturday weeks, oldest first, zero-filled; Sunday and Saturday boundaries); week bar labels (`18 Oct`, `25`, `1 Nov`, `8`); streak with an
   in-progress current week, with a gap, and across the year boundary.
 
 **Data (drift in-memory)**
@@ -694,7 +694,8 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 | Log other sports from the Train tab ("Log activity"; since 2.7 via the [+] hub, "Log a past session") and show them in History | Owner's decision (13 Nov 2026); one place to log, one list to review |
 | Activities can be edited and deleted from History | Owner's decision (13 Nov 2026); same expectation as workouts, delete is confirmed |
 | Activities count toward This week, Week streak and the weekly bars; Total workouts stays gym only; never volume or progression | Owner's decision (13 Nov 2026); consistency covers all training, "workouts" stays gym. Total workouts part superseded by feature 025 |
-| Train weeks run Sunday to Saturday (local); Train tiles are This week, Week streak, All time (gym plus activities); a By type list shows per-type counts. Progress chart stays ISO weeks | Owner's decision (20 Nov 2026, feature 025); supersedes the gym-only Total workouts of feature 006 |
+| Train weeks run Sunday to Saturday (local); Train tiles are This week, Week streak, All time (gym plus activities); a By type list shows per-type counts. Progress chart stays ISO weeks; superseded by feature 026 (Progress bars also Sunday weeks) | Owner's decision (20 Nov 2026, feature 025); supersedes the gym-only Total workouts of feature 006 |
+| Progress bars use the same Sunday-to-Saturday weeks as Train, labelled by the week's Sunday date instead of ISO week numbers | Owner's decision (20 Nov 2026, feature 026, "Yes, align it"); one week definition across the app |
 | Distinct icons per row in History, including a dumbbell for gym workouts | Owner's decision (13 Nov 2026); tell sports and gym apart at a glance |
 | Resume any finished workout, discard live workouts, backdate gym sessions | Owner's decision (13 Nov 2026); a backdated or older session never rewrites a plan's base |
 | Exercises library with custom categories; History calendar | Owner's decision (13 Nov 2026); browse and edit exercises, review training by day |
@@ -755,4 +756,5 @@ resolved on 12 Nov 2026; see the decisions log.
   - Schema v9 (`from8To9`): six nullable columns on `activities`; server migration `20261116000001_activities_snowboard.sql`; all six sync. No new packages. Constitution 1.8.0.
   - Barometer altitude, lift and piste names, 3D maps and replay, heart rate, GPX, miles, offline tiles stay LATER.
 - **2.10 (20 Nov 2026):** feature 024, template-only gym start. The Train hero's empty "Start gym workout" is removed; gym workouts start only from a template's START, and the hero shows only while a session is in progress (section 5.5).
-- **2.11 (20 Nov 2026):** feature 025, Train stats by type (owner request of 20 Nov 2026). Train weeks run Sunday to Saturday; tiles become This week, Week streak, All time (gym plus activities, replacing gym-only Total workouts); new By type list (section 5.5). Progress chart keeps ISO weeks.
+- **2.11 (20 Nov 2026):** feature 025, Train stats by type (owner request of 20 Nov 2026). Train weeks run Sunday to Saturday; tiles become This week, Week streak, All time (gym plus activities, replacing gym-only Total workouts); new By type list (section 5.5). Progress chart keeps ISO weeks (changed in 2.12).
+- **2.12 (20 Nov 2026):** feature 026, Progress bars on Sunday weeks (owner request "Yes, align it"). The Workouts per week chart uses the same Sunday-to-Saturday weeks as Train and is labelled by each week's Sunday date (`18 Oct`, `25`, `1 Nov`) instead of ISO week numbers (section 5.6).

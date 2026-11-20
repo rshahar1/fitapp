@@ -556,7 +556,7 @@ class WorkoutRepository {
     );
   }
 
-  Stream<Map<String, int>> watchWorkoutsPerWeek(DateTime Function() now) =>
+  Stream<Map<DateTime, int>> watchWorkoutsPerWeek(DateTime Function() now) =>
       watchQuery(
         _db,
         () async => workoutsPerWeek([

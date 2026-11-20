@@ -64,7 +64,7 @@ final homeStatsProvider = StreamProvider<HomeStats>(
       .watchHomeStats(ref.watch(clockProvider)),
 );
 
-final workoutsPerWeekProvider = StreamProvider<Map<String, int>>(
+final workoutsPerWeekProvider = StreamProvider<Map<DateTime, int>>(
   (ref) => ref
       .watch(workoutRepositoryProvider)
       .watchWorkoutsPerWeek(ref.watch(clockProvider)),

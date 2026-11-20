@@ -1,17 +1,19 @@
 import 'dart:math' as math;
 
 import 'package:fitapp/app/theme/tokens.dart';
+import 'package:fitapp/domain/stats.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Bar chart of workouts per ISO week. [counts] keys such as `2026-W46`,
-/// ordered oldest to current week; the last bar is highlighted.
+/// Bar chart of workouts per Sunday-to-Saturday week. [counts] is keyed by
+/// each week's Sunday, ordered oldest to current week; the last bar is
+/// highlighted.
 class WeeklyBarChart extends StatelessWidget {
   /// Creates the chart.
   const new({super.key, required this.counts});
 
-  /// Workouts per week key, oldest first.
-  final Map<String, int> counts;
+  /// Workouts per week, keyed by the week's Sunday, oldest first.
+  final Map<DateTime, int> counts;
 
   static const _height = 160.0;
   static const _barWidth = 16.0;
@@ -19,19 +21,19 @@ class WeeklyBarChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final entries = counts.entries.toList();
-    final labels = [for (final e in entries) e.key.split('-').last];
+    final labels = weekBarLabels([for (final e in entries) e.key]);
     final maxCount = entries.fold<int>(0, (m, e) => math.max(m, e.value));
     final maxY = math.max(maxCount, 3) + 1;
     final interval = math.max(1, (maxY / 4).ceil()).toDouble();
     final text = Theme.of(context).textTheme.labelSmall;
     final summary = [
       for (var i = 0; i < entries.length; i++)
-        '${labels[i]} ${entries[i].value}',
+        '${labels[i]}: ${entries[i].value}',
     ].join(', ');
 
     return Semantics(
       container: true,
-      label: 'Workouts per week: $summary',
+      label: 'Workouts per week, by week starting: $summary',
       child: ExcludeSemantics(
         child: SizedBox(
           height: _height,

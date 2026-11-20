@@ -18,10 +18,10 @@ on Train should open History in Calendar view.
 - Q: Live style? → A: Amber (#FF9F0A, already in the palette as the weight metric colour) fill with
   black text and a play icon on the Continue button, amber card border and a small "● LIVE" pill.
   The Start button stays green. Applies to any session in progress (gym and GPS).
-- Q: Functional icon? → A: The 🏋️ emoji (person lifting weights, gender-neutral), painted as a
-  one-colour silhouette in the same colour as the other activity icons (owner feedback after the
-  first build: the full-colour emoji did not match),
-  wherever activity-type icons appear. Other types keep their icons.
+- Q: Functional icon? → A: A person holding a loaded barbell overhead (the 🏋️ idea), drawn on
+  the 24-unit Material icon grid with the same thin limbs and colour as the other activity icons,
+  wherever activity-type icons appear. Other types keep their icons. (Owner feedback: the
+  full-colour emoji did not match the app colours, and its silhouette looked too bold.)
 - Q: Sunday start scope? → A: History calendar view only (grid and weekday header). Weekly stats
   keep ISO (Monday) weeks.
 - Q: Which steps state is tappable? → A: Only when steps are shown. The Connect / Get Health Connect
@@ -47,7 +47,7 @@ Continue button) and cannot be mistaken for the green Start action.
 **Acceptance Scenarios**:
 
 1. **Given** functional training in the start hub, activity sheet, History list or calendar,
-   **Then** it shows 🏋️.
+   **Then** it shows the weightlifter icon in the same colour and weight as the other activities.
 
 ### User Story 3 - Calendar weeks start on Sunday (Priority: P2)
 
@@ -67,7 +67,7 @@ Continue button) and cannot be mistaken for the green Start action.
 
 - **FR-001**: A session in progress is styled with a distinct "live" colour on the Train card;
   starting stays the green primary style.
-- **FR-002**: Functional training shows the 🏋️ emoji everywhere activity icons appear, with the same
+- **FR-002**: Functional training shows a weightlifter icon (barbell overhead) everywhere activity icons appear, with the same
   accessible labels as before.
 - **FR-003**: History calendar weeks start on Sunday; stats weeks are unchanged.
 - **FR-004**: The steps card (steps shown) is a button that opens History in Calendar view; it is
@@ -78,7 +78,6 @@ Continue button) and cannot be mistaken for the green Start action.
 
 - A month whose 1st is a Sunday starts its grid on the 1st; a month ending on Saturday has no
   trailing days.
-- Emoji rendering depends on the device font; Android ships a colour emoji font.
 - If History is already showing List view, tapping steps switches it to Calendar.
 
 ## Success Criteria

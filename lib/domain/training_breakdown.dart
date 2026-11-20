@@ -46,6 +46,17 @@ class TypeCount {
 /// calendar days).
 bool isSameWeek(DateTime a, DateTime b) => startOfWeek(a) == startOfWeek(b);
 
+/// Whether [a] and [b] fall in the same local calendar month (feature 028).
+bool isSameMonth(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month;
+
+/// The types of [breakdown] with at least one session this week, in order
+/// (Train's *By type* list, feature 028).
+List<TypeCount> activeTypes(List<TypeCount> breakdown) => [
+  for (final t in breakdown)
+    if (t.thisWeek > 0) t,
+];
+
 /// Display label of a training type: "Gym", the activity label, or
 /// "Activity" for unknown ids.
 String trainingTypeLabel(String typeId) =>

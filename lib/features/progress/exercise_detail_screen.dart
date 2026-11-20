@@ -25,6 +25,7 @@ class ExerciseDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final exercise = ref.watch(exerciseProvider(exerciseId)).value;
     final plan = ref.watch(planProvider(exerciseId)).value;
+    final current = ref.watch(currentWeightProvider(exerciseId)).value;
     final history = ref.watch(exerciseHistoryProvider(exerciseId));
     return DefaultTabController(
       length: 2,
@@ -56,6 +57,7 @@ class ExerciseDetailScreen extends ConsumerWidget {
                   _SummaryTab(
                     exercise: exercise,
                     plan: plan,
+                    currentWeight: current,
                     sessions: history.value ?? const [],
                   ),
                   _HistoryTab(sessions: history.value ?? const []),
@@ -103,11 +105,15 @@ class _SummaryTab extends StatefulWidget {
   const new({
     required this.exercise,
     required this.plan,
+    required this.currentWeight,
     required this.sessions,
   });
 
   final ExerciseRow exercise;
   final PlanRow? plan;
+
+  /// See `ExerciseRepository.currentWeight` (feature 028).
+  final double? currentWeight;
   final List<ExerciseSession> sessions;
 
   @override
@@ -138,10 +144,10 @@ class _SummaryTabState extends State<_SummaryTab> {
           children: [
             Expanded(
               child: MetricTile(
-                label: 'Current base',
-                value: widget.plan == null
+                label: 'Current weight',
+                value: widget.currentWeight == null
                     ? '—'
-                    : formatKg(widget.plan!.baseWeight),
+                    : formatKg(widget.currentWeight!),
                 color: m.weight,
               ),
             ),

@@ -4,7 +4,8 @@ import 'package:fitapp/widgets/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// You tab (feature 011): exercise library and settings.
+/// You tab (feature 011): exercise library, gym templates (feature 028)
+/// and settings.
 class YouScreen extends StatelessWidget {
   const new({super.key});
 
@@ -25,6 +26,12 @@ class YouScreen extends StatelessWidget {
                   leading: const Icon(Icons.list_alt),
                   showChevron: true,
                   onTap: () => context.push(Routes.exercises),
+                ),
+                GroupRow(
+                  title: 'Gym Templates',
+                  leading: const Icon(Icons.view_list_outlined),
+                  showChevron: true,
+                  onTap: () => context.push(Routes.templates),
                 ),
                 GroupRow(
                   title: 'Settings',

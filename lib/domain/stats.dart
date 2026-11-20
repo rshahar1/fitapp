@@ -158,6 +158,20 @@ SessionSummary summarizeSession(
   );
 }
 
+/// Weight shown for a trained exercise (feature 028): the plan's base when
+/// the latest session had a plan, else that session's working weight, else
+/// its top weight; null when nothing was lifted.
+double? displayWeight({
+  double? planBase,
+  double workingWeight = 0,
+  double topWeight = 0,
+}) {
+  if (planBase != null) return planBase;
+  if (workingWeight > 0) return workingWeight;
+  if (topWeight > 0) return topWeight;
+  return null;
+}
+
 /// Direction of change.
 enum Trend {
   /// Increased.

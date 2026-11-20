@@ -192,4 +192,20 @@ void main() {
       expect(weeklyStreak(dates, now: now), 3);
     });
   });
+
+  group('displayWeight', () {
+    test('plan base wins', () {
+      expect(displayWeight(planBase: 40, workingWeight: 35, topWeight: 45), 40);
+    });
+    test('no plan -> working weight', () {
+      expect(displayWeight(workingWeight: 35, topWeight: 45), 35);
+    });
+    test('no working weight -> top weight', () {
+      expect(displayWeight(workingWeight: 0, topWeight: 45), 45);
+    });
+    test('nothing -> null', () {
+      expect(displayWeight(), isNull);
+      expect(displayWeight(workingWeight: 0, topWeight: 0), isNull);
+    });
+  });
 }

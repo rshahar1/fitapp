@@ -18,7 +18,9 @@ on Train should open History in Calendar view.
 - Q: Live style? → A: Amber (#FF9F0A, already in the palette as the weight metric colour) fill with
   black text and a play icon on the Continue button, amber card border and a small "● LIVE" pill.
   The Start button stays green. Applies to any session in progress (gym and GPS).
-- Q: Functional icon? → A: The 🏋️ emoji (person lifting weights, gender-neutral), shown in colour,
+- Q: Functional icon? → A: The 🏋️ emoji (person lifting weights, gender-neutral), painted as a
+  one-colour silhouette in the same colour as the other activity icons (owner feedback after the
+  first build: the full-colour emoji did not match),
   wherever activity-type icons appear. Other types keep their icons.
 - Q: Sunday start scope? → A: History calendar view only (grid and weekday header). Weekly stats
   keep ISO (Monday) weeks.

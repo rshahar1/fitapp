@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' show DatabaseConnection, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:fitapp/app/router.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
@@ -305,6 +306,17 @@ void main() {
       );
       expect(find.text(functionalEmoji), findsOneWidget);
       expect(find.byIcon(Icons.sports_gymnastics), findsNothing);
+      // Painted as a one-colour silhouette in the row's icon colour (022).
+      final filter = tester.widget<ColorFiltered>(
+        find.ancestor(
+          of: find.text(functionalEmoji),
+          matching: find.byType(ColorFiltered),
+        ),
+      );
+      expect(
+        filter.colorFilter,
+        const ColorFilter.mode(AppColors.textSecondary, BlendMode.srcIn),
+      );
       await unmount(tester);
     });
 

@@ -1,3 +1,4 @@
+import 'package:fitapp/app/theme/tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Icon of a gym workout in lists.
@@ -29,7 +30,7 @@ class ActivityIcon extends StatelessWidget {
   /// Icon box size; defaults to the ambient icon size.
   final double? size;
 
-  /// Icon colour (ignored by the emoji).
+  /// Icon colour; the emoji is painted as a silhouette in it.
   final Color? color;
 
   @override
@@ -37,16 +38,23 @@ class ActivityIcon extends StatelessWidget {
     if (typeId != 'functional') {
       return Icon(activityIcon(typeId), size: size, color: color);
     }
-    final box = size ?? IconTheme.of(context).size ?? 24;
+    final iconTheme = IconTheme.of(context);
+    final box = size ?? iconTheme.size ?? 24;
+    final tint = color ?? iconTheme.color ?? AppColors.textSecondary;
+    // Paint the colour emoji as a one-colour silhouette so it matches the
+    // Material icons around it (owner feedback, feature 022).
     return ExcludeSemantics(
       child: SizedBox(
         width: box,
         height: box,
-        child: Center(
-          child: Text(
-            functionalEmoji,
-            style: TextStyle(fontSize: box, height: 1),
-            textScaler: TextScaler.noScaling,
+        child: ColorFiltered(
+          colorFilter: ColorFilter.mode(tint, BlendMode.srcIn),
+          child: Center(
+            child: Text(
+              functionalEmoji,
+              style: TextStyle(fontSize: box * 0.9, height: 1),
+              textScaler: TextScaler.noScaling,
+            ),
           ),
         ),
       ),

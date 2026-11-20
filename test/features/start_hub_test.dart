@@ -165,16 +165,14 @@ void main() {
   });
 
   group('Train', () {
-    testWidgets('gym workout starts in one tap; no header icons or Log '
-        'activity', (tester) async {
+    testWidgets('no empty gym start, header icons or Log activity', (
+      tester,
+    ) async {
       await pumpApp(tester);
+      expect(find.text('START GYM WORKOUT'), findsNothing);
       expect(find.byTooltip('Settings'), findsNothing);
       expect(find.byTooltip('Exercises'), findsNothing);
       expect(find.text('LOG ACTIVITY'), findsNothing);
-      await tester.tap(find.text('START GYM WORKOUT'));
-      await settle(tester);
-      expect(location(), Routes.workout);
-      expect(await tester.runAsync(activeWorkout), isNotNull);
       await unmount(tester);
     });
 

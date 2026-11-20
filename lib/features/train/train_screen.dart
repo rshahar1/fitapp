@@ -16,7 +16,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Home tab: start or continue a workout, stats and recent workouts.
+/// Home tab: continue a session in progress, start a template, stats and
+/// recent workouts.
 class TrainScreen extends ConsumerWidget {
   const new({super.key});
 
@@ -65,7 +66,7 @@ class TrainScreen extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: Space.s),
                   child: _TemplateCard(
                     template: t,
-                    onStart: () => actions.startGym(context, templateId: t.id),
+                    onStart: () => actions.startTemplate(context, t.id),
                   ),
                 ),
             const StepsCard(),
@@ -185,24 +186,24 @@ class _TemplateCard extends StatelessWidget {
   }
 }
 
-/// The one "start or continue" surface on Train: one tap to a gym workout,
-/// or continue the gym workout or GPS session in progress (feature 011).
+/// The "continue" surface on Train: shown only while a gym workout or GPS
+/// session is in progress (features 011, 024). There is no empty gym start;
+/// gym workouts start from a template.
 class _HeroCard extends ConsumerWidget {
   const new();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final inProgress = ref.watch(sessionInProgressProvider);
+    if (inProgress == null) return const SizedBox.shrink();
     final text = Theme.of(context).textTheme;
     final secondary = text.bodyMedium?.copyWith(color: AppColors.textSecondary);
     final now = ref.watch(clockProvider)();
-    final inProgress = ref.watch(sessionInProgressProvider);
     final actions = ref.read(startActionsProvider);
 
     final String title;
     Widget? line;
-    switch (inProgress?.kind) {
-      case null:
-        title = 'Ready to train?';
+    switch (inProgress.kind) {
       case SessionKind.gym:
         title = 'Workout in progress';
         final active = ref.watch(activeWorkoutProvider).value;
@@ -218,7 +219,7 @@ class _HeroCard extends ConsumerWidget {
           style: secondary,
         );
       case SessionKind.tracking:
-        title = '${inProgress!.label} in progress';
+        title = '${inProgress.label} in progress';
         final live = ref.watch(trackingControllerProvider);
         if (live is TrackingLive) {
           line = Tick(
@@ -238,45 +239,39 @@ class _HeroCard extends ConsumerWidget {
     }
 
     return AppCard(
-      borderColor: inProgress != null ? AppColors.live : null,
+      borderColor: AppColors.live,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Flexible(child: Text(title, style: text.titleLarge)),
-              if (inProgress != null) ...[
-                const SizedBox(width: Space.s),
-                Semantics(
-                  label: 'In progress',
-                  excludeSemantics: true,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: Space.s),
-                    decoration: const ShapeDecoration(
-                      color: AppColors.liveSoft,
-                      shape: StadiumBorder(),
-                    ),
-                    child: Text(
-                      '● LIVE',
-                      style: text.labelSmall?.copyWith(color: AppColors.live),
-                    ),
+              const SizedBox(width: Space.s),
+              Semantics(
+                label: 'In progress',
+                excludeSemantics: true,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: Space.s),
+                  decoration: const ShapeDecoration(
+                    color: AppColors.liveSoft,
+                    shape: StadiumBorder(),
+                  ),
+                  child: Text(
+                    '● LIVE',
+                    style: text.labelSmall?.copyWith(color: AppColors.live),
                   ),
                 ),
-              ],
+              ),
             ],
           ),
           if (line != null) ...[const SizedBox(height: Space.xs), line],
           const SizedBox(height: Space.m),
           AppButton(
-            label: inProgress?.continueLabel ?? 'Start gym workout',
-            icon: inProgress != null ? Icons.play_arrow : null,
-            variant: inProgress != null
-                ? AppButtonVariant.live
-                : AppButtonVariant.primary,
+            label: inProgress.continueLabel,
+            icon: Icons.play_arrow,
+            variant: AppButtonVariant.live,
             expand: true,
-            onPressed: inProgress == null
-                ? () => actions.startGym(context)
-                : () => actions.open(context, inProgress),
+            onPressed: () => actions.open(context, inProgress),
           ),
         ],
       ),

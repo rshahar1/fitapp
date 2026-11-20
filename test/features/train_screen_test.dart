@@ -77,11 +77,11 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('empty state offers to start a workout', (tester) async {
+  testWidgets('empty state has no empty gym start', (tester) async {
     await pump(tester);
     expect(find.text('Train'), findsOneWidget);
-    expect(find.text('Ready to train?'), findsOneWidget);
-    expect(find.text('START GYM WORKOUT'), findsOneWidget);
+    expect(find.text('Ready to train?'), findsNothing);
+    expect(find.text('START GYM WORKOUT'), findsNothing);
     expect(find.text('No workouts yet'), findsOneWidget);
     expect(find.text('0'), findsNWidgets(3));
     await unmount(tester);
@@ -118,10 +118,9 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('no session: green Start button, no LIVE pill', (tester) async {
+  testWidgets('no session: no hero, no LIVE pill', (tester) async {
     await pump(tester);
-    final button = tester.widget<AppButton>(find.byType(AppButton));
-    expect(button.variant, AppButtonVariant.primary);
+    expect(find.byType(AppButton), findsNothing);
     expect(find.textContaining('LIVE'), findsNothing);
     await unmount(tester);
   });

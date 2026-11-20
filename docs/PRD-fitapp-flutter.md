@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.9, 16 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.10, 20 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -237,7 +237,7 @@ back to the exercise plan.
 - Template plans are shown in the template editor (`3 × 10 @ 20 kg · overload +2.5`, or *No plan yet*); tap a row to edit it, saved with the template.
 
 ### 5.3 Live workout (Hevy-style)
-- **Start workout** from the home tab, or **Continue** if one is in progress. At most one workout is active.
+- **Start** a workout from a template's **START** on the home tab, or **Continue** if one is in progress. At most one workout is active.
 - Header: elapsed **Duration**, live **Volume**, **Sets** done, and a **Finish** button.
 - Per exercise, a card with the name, plan summary (`3 × 10 @ 20 kg · overload +2.5 · per hand`, plus `· template plan` when the workout came from a template), and a `⋮`
   menu (Remove exercise, Edit plan). *Edit plan* edits the template plan for template exercises.
@@ -281,9 +281,9 @@ back to the exercise plan.
 
 ### 5.5 Home / Train tab
 - Date kicker, title, a hero card and stat tiles: *This week*, *Week streak*, *Total workouts*. Below them, the 3
-  most recent workouts (gym workouts only). The hero is **Ready to train?** with **Start gym workout** (1 tap);
-  **Continue workout** when a gym workout is active; when a GPS session is active it shows "<Sport> in progress", the
-  ticking `mm:ss · km` and **Continue <sport>** (no separate tracking banner). Templates keep their **START**.
+  most recent workouts (gym workouts only). There is no empty gym start: gym workouts start only from a
+  template's **START**. The hero shows only while a session is in progress: **Continue workout** for a gym workout, or
+  "<Sport> in progress" with the ticking `mm:ss · km` and **Continue <sport>** for a GPS session (no separate tracking banner).
   The Train header has no icons and there is no *Log activity* button (feature 011, section 5.9).
 - The **activity sheet** (opened from the hub's *Log a past session* and *More sports*; titled "Log a past session" for
   new entries, "Edit activity" when editing; no *Start live*): activity type, date (default today, never in the future), optional
@@ -642,7 +642,7 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
   and then shows overtime; it stays correct after the app is backgrounded (computed from a stored start time).
 - Changing the default rest time in Settings persists across restarts and applies to the next logged set; the
   per-exercise value `NULL` falls back to the default.
-- End-to-end: start workout → add exercise → set up plan → log 3 sets → finish → exercise detail shows the new
+- End-to-end: start workout from a template → add exercise → set up plan → log 3 sets → finish → exercise detail shows the new
   base and a chart point.
 
 ---
@@ -749,3 +749,4 @@ resolved on 12 Nov 2026; see the decisions log.
   - Finish sheet and History row with day totals; Activity detail with speed heatmap, Dark / Winter / Satellite map styles, run comparison with best-run badges, timeline and 2D run replay.
   - Schema v9 (`from8To9`): six nullable columns on `activities`; server migration `20261116000001_activities_snowboard.sql`; all six sync. No new packages. Constitution 1.8.0.
   - Barometer altitude, lift and piste names, 3D maps and replay, heart rate, GPX, miles, offline tiles stay LATER.
+- **2.10 (20 Nov 2026):** feature 024, template-only gym start. The Train hero's empty "Start gym workout" is removed; gym workouts start only from a template's START, and the hero shows only while a session is in progress (section 5.5).

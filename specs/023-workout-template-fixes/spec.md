@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-20
 
-**Status**: Draft
+**Status**: Implemented (device check open)
 
 **Input**: Owner request, four fixes: (1) notes from earlier sessions are not carried into a workout
 started from a template; (2) a template workout shows an "Add Set" button inside every exercise,
@@ -44,8 +44,9 @@ button; "Edit plan" changes the number of set rows.
 
 1. **Given** a workout exercise using its template's plan, **Then** no "Add Set" button is shown
    (live or when editing a finished workout).
-2. **Given** an ad-hoc exercise, or a template exercise whose template entry was deleted, **Then**
-   "Add Set" is still shown.
+2. **Given** an ad-hoc exercise, or a template exercise whose template entry was deleted (a live
+   session is then unlinked and uses the exercise's own plan; a finished one is an orphan), **Then**
+   "Add Set" is still shown when the card is editable.
 3. **Given** a template exercise, **When** the target sets are changed in "Edit plan", **Then** the
    number of set rows follows.
 

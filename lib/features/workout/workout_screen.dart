@@ -8,6 +8,7 @@ import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/live_session_store.dart';
 import 'package:fitapp/data/repositories/template_repository.dart';
 import 'package:fitapp/domain/calendar.dart' show dateOnly;
+import 'package:fitapp/domain/workout_progress.dart';
 import 'package:fitapp/features/settings/account_section.dart';
 import 'package:fitapp/features/workout/rest_timer_controller.dart';
 import 'package:fitapp/features/workout/widgets/exercise_card.dart';
@@ -101,6 +102,42 @@ class _WorkoutBodyState extends ConsumerState<_WorkoutBody> {
   /// A finished workout opens read-only; Edit switches this on.
   bool _editing = false;
 
+  final _scroll = ScrollController();
+  final _cardKeys = <String, GlobalKey>{};
+
+  /// The live workout jumps to its current exercise once per visit
+  /// (feature 023), never again after the user scrolls or logs.
+  bool _resumed = false;
+
+  GlobalKey _keyFor(String workoutExerciseId) =>
+      _cardKeys.putIfAbsent(workoutExerciseId, GlobalKey.new);
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _resumeAt(WorkoutDetail d) {
+    if (_resumed) return;
+    _resumed = true;
+    if (d.isFinished) return;
+    final index = resumeExerciseIndex([
+      for (final e in d.exercises)
+        ExerciseProgress(
+          loggedSetNos: {for (final s in e.sets) s.setNo},
+          plannedSets: e.effectivePlan?.targetSets,
+        ),
+    ]);
+    if (index == null) return;
+    final key = _keyFor(d.exercises[index].row.id);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final target = key.currentContext;
+      if (!mounted || target == null || !target.mounted) return;
+      Scrollable.ensureVisible(target);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final detail = ref.watch(workoutDetailProvider(widget.workoutId));
@@ -108,13 +145,19 @@ class _WorkoutBodyState extends ConsumerState<_WorkoutBody> {
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (_, _) => const _Missing(message: 'Could not load the workout.'),
-      data: (d) => d == null
-          ? const _Missing(message: 'This workout no longer exists.')
-          : _WorkoutView(
-              detail: d,
-              editing: _editing,
-              onToggleEdit: () => setState(() => _editing = !_editing),
-            ),
+      data: (d) {
+        if (d == null) {
+          return const _Missing(message: 'This workout no longer exists.');
+        }
+        _resumeAt(d);
+        return _WorkoutView(
+          detail: d,
+          editing: _editing,
+          onToggleEdit: () => setState(() => _editing = !_editing),
+          scrollController: _scroll,
+          cardKey: _keyFor,
+        );
+      },
     );
   }
 }
@@ -124,9 +167,15 @@ class _WorkoutView extends ConsumerWidget {
     required this.detail,
     required this.editing,
     required this.onToggleEdit,
+    required this.scrollController,
+    required this.cardKey,
   });
 
   final WorkoutDetail detail;
+  final ScrollController scrollController;
+
+  /// Locates an exercise card (by workout exercise id) for scrolling.
+  final GlobalKey Function(String workoutExerciseId) cardKey;
 
   /// Edit mode of a finished workout (ignored while live).
   final bool editing;
@@ -421,66 +470,73 @@ class _WorkoutView extends ConsumerWidget {
           ),
         ),
       ),
-      body: ListView(
+      // Every card is built (not lazily) so the live workout can scroll to
+      // its current exercise on open (feature 023).
+      body: SingleChildScrollView(
+        controller: scrollController,
         padding: const EdgeInsets.fromLTRB(Space.m, Space.s, Space.m, Space.xl),
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: Space.m),
-            child: Group(
-              children: [
-                GroupRow(
-                  title: 'Date',
-                  trailing: Text(
-                    _dayLabel(shownDay, now),
-                    style: Theme.of(context).textTheme.bodyLarge
-                        ?.copyWith(color: AppColors.accent),
-                  ),
-                  showChevron: !readOnly,
-                  onTap: readOnly
-                      ? null
-                      : () => _pickDay(context, ref, shownDay),
-                ),
-              ],
-            ),
-          ),
-          if (!isLive && editing)
-            Padding(
-              padding: const EdgeInsets.only(bottom: Space.s),
-              child: Text(
-                'Changes save automatically',
-                style: Theme.of(context).textTheme.bodySmall
-                    ?.copyWith(color: AppColors.textSecondary),
-              ),
-            ),
-          for (final e in detail.exercises)
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
             Padding(
               padding: const EdgeInsets.only(bottom: Space.m),
-              child: ExerciseCard(
-                key: ValueKey(e.row.id),
-                detail: e,
-                isLive: isLive,
-                readOnly: readOnly,
+              child: Group(
+                children: [
+                  GroupRow(
+                    title: 'Date',
+                    trailing: Text(
+                      _dayLabel(shownDay, now),
+                      style: Theme.of(context).textTheme.bodyLarge
+                          ?.copyWith(color: AppColors.accent),
+                    ),
+                    showChevron: !readOnly,
+                    onTap: readOnly
+                        ? null
+                        : () => _pickDay(context, ref, shownDay),
+                  ),
+                ],
               ),
             ),
-          if (readOnly && detail.exercises.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: Space.l),
-              child: Text(
-                'No exercises logged',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium
-                    ?.copyWith(color: AppColors.textSecondary),
+            if (!isLive && editing)
+              Padding(
+                padding: const EdgeInsets.only(bottom: Space.s),
+                child: Text(
+                  'Changes save automatically',
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: AppColors.textSecondary),
+                ),
               ),
-            ),
-          if (!readOnly)
-            AppButton(
-              label: 'Add Exercise',
-              icon: Icons.add,
-              variant: AppButtonVariant.secondary,
-              expand: true,
-              onPressed: () => context.push(Routes.addExercise(w.id)),
-            ),
-        ],
+            for (final e in detail.exercises)
+              Padding(
+                key: cardKey(e.row.id),
+                padding: const EdgeInsets.only(bottom: Space.m),
+                child: ExerciseCard(
+                  key: ValueKey(e.row.id),
+                  detail: e,
+                  isLive: isLive,
+                  readOnly: readOnly,
+                ),
+              ),
+            if (readOnly && detail.exercises.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: Space.l),
+                child: Text(
+                  'No exercises logged',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium
+                      ?.copyWith(color: AppColors.textSecondary),
+                ),
+              ),
+            if (!readOnly)
+              AppButton(
+                label: 'Add Exercise',
+                icon: Icons.add,
+                variant: AppButtonVariant.secondary,
+                expand: true,
+                onPressed: () => context.push(Routes.addExercise(w.id)),
+              ),
+          ],
+        ),
       ),
       bottomNavigationBar: !isLive
           ? null

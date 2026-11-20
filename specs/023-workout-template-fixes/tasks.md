@@ -21,10 +21,10 @@ None: the four stories touch separate code paths.
 **Goal**: a template start pre-fills each exercise's latest earlier note (FR-001, FR-002).
 **Independent test**: template note written, finished, template started again → note shown.
 
-- [ ] T002 [US1] Failing tests: latest non-empty note of the same template exercise carried over;
+- [x] T002 [US1] Failing tests: latest non-empty note of the same template exercise carried over;
   empty/blank notes skipped; ad-hoc and other-template notes ignored; live (unfinished) workouts
   ignored; editing the new note leaves the old one — test/data/template_repository_test.dart
-- [ ] T003 [US1] `_lastNote(templateExerciseId)` and `notes: Value(...)` in `startWorkout` —
+- [x] T003 [US1] `_lastNote(templateExerciseId)` and `notes: Value(...)` in `startWorkout` —
   lib/data/repositories/template_repository.dart
 
 ## Phase 4: Continue where you left off (US4, P1)
@@ -32,38 +32,38 @@ None: the four stories touch separate code paths.
 **Goal**: a live workout opens at the current exercise (FR-006, FR-007).
 **Independent test**: exercises 1–3 complete, reopen → exercise 4 visible at the top.
 
-- [ ] T004 [P] [US4] Failing tests for `resumeExerciseIndex`: none logged → null; partial last →
+- [x] T004 [P] [US4] Failing tests for `resumeExerciseIndex`: none logged → null; partial last →
   that index; complete with next → next; complete and last → itself; no plan → itself; gaps before
   the last logged exercise ignored — test/domain/workout_progress_test.dart
-- [ ] T005 [US4] `ExerciseProgress`, `resumeExerciseIndex` (pure Dart) —
+- [x] T005 [US4] `ExerciseProgress`, `resumeExerciseIndex` (pure Dart) —
   lib/domain/workout_progress.dart
-- [ ] T006 [US4] Scroll controller, per-card keys, one-time `ensureVisible` for live workouts;
+- [x] T006 [US4] Scroll controller, per-card keys, one-time `ensureVisible` for live workouts;
   `SingleChildScrollView` + `Column` body — lib/features/workout/workout_screen.dart
-- [ ] T007 [US4] Widget tests: live workout with progress opens scrolled to the current card;
+- [x] T007 [US4] Widget tests: live workout with progress opens scrolled to the current card;
   no progress and finished workouts stay at the top — test/features/workout_screen_test.dart
 
 ## Phase 5: One set-count control (US2, P2)
 
 **Goal**: no "Add Set" on template-plan exercises (FR-003).
 
-- [ ] T008 [P] [US2] Hide Add Set when `planSource == PlanSourceKind.template` —
+- [x] T008 [P] [US2] Hide Add Set when `planSource == PlanSourceKind.template` —
   lib/features/workout/widgets/exercise_card.dart
-- [ ] T009 [US2] Widget tests: template exercise has no Add Set, ad-hoc and orphan keep it; Edit
+- [x] T009 [US2] Widget tests: template exercise has no Add Set, ad-hoc and template-deleted-mid-session (unlinked to ad-hoc) keep it; Edit
   plan target sets changes the rows — test/features/template_progression_ui_test.dart
 
 ## Phase 6: Notes save on their own (US3, P2)
 
 **Goal**: notes auto-save and leave edit state (FR-004, FR-005).
 
-- [ ] T010 [US3] `_NotesField`: 600 ms debounce save, Done → save + unfocus, tap outside →
+- [x] T010 [US3] `_NotesField`: 600 ms debounce save, Done → save + unfocus, tap outside →
   unfocus, save on dispose — lib/features/workout/widgets/exercise_card.dart
-- [ ] T011 [US3] Widget tests: typing saves after the debounce; Done unfocuses and saves; clearing
-  stores null — test/features/exercise_notes_test.dart
+- [x] T011 [US3] Widget tests: typing saves after the debounce; Done unfocuses and saves; clearing
+  stores null; leaving the screen while typing saves — test/features/exercise_notes_test.dart
 
 ## Phase 7: Polish
 
-- [ ] T012 `dart format --set-exit-if-changed .`, `flutter analyze`, `flutter test`; spec status;
-  commit
+- [x] T012 `dart format --set-exit-if-changed .`, `flutter analyze`, `flutter test`; spec status;
+  commit (940 green)
 
 ## Dependencies
 

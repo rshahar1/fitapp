@@ -172,6 +172,89 @@ void main() {
     });
   });
 
+  group('notes carry over (023 US1)', () {
+    /// Starts template [id], writes [notes] per exercise id, logs one set on
+    /// each so finishing keeps the workout, finishes. Returns the workout id.
+    Future<String> templateSession(
+      String id,
+      Map<String, String?> notes, {
+      bool finish = true,
+    }) async {
+      h.advance();
+      final w = await templates.startWorkout(id);
+      for (final e in (await h.workouts.workoutDetail(w))!.exercises) {
+        await h.workouts.logSet(e.row.id, setNo: 1, weight: 20, reps: 10);
+        if (notes.containsKey(e.exercise.id)) {
+          await h.workouts.setExerciseNotes(e.row.id, notes[e.exercise.id]);
+        }
+      }
+      if (finish) await h.workouts.finishWorkout(w);
+      return w;
+    }
+
+    Future<Map<String, String?>> notesOf(String workoutId) async => {
+      for (final e in (await h.workouts.workoutDetail(workoutId))!.exercises)
+        e.exercise.id: e.row.notes,
+    };
+
+    test('each exercise gets its latest earlier note', () async {
+      final id = await templates.create(
+        name: 'Push',
+        exerciseIds: [_bench, _ohp],
+      );
+      await templateSession(id, {_bench: 'seat 4', _ohp: 'strict'});
+      await templateSession(id, {_bench: 'seat 5'});
+      final w = await templateSession(id, {}, finish: false);
+      expect(await notesOf(w), {_bench: 'seat 5', _ohp: 'strict'});
+    });
+
+    test('a session with an empty note does not erase an older note', () async {
+      final id = await templates.create(name: 'Push', exerciseIds: [_bench]);
+      await templateSession(id, {_bench: 'seat 4'});
+      await templateSession(id, {_bench: '   '});
+      await templateSession(id, {});
+      final w = await templateSession(id, {}, finish: false);
+      expect(await notesOf(w), {_bench: 'seat 4'});
+    });
+
+    test('ad-hoc and other-template notes are not carried over', () async {
+      final push = await templates.create(name: 'Push', exerciseIds: [_bench]);
+      final other = await templates.create(
+        name: 'Other',
+        exerciseIds: [_bench],
+      );
+      final (_, adHoc) = await h.session([(20, 10)], exerciseId: _bench);
+      await h.workouts.setExerciseNotes(adHoc, 'ad-hoc note');
+      await templateSession(other, {_bench: 'other template'});
+      final w = await templateSession(push, {}, finish: false);
+      expect(await notesOf(w), {_bench: null});
+    });
+
+    test('kept across template edits', () async {
+      final id = await templates.create(name: 'Push', exerciseIds: [_bench]);
+      await templateSession(id, {_bench: 'seat 4'});
+      await templates.update(id, name: 'Push day', exerciseIds: [_ohp, _bench]);
+      final w = await templateSession(id, {}, finish: false);
+      expect(await notesOf(w), {_ohp: null, _bench: 'seat 4'});
+    });
+
+    test('editing the carried note leaves the earlier one', () async {
+      final id = await templates.create(name: 'Push', exerciseIds: [_bench]);
+      final first = await templateSession(id, {_bench: 'seat 4'});
+      final w = await templateSession(id, {_bench: 'seat 6'}, finish: false);
+      expect(await notesOf(w), {_bench: 'seat 6'});
+      expect(await notesOf(first), {_bench: 'seat 4'});
+    });
+
+    test('a discarded live workout is not a source', () async {
+      final id = await templates.create(name: 'Push', exerciseIds: [_bench]);
+      final live = await templateSession(id, {_bench: 'draft'}, finish: false);
+      await h.workouts.discardWorkout(live);
+      final w = await templateSession(id, {}, finish: false);
+      expect(await notesOf(w), {_bench: null});
+    });
+  });
+
   group('save from workout (US3)', () {
     test('copies exercises in workout order, distinct', () async {
       final w = await h.workouts.startWorkout();

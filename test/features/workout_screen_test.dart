@@ -234,4 +234,128 @@ void main() {
     expect(find.text('1:30'), findsOneWidget);
     await _dispose(tester, env);
   });
+
+  group('resume at the current exercise (023 US4)', () {
+    String exId(int n) =>
+        '00000000-0000-4000-8000-${n.toRadixString(16).padLeft(12, '0')}';
+
+    /// Live workout with five planned exercises (3 sets each); [logged]
+    /// lists the set numbers logged per exercise. Returns workout exercise
+    /// ids in order.
+    Future<List<String>> seedFive(_Env env, List<List<int>> logged) async {
+      final w = await env.workouts.startWorkout();
+      env.workoutId = w.id;
+      final ids = <String>[];
+      for (var i = 0; i < 5; i++) {
+        await env.exercises.savePlan(
+          exId(i + 1),
+          baseWeight: 20,
+          targetReps: 10,
+          targetSets: 3,
+          increment: 2.5,
+        );
+        final we = await env.workouts.addExercise(w.id, exId(i + 1));
+        ids.add(we.id);
+        for (final n in i < logged.length ? logged[i] : const <int>[]) {
+          await env.workouts.logSet(we.id, setNo: n, weight: 20, reps: 10);
+        }
+      }
+      return ids;
+    }
+
+    double offset(WidgetTester tester) => tester
+        .state<ScrollableState>(find.byType(Scrollable).first)
+        .position
+        .pixels;
+
+    double cardTop(WidgetTester tester, String weId) =>
+        tester.getTopLeft(find.byKey(ValueKey(weId))).dy;
+
+    double bodyTop(WidgetTester tester) =>
+        tester.getTopLeft(find.byType(SingleChildScrollView)).dy;
+
+    testWidgets('opens at the exercise after the completed ones', (
+      tester,
+    ) async {
+      final env = _Env();
+      final ids = await tester.runAsync(
+        () => seedFive(env, [
+          [1, 2, 3],
+          [1, 2, 3],
+          [1, 2, 3],
+        ]),
+      );
+      await _pump(tester, env);
+      expect(offset(tester), greaterThan(0));
+      expect(
+        cardTop(tester, ids![3]),
+        moreOrLessEquals(bodyTop(tester), epsilon: 1),
+      );
+      await _dispose(tester, env);
+    });
+
+    testWidgets('opens at a partly logged exercise', (tester) async {
+      final env = _Env();
+      final ids = await tester.runAsync(
+        () => seedFive(env, [
+          [1, 2, 3],
+          [1, 2, 3],
+          [1],
+        ]),
+      );
+      await _pump(tester, env);
+      expect(
+        cardTop(tester, ids![2]),
+        moreOrLessEquals(bodyTop(tester), epsilon: 1),
+      );
+      await _dispose(tester, env);
+    });
+
+    testWidgets('nothing logged: opens at the top', (tester) async {
+      final env = _Env();
+      await tester.runAsync(() => seedFive(env, []));
+      await _pump(tester, env);
+      expect(offset(tester), 0);
+      await _dispose(tester, env);
+    });
+
+    testWidgets('logging a set later does not jump the screen', (tester) async {
+      final env = _Env();
+      await tester.runAsync(() => seedFive(env, []));
+      await _pump(tester, env);
+      await tester.tap(find.bySemanticsLabel('Log set 1 as prescribed').first);
+      await _settle(tester);
+      expect(offset(tester), 0);
+      await _dispose(tester, env);
+    });
+
+    testWidgets('a finished workout opens at the top', (tester) async {
+      final env = _Env();
+      await tester.runAsync(() async {
+        await seedFive(env, [
+          [1, 2, 3],
+          [1, 2, 3],
+          [1, 2, 3],
+        ]);
+        await env.workouts.finishWorkout(env.workoutId);
+      });
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(env.db),
+            clockProvider.overrideWithValue(() => env.now),
+            hapticsProvider.overrideWithValue(env.haptics),
+            restAlertsProvider.overrideWithValue(env.alerts),
+          ],
+          child: MaterialApp(
+            theme: buildAppTheme(),
+            home: WorkoutScreen(workoutId: env.workoutId),
+          ),
+        ),
+      );
+      await _settle(tester);
+      expect(offset(tester), 0);
+      await _dispose(tester, env);
+    });
+  });
 }

@@ -6,6 +6,7 @@ import 'package:fitapp/core/format.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/providers.dart';
+import 'package:fitapp/data/repositories/workout_repository.dart';
 import 'package:fitapp/domain/milestones.dart';
 import 'package:fitapp/domain/progression.dart';
 import 'package:fitapp/domain/stats.dart';
@@ -339,17 +340,19 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                   ),
               ],
             ),
-            if (!readOnly)
+            if (!readOnly &&
+                (d.planSource != PlanSourceKind.template || firstTwoSetsHit(d)))
               Row(
                 children: [
-                  TextButton.icon(
-                    onPressed: () {
-                      ref.read(hapticsProvider).tick();
-                      setState(() => _extraRows++);
-                    },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Set'),
-                  ),
+                  if (d.planSource != PlanSourceKind.template)
+                    TextButton.icon(
+                      onPressed: () {
+                        ref.read(hapticsProvider).tick();
+                        setState(() => _extraRows++);
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add Set'),
+                    ),
                   if (firstTwoSetsHit(d)) ...[
                     const SizedBox(width: Space.s),
                     Expanded(
@@ -398,23 +401,63 @@ class _NotesField extends ConsumerStatefulWidget {
 class _NotesFieldState extends ConsumerState<_NotesField> {
   late final _controller = TextEditingController(text: widget.detail.row.notes);
   late final _focus = FocusNode()..addListener(_onFocus);
+  late String _saved = widget.detail.row.notes ?? '';
+  Timer? _timer;
+
+  /// Read up front: `ref` cannot be used while the field is disposed, which
+  /// is when a note typed just before leaving the screen is saved.
+  late final WorkoutRepository _repo;
+
+  @override
+  void initState() {
+    super.initState();
+    _repo = ref.read(workoutRepositoryProvider);
+  }
 
   void _onFocus() {
     if (_focus.hasFocus) return;
+    _timer?.cancel();
+    _save();
+  }
+
+  void _onChanged(String _) {
+    _timer?.cancel();
+    _timer = Timer(const Duration(milliseconds: 600), _save);
+  }
+
+  void _save() {
+    _timer?.cancel();
+    if (!mounted) return;
     final text = _controller.text;
-    if (text == (widget.detail.row.notes ?? '')) return;
+    if (text == _saved) return;
+    _saved = text;
     unawaited(
-      guard(
-        context,
-        () => ref
-            .read(workoutRepositoryProvider)
-            .setExerciseNotes(widget.detail.row.id, text),
-      ),
+      guard(context, () => _repo.setExerciseNotes(widget.detail.row.id, text)),
     );
   }
 
   @override
+  void didUpdateWidget(_NotesField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final notes = widget.detail.row.notes ?? '';
+    if (!_focus.hasFocus && _controller.text == _saved && notes != _saved) {
+      _saved = notes;
+      _controller.text = notes;
+    }
+  }
+
+  @override
   void dispose() {
+    _timer?.cancel();
+    final text = _controller.text;
+    if (text != _saved) {
+      // The screen is going away; there is nowhere to report a failure.
+      unawaited(
+        _repo
+            .setExerciseNotes(widget.detail.row.id, text)
+            .catchError((Object _) {}),
+      );
+    }
     _focus.dispose();
     _controller.dispose();
     super.dispose();
@@ -428,7 +471,14 @@ class _NotesFieldState extends ConsumerState<_NotesField> {
       focusNode: _focus,
       minLines: 1,
       maxLines: 3,
+      textInputAction: TextInputAction.done,
       textCapitalization: TextCapitalization.sentences,
+      onChanged: _onChanged,
+      onSubmitted: (_) {
+        _save();
+        _focus.unfocus();
+      },
+      onTapOutside: (_) => _focus.unfocus(),
       decoration: const InputDecoration(
         hintText: 'Add notes',
         isDense: true,

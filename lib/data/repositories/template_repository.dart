@@ -203,6 +203,7 @@ class TemplateRepository {
               position: i,
               updatedAt: now,
               templateExerciseId: Value(item.id),
+              notes: Value(await _lastNote(item.id)),
             ),
           );
     }
@@ -217,6 +218,26 @@ class TemplateRepository {
     );
     return workoutId;
   });
+
+  /// The newest non-empty note of a finished session of the template
+  /// exercise [templateExerciseId] (feature 023), so notes carry from one
+  /// template workout to the next.
+  Future<String?> _lastNote(String templateExerciseId) async {
+    final w = _db.workouts;
+    final we = _db.workoutExercises;
+    final q = _db.select(we).join([innerJoin(w, w.id.equalsExp(we.workoutId))])
+      ..where(
+        we.templateExerciseId.equals(templateExerciseId) &
+            w.endedAt.isNotNull() &
+            we.notes.isNotNull(),
+      )
+      ..orderBy([OrderingTerm.desc(w.startedAt), OrderingTerm.desc(w.id)]);
+    for (final row in await q.get()) {
+      final note = row.readTable(we).notes;
+      if (note != null && note.trim().isNotEmpty) return note;
+    }
+    return null;
+  }
 
   // ---------------------------------------------------------------------------
 

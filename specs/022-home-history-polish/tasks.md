@@ -38,4 +38,5 @@ description: "Task list for home and history polish"
 ## Phase 6: Polish
 
 - [x] T013 `dart format --set-exit-if-changed .`, `flutter analyze`, `flutter test` (914 green)
+- [x] T015 Functional emoji painted as a silhouette in the icon colour (owner feedback) — activity_icons.dart, start_hub_test.dart
 - [ ] T014 (owner) check on a device

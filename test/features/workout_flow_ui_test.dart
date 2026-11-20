@@ -107,7 +107,8 @@ void main() {
       findsOneWidget,
     );
     await tap(tester, find.text('Discard'));
-    expect(find.text('Ready to train?'), findsOneWidget);
+    expect(find.text('Ready to train?'), findsNothing);
+    expect(find.text('Workout in progress'), findsNothing);
     expect(await tester.runAsync(repo.activeWorkout), isNull);
     await unmount(tester);
   });

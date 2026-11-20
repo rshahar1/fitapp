@@ -22,8 +22,9 @@ final sessionInProgressProvider = Provider<SessionInProgress?>((ref) {
 
 final startActionsProvider = Provider<StartActions>(StartActions.new);
 
-/// Shared start logic for every entry point (feature 011): the hub, the Train
-/// hero and template STARTs. One guard for gym and GPS starts.
+/// Shared start logic for every entry point (feature 011): the hub and template
+/// STARTs (the Train hero only continues a session). Gym workouts start only
+/// from a template (feature 024). One guard for gym and GPS starts.
 class StartActions {
   const new(this._ref);
 
@@ -39,18 +40,15 @@ class StartActions {
     );
   }
 
-  /// Starts an empty gym workout, or one from [templateId], and opens it.
+  /// Starts a gym workout from the template [templateId] and opens it.
   /// Refused with a message while any session is in progress.
-  Future<void> startGym(BuildContext context, {String? templateId}) async {
+  Future<void> startTemplate(BuildContext context, String templateId) async {
     if (!await _allowed(context)) return;
     if (!context.mounted) return;
-    final ok = await guard(context, () async {
-      if (templateId == null) {
-        await _ref.read(workoutRepositoryProvider).startWorkout();
-      } else {
-        await _ref.read(templateRepositoryProvider).startWorkout(templateId);
-      }
-    });
+    final ok = await guard(
+      context,
+      () => _ref.read(templateRepositoryProvider).startWorkout(templateId),
+    );
     if (!ok || !context.mounted) return;
     _ref.read(hapticsProvider).success();
     unawaited(GoRouter.of(context).push(Routes.workout));

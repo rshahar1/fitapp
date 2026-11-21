@@ -240,6 +240,7 @@ class WorkoutListItem {
     required this.exerciseNames,
     required this.volume,
     required this.setCount,
+    this.templateName,
   });
 
   final String id;
@@ -248,6 +249,10 @@ class WorkoutListItem {
   final List<String> exerciseNames;
   final double volume;
   final int setCount;
+
+  /// Name of the template this workout came from, or null for an ad-hoc
+  /// workout or a deleted template.
+  final String? templateName;
 
   Duration get duration => (endedAt ?? startedAt).difference(startedAt);
 }

@@ -7,6 +7,7 @@ import 'package:fitapp/core/step_source.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/activity_repository.dart';
+import 'package:fitapp/data/repositories/template_repository.dart';
 import 'package:fitapp/data/repositories/workout_repository.dart';
 import 'package:fitapp/features/train/train_screen.dart';
 import 'package:fitapp/widgets/app_button.dart';
@@ -98,8 +99,30 @@ void main() {
     await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     await tester.pumpAndSettle();
     expect(find.text('No workouts yet'), findsNothing);
-    expect(find.text('Incline Dumbbell Bench Press'), findsOneWidget);
-    expect(find.textContaining(' kg'), findsOneWidget);
+    // Compact row: date and "Workout" (ad-hoc), no exercises or volume.
+    expect(find.text('Workout'), findsOneWidget);
+    expect(find.text('Incline Dumbbell Bench Press'), findsNothing);
+    expect(find.textContaining(' kg'), findsNothing);
+    await unmount(tester);
+  });
+
+  testWidgets('Recent shows the template name, not the exercises', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      final templateId = await TemplateRepository(db)
+          .create(name: 'Push day', exerciseIds: [_inclineId]);
+      final repo = WorkoutRepository(db);
+      final started = await TemplateRepository(db).startWorkout(templateId);
+      final we = (await repo.workoutDetail(started))!.exercises.first.row;
+      await repo.logSet(we.id, setNo: 1, weight: 20, reps: 10);
+      await repo.finishWorkout(started);
+    });
+    await pump(tester);
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pumpAndSettle();
+    expect(find.text('Push day'), findsOneWidget);
+    expect(find.text('Incline Dumbbell Bench Press'), findsNothing);
     await unmount(tester);
   });
 
@@ -148,7 +171,8 @@ void main() {
     await pump(tester);
     await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     await tester.pumpAndSettle();
-    expect(find.text('By type'), findsOneWidget);
+    expect(find.text('By type'), findsNothing);
+    expect(find.text('BY TYPE'), findsNothing);
     expect(find.text('Gym'), findsOneWidget);
     // By type row plus the activity's Recent row (feature 028).
     expect(find.text('Cycling'), findsNWidgets(2));

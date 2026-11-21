@@ -38,6 +38,12 @@ enum MapStyle {
   String get urlTemplate =>
       'https://api.maptiler.com/maps/$mapId/256/{z}/{x}/{y}.$format'
       '?key=$mapTilesKey';
+
+  /// One 2× (512 px) raster tile, for the share image (feature 035).
+  Uri retinaTile(int z, int x, int y) => Uri.parse(
+    'https://api.maptiler.com/maps/$mapId/256/$z/$x/$y@2x.$format'
+    '?key=$mapTilesKey',
+  );
 }
 
 /// A stretch of the route drawn in its own colour over the base line: the

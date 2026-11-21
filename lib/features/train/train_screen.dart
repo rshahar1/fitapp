@@ -19,8 +19,8 @@ import 'package:material_ui/material_ui.dart';
 
 /// Home tab: continue a session in progress, stats (this week, this month,
 /// all time), the types trained this week and the newest sessions of any type
-/// (features 028, 031). Templates start from the Go sheet and are created
-/// under You.
+/// as compact rows (features 028, 031, 035). Templates start from the Go
+/// sheet and are created under You.
 class TrainScreen extends ConsumerWidget {
   const new({super.key});
 
@@ -71,7 +71,7 @@ class TrainScreen extends ConsumerWidget {
               ],
             ),
             if (byType.isNotEmpty) ...[
-              const SectionHeader('By type'),
+              const SizedBox(height: Space.l),
               Group(
                 children: [
                   for (final t in byType)
@@ -109,7 +109,10 @@ class TrainScreen extends ConsumerWidget {
               )
             else
               Group(
-                children: [for (final e in recent) HistoryEntryRow(entry: e)],
+                children: [
+                  for (final e in recent)
+                    HistoryEntryRow(entry: e, compact: true),
+                ],
               ),
           ],
         ),

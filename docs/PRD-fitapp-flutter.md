@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.20, 21 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.21, 21 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -306,8 +306,9 @@ back to the exercise plan.
 - Tapping an activity row opens the activity sheet to edit it or delete it (delete asks for confirmation).
 
 ### 5.5 Home tab
-- Date kicker, title **Home** (the tab was called Train before feature 031), a hero card and stat tiles: *This week*, *This month*, *All time*, then a **By type** list. Below them,
-  **Recent**: the 3 newest sessions of any type (gym workouts and activities, History rows), newest first. There is no empty gym start: gym workouts start only from a
+- Date kicker, title **Home** (the tab was called Train before feature 031), a hero card and stat tiles: *This week*, *This month*, *All time*, then a **By type** list (no header, feature 035). Below them,
+  **Recent**: the 3 newest sessions of any type (gym workouts and activities), newest first, as compact rows: a gym workout shows its date and template name only
+  (the workout's name, else the template its exercises came from, else "Workout"; no exercise list, volume or sets, feature 035); activities use their History row. There is no empty gym start: gym workouts start only from a
   template row in the **Go** sheet (section 5.9; templates are created under You → **Gym Templates**, feature 028). The hero shows only while a session is in progress: **Continue workout** for a gym workout, or
   "<Sport> in progress" with the ticking `mm:ss · km` and **Continue <sport>** for a GPS session (no separate tracking banner).
   The Home header has no icons and there is no *Log activity* button (feature 011, section 5.9).
@@ -319,7 +320,7 @@ back to the exercise plan.
 - *This week*, *This month* (current local calendar month) and *All time* count gym workouts **and** activities. *All time* is every finished gym workout plus every activity.
 - **Weeks** on Train run Sunday to Saturday on local calendar days (feature 025), and so do the Progress bars (feature 026).
 - The *Week streak* tile was replaced by *This month* (feature 028); `weeklyStreak` stays in the domain, unused by the UI.
-- **By type** list under the tiles: one row per training type with at least one session **this week** (feature 028; Gym, or an activity type; unknown activity ids
+- **By type** list under the tiles (shown without a section header since feature 035): one row per training type with at least one session **this week** (feature 028; Gym, or an activity type; unknown activity ids
   group as "Activity"), with type icon, "N all time" subtitle and "N this week" trailing. Ordered by this-week count, then
   all-time count, then Gym first and registry order. Hidden when nothing was logged this week.
 - The one-time backup nudge still triggers after the 3rd finished gym workout.
@@ -416,22 +417,26 @@ back to the exercise plan.
   "<Workout|Running|Cycling|Snowboarding> in progress. Finish it first." with **Open**. Logging a past session is never blocked.
 - Home stats and Recent are unchanged (a later slice reworks them). Details: `specs/011-start-hub/` and `docs/ux/unified-start-proposal.md`.
 
-### 5.11 Sharing a session as an image (features 027, 029, 030, 032)
+### 5.11 Sharing a session as an image (features 027, 029, 030, 032, 035)
 - **Share action:** every finished gym workout and every activity (running, cycling, snowboarding, functional training, Pilates; GPS and manual)
   has **Share** as an item in the ⋮ overflow menu of `/activity/:id` and `/workout/:id` (finished, not editing; no app-bar icon), plus a
   **Share workout** button on the gym finish summary. Every share control uses the platform-adaptive share glyph (Material share on Android) (feature 029).
 - **Preview screen** (`/share/workout/:id`, `/share/activity/:id`) shows a 1080×1350 PNG card in the dark style, tailored per type:
-  run and ride: route drawing (no map tiles) with distance, pace, speed, duration, moving time, climb and best km; snowboarding day: speed-heat route,
+  run and ride: route drawn over map tiles (feature 035) with distance, pace, speed, duration, moving time, climb and best km; snowboarding day: speed-heat route,
   ride / lift / rest time breakdown, top speed, vertical, runs, distance and longest run; gym: totals plus one compressed line for **every** exercise, never "+N more"
   (feature 029): 4:5 (1080×1350) up to 8 exercises, taller up to 9:16 (1080×1920) for more, then two columns, then smaller rows; other activities: duration, distance and pace when present.
-- **Share image** hands the PNG to the OS share sheet (`share_plus`). The app sends nothing over the network; the image is a temporary cache file.
+- **Share image** hands the PNG to the OS share sheet (`share_plus`). Apart from map tile requests the app sends nothing over the network; the image is a temporary cache file.
   Notes are never printed on the image. Durations read "27 min" / "1h 3m" / "4h" with digits as large as the other values; stat grids scale all
   values together so sizes stay balanced (feature 029).
 - **Capture reliability and no caption (features 030, 032):** no share sends caption text (gym or any activity type): the image only, the owner adds their own text; the sharer takes no text.
   The preview captures the session as it was when opened (later database updates are ignored), waits for a painted frame and never shares a blank
   image: a blank capture is retried up to 3 times, otherwise the app shows "Could not share the image." and sends nothing.
-- Pure logic lives in `lib/domain/share/` (`share_card.dart`, `route_projection.dart`), the sharer in `lib/core/image_sharer.dart`, UI in `lib/features/share/`.
-  No schema change. Details: `specs/027-workout-share/`, `specs/029-share-polish/`, `specs/030-share-capture-fix/`, `specs/032-share-no-caption/`.
+- **Map behind the route (feature 035):** route and snow cards draw MapTiler raster tiles (@2x) of the route's area under the route, fitted in one Web Mercator
+  projection (zoom 3 to 17), with a "© MapTiler © OpenStreetMap" credit; runs and rides use the Dark style, snowboarding the chosen map style. The preview
+  waits for the tiles (at most 8 s; "Preparing…") before it can share; without a key, network or tiles the route is drawn on the plain background as before.
+  Only tile requests leave the device, as for the in-app maps.
+- Pure logic lives in `lib/domain/share/` (`share_card.dart`, `route_projection.dart`, `map_tiles.dart`), the sharer in `lib/core/image_sharer.dart`, UI in `lib/features/share/`.
+  No schema change. Details: `specs/027-workout-share/`, `specs/029-share-polish/`, `specs/030-share-capture-fix/`, `specs/032-share-no-caption/`, `specs/035-share-map-home-tidy/`.
 
 ## 6. Navigation and screens
 
@@ -837,3 +842,6 @@ resolved on 12 Nov 2026; see the decisions log.
   chalk, plate yellow as the single action color, square shapes (cards 2 dp, chips and check boxes 0), 4 dp yellow card top
   rule, PlateDisplay/Barlow Condensed/Barlow type, Material Symbols Sharp icons, a rectangular yellow Go block, and a new
   yellow-on-soot launcher icon and splash. Behaviour is unchanged (sections 2.2, 5.9).
+- **2.21 (21 Nov 2026):** feature 035 (owner request of 21 Nov 2026). Run, ride and snowboarding share images draw the route over
+  real map tiles with a MapTiler / OpenStreetMap credit (section 5.11). Home drops the "By type" header, and gym rows under Recent
+  show only the date and template name (section 5.5).

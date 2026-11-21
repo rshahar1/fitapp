@@ -10,6 +10,9 @@ import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/domain/share/image_check.dart';
 import 'package:fitapp/domain/share/share_card.dart';
 import 'package:fitapp/features/share/share_card_view.dart';
+import 'package:fitapp/features/share/share_map.dart';
+import 'package:fitapp/features/tracking/map_style.dart';
+import 'package:fitapp/features/tracking/widgets/route_map.dart' show MapStyle;
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -79,6 +82,27 @@ class _SharePreviewState extends ConsumerState<SharePreviewScreen> {
   /// (e.g. sync right after finishing a workout) must not rebuild the card
   /// while it is being captured (feature 030).
   ShareCardData? _frozen;
+
+  /// The map tiles to load under the frozen card's route (feature 035), or
+  /// null for cards without a route.
+  ShareMapRequest? _mapRequest;
+
+  ShareMapRequest? _mapRequestOf(ShareCardData data) {
+    final route = data.route;
+    if (route == null || route.length < 2) return null;
+    final layout = data.layout;
+    if (layout != ShareLayout.route && layout != ShareLayout.snow) return null;
+    final size = ShareCardView.routeBoxSize(layout);
+    return ShareMapRequest(
+      route: route,
+      width: size.width,
+      height: size.height,
+      // Runs and rides match their detail map; snow days use the chosen style.
+      style: layout == ShareLayout.snow
+          ? ref.read(mapStyleProvider)
+          : MapStyle.dark,
+    );
+  }
 
   /// The card, or null while loading or when there is nothing to share.
   AsyncValue<ShareCardData?> _card() => switch (widget.subject) {
@@ -150,6 +174,14 @@ class _SharePreviewState extends ConsumerState<SharePreviewScreen> {
   Widget build(BuildContext context) {
     final card = _card();
     final data = _frozen ??= card.value;
+    if (data != null) _mapRequest ??= _mapRequestOf(data);
+    final request = _mapRequest;
+    final mapState = request == null
+        ? const AsyncData<ShareMapImages?>(null)
+        : ref.watch(shareMapProvider(request));
+    // Share only once the tiles are drawn (or gave up), never half-loaded.
+    final preparing = _busy || mapState.isLoading;
+    final map = mapState.value;
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -185,7 +217,7 @@ class _SharePreviewState extends ConsumerState<SharePreviewScreen> {
                               borderRadius: BorderRadius.circular(Radii.card),
                               child: RepaintBoundary(
                                 key: _boundary,
-                                child: ShareCardView(data: data),
+                                child: ShareCardView(data: data, map: map),
                               ),
                             ),
                           ),
@@ -194,10 +226,10 @@ class _SharePreviewState extends ConsumerState<SharePreviewScreen> {
                     ),
                     const SizedBox(height: Space.m),
                     AppButton(
-                      label: _busy ? 'Preparing…' : 'Share image',
+                      label: preparing ? 'Preparing…' : 'Share image',
                       icon: AppIcons.share,
                       expand: true,
-                      onPressed: _busy ? null : () => _share(data),
+                      onPressed: preparing ? null : () => _share(data),
                     ),
                   ],
                 ),

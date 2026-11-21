@@ -496,7 +496,13 @@ class WorkoutRepository {
       final names = <String>[];
       var vol = 0.0;
       var count = 0;
+      String? templateName;
+      final own = w.name?.trim();
+      if (own != null && own.isNotEmpty) templateName = own;
       for (final we in await _wesOf(w.id)) {
+        if (templateName == null && we.templateExerciseId != null) {
+          templateName = await _templateNameOf(we.templateExerciseId!);
+        }
         final ex = await _exercise(we.exerciseId);
         final sets = await _setsOf(we.id);
         names.add(ex.name);
@@ -511,10 +517,26 @@ class WorkoutRepository {
           exerciseNames: names,
           volume: vol,
           setCount: count,
+          templateName: templateName,
         ),
       );
     }
     return items;
+  }
+
+  /// Name of the template owning template exercise [teId], or null when the
+  /// template exercise (or its template) no longer exists.
+  Future<String?> _templateNameOf(String teId) async {
+    final te = _db.templateExercises;
+    final t = _db.templates;
+    final row =
+        await (_db.select(t).join([
+                innerJoin(te, te.templateId.equalsExp(t.id)),
+              ])
+              ..where(te.id.equals(teId))
+              ..limit(1))
+            .getSingleOrNull();
+    return row?.read(t.name);
   }
 
   Stream<List<HistoryEntry>> watchHistoryEntries() =>

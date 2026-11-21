@@ -135,7 +135,6 @@ class _SharePreviewState extends ConsumerState<SharePreviewScreen> {
       await sharer.sharePng(
         png,
         fileName: shareFileName(data.typeId, data.startedAt),
-        text: shareCaptionFor(data),
       );
     } on Object {
       messenger.showSnackBar(

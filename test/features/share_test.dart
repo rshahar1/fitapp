@@ -36,16 +36,12 @@ class _FakeSharer implements ImageSharer {
   new({this.fail = false});
 
   final bool fail;
-  final calls = <({Uint8List bytes, String fileName, String? text})>[];
+  final calls = <({Uint8List bytes, String fileName})>[];
 
   @override
-  Future<void> sharePng(
-    Uint8List bytes, {
-    required String fileName,
-    String? text,
-  }) async {
+  Future<void> sharePng(Uint8List bytes, {required String fileName}) async {
     if (fail) throw Exception('no share sheet');
-    calls.add((bytes: bytes, fileName: fileName, text: text));
+    calls.add((bytes: bytes, fileName: fileName));
   }
 }
 
@@ -266,7 +262,6 @@ void main() {
         c.fileName,
         matches(RegExp(r'^fitapp-running-\d{4}-\d{2}-\d{2}\.png$')),
       );
-      expect(c.text, startsWith('Running'));
       await unmount(tester);
     });
 
@@ -309,7 +304,6 @@ void main() {
         );
         await tester.pump();
         expect(sharer.calls, hasLength(1));
-        expect(sharer.calls.single.text, isNull);
         expect(sharer.calls.single.bytes.sublist(0, 4), [
           0x89,
           0x50,

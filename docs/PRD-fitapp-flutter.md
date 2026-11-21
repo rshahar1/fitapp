@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.17, 21 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.18, 21 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -391,7 +391,7 @@ back to the exercise plan.
   "<Workout|Running|Cycling|Snowboarding> in progress. Finish it first." with **Open**. Logging a past session is never blocked.
 - Home stats and Recent are unchanged (a later slice reworks them). Details: `specs/011-start-hub/` and `docs/ux/unified-start-proposal.md`.
 
-### 5.11 Sharing a session as an image (features 027, 029, 030)
+### 5.11 Sharing a session as an image (features 027, 029, 030, 032)
 - **Share action:** every finished gym workout and every activity (running, cycling, snowboarding, functional training, Pilates; GPS and manual)
   has **Share** as an item in the ⋮ overflow menu of `/activity/:id` and `/workout/:id` (finished, not editing; no app-bar icon), plus a
   **Share workout** button on the gym finish summary. Every share control uses the platform-adaptive share glyph (Material share on Android) (feature 029).
@@ -402,11 +402,11 @@ back to the exercise plan.
 - **Share image** hands the PNG to the OS share sheet (`share_plus`). The app sends nothing over the network; the image is a temporary cache file.
   Notes are never printed on the image. Durations read "27 min" / "1h 3m" / "4h" with digits as large as the other values; stat grids scale all
   values together so sizes stay balanced (feature 029).
-- **Capture reliability and caption (feature 030):** gym workout shares send the image only, with no caption text (activity shares keep their short caption).
+- **Capture reliability and no caption (features 030, 032):** no share sends caption text (gym or any activity type): the image only, the owner adds their own text; the sharer takes no text.
   The preview captures the session as it was when opened (later database updates are ignored), waits for a painted frame and never shares a blank
   image: a blank capture is retried up to 3 times, otherwise the app shows "Could not share the image." and sends nothing.
 - Pure logic lives in `lib/domain/share/` (`share_card.dart`, `route_projection.dart`), the sharer in `lib/core/image_sharer.dart`, UI in `lib/features/share/`.
-  No schema change. Details: `specs/027-workout-share/`, `specs/029-share-polish/`, `specs/030-share-capture-fix/`.
+  No schema change. Details: `specs/027-workout-share/`, `specs/029-share-polish/`, `specs/030-share-capture-fix/`, `specs/032-share-no-caption/`.
 
 ## 6. Navigation and screens
 
@@ -799,7 +799,9 @@ resolved on 12 Nov 2026; see the decisions log.
     "+N more exercises" cap is removed. Durations show as "27 min" / "1h 3m" / "4h" and stat grids scale all values together.
 - **2.16 (21 Nov 2026):** feature 030, Share capture fix (owner report of 21 Nov 2026).
   - Blank first gym share fixed: the preview takes the session once, waits for a painted frame before capturing, and retries a blank capture up to 3 times, otherwise shows "Could not share the image." (section 5.11).
-  - Gym workout shares send the image only, with no caption text; activity shares keep their short caption.
+  - Gym workout shares send the image only, with no caption text; activity shares kept their short caption until 2.18.
 - **2.17 (21 Nov 2026):** feature 031, Home & Go (owner request of 21 Nov 2026). The Train tab and screen are renamed
   **Home** and lose the Templates section (the in-progress hero stays); the centre "+" becomes **Go** (play icon, "Go"
   caption); gym templates start from rows in the Go sheet, which offers *Create a gym template* when none exist (sections 5.5, 5.9).
+- **2.18 (21 Nov 2026):** feature 032, No caption on any share (owner request of 21 Nov 2026).
+  - No share sends predefined caption text, for gym and every activity type: the image only, the owner adds their own text. The sharer interface takes no text and the caption helpers are removed (section 5.11).

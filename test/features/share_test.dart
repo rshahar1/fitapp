@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart'
     show DatabaseConnection, Value, driftRuntimeOptions;
@@ -14,7 +15,10 @@ import 'package:fitapp/domain/share/share_card.dart';
 import 'package:fitapp/domain/tracking/geo.dart';
 import 'package:fitapp/features/activities/activity_detail_screen.dart';
 import 'package:fitapp/features/share/share_card_view.dart';
+import 'package:fitapp/features/share/share_map.dart';
 import 'package:fitapp/features/share/share_preview_screen.dart';
+import 'package:fitapp/features/tracking/widgets/route_map.dart'
+    show mapTilesEnabledProvider;
 import 'package:fitapp/features/workout/widgets/finish_summary_sheet.dart';
 import 'package:fitapp/features/workout/workout_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -85,6 +89,7 @@ void main() {
     Widget home, {
     AppDatabase? database,
     ImageSharer? sharer,
+    TileFetcher? tiles,
   }) async {
     bigView(tester);
     await tester.pumpWidget(
@@ -93,6 +98,10 @@ void main() {
           databaseProvider.overrideWithValue(database ?? db),
           hapticsProvider.overrideWithValue(_FakeHaptics()),
           imageSharerProvider.overrideWithValue(sharer ?? _FakeSharer()),
+          if (tiles != null) ...[
+            mapTilesEnabledProvider.overrideWithValue(true),
+            tileFetcherProvider.overrideWithValue(tiles),
+          ],
         ],
         child: MaterialApp(theme: buildAppTheme(), home: home),
       ),
@@ -263,6 +272,83 @@ void main() {
         c.fileName,
         matches(RegExp(r'^fitapp-running-\d{4}-\d{2}-\d{2}\.png$')),
       );
+      await unmount(tester);
+    });
+
+    Future<Uint8List> tilePng(WidgetTester tester) async {
+      final png = await tester.runAsync(() async {
+        final rec = ui.PictureRecorder();
+        Canvas(rec).drawRect(
+          const Rect.fromLTWH(0, 0, 8, 8),
+          Paint()..color = const Color(0xFF406080),
+        );
+        final img = await rec.endRecording().toImage(8, 8);
+        final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
+        img.dispose();
+        return bytes!.buffer.asUint8List();
+      });
+      return png!;
+    }
+
+    testWidgets('a run is drawn on map tiles and shared once they load', (
+      tester,
+    ) async {
+      await tester.runAsync(addRun);
+      final png = await tilePng(tester);
+      final urls = <Uri>[];
+      final sharer = _FakeSharer();
+      await pump(
+        tester,
+        const SharePreviewScreen(subject: ShareSubject.activity, id: _runId),
+        sharer: sharer,
+        tiles: (url) async {
+          urls.add(url);
+          return png;
+        },
+      );
+      await settle(tester);
+      expect(urls, isNotEmpty);
+      expect(urls.first.path, contains('/dataviz-dark/256/'));
+      expect(urls.first.path, endsWith('@2x.png'));
+      expect(find.text('© MapTiler © OpenStreetMap'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is CustomPaint && w.painter is ShareTilesPainter,
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.text('Share image'));
+      await tester.pump();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
+      await tester.pump();
+      expect(sharer.calls, hasLength(1));
+      await unmount(tester);
+    });
+
+    testWidgets('tiles that fail leave the plain route and sharing works', (
+      tester,
+    ) async {
+      await tester.runAsync(addRun);
+      final sharer = _FakeSharer();
+      await pump(
+        tester,
+        const SharePreviewScreen(subject: ShareSubject.activity, id: _runId),
+        sharer: sharer,
+        tiles: (_) async => null,
+      );
+      await settle(tester);
+      expect(find.text('© MapTiler © OpenStreetMap'), findsNothing);
+      expect(find.text('Share image'), findsOneWidget);
+      await tester.tap(find.text('Share image'));
+      await tester.pump();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
+      await tester.pump();
+      expect(sharer.calls, hasLength(1));
       await unmount(tester);
     });
 

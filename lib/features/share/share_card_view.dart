@@ -7,6 +7,7 @@ import 'package:fitapp/domain/share/share_card.dart';
 import 'package:fitapp/domain/tracking/snow_review.dart';
 import 'package:fitapp/domain/tracking/snow_summary.dart';
 import 'package:fitapp/features/activities/activity_icons.dart';
+import 'package:fitapp/features/share/share_map.dart';
 import 'package:fitapp/features/share/share_route_painter.dart';
 import 'package:fitapp/features/tracking/widgets/snow_route_spans.dart';
 import 'package:intl/intl.dart';
@@ -18,9 +19,21 @@ import 'package:material_ui/material_ui.dart';
 /// [ShareCardSize.pixelRatio] it becomes a 1080 × 1350 PNG; gym cards with
 /// many exercises grow up to [ShareCardSize.maxHeight] (1080 × 1920).
 class ShareCardView extends StatelessWidget {
-  const new({required this.data, super.key});
+  const new({required this.data, this.map, super.key});
 
   final ShareCardData data;
+
+  /// Map tiles under the route of route and snow cards (feature 035); null
+  /// draws the route on the plain background.
+  final ShareMapImages? map;
+
+  /// Size of the route box of a card with [layout] (route and snow cards).
+  static Size routeBoxSize(ShareLayout layout) => Size(
+    ShareCardSize.width - 2 * Space.l,
+    layout == ShareLayout.snow
+        ? ShareCardSize.routeHeight - Space.l
+        : ShareCardSize.routeHeight,
+  );
 
   /// The exercise list layout of a gym card with [count] exercises.
   static ShareListLayout listLayout(int count) => shareListLayout(
@@ -81,8 +94,8 @@ class ShareCardView extends StatelessWidget {
   }
 
   Widget _body(ShareListLayout? list) => switch (data.layout) {
-    ShareLayout.route => _RouteBody(data: data),
-    ShareLayout.snow => _SnowBody(data: data),
+    ShareLayout.route => _RouteBody(data: data, map: map),
+    ShareLayout.snow => _SnowBody(data: data, map: map),
     ShareLayout.strength => _StrengthBody(data: data, list: list!),
     ShareLayout.basic => _BasicBody(data: data),
   };
@@ -325,27 +338,40 @@ class _Stat extends StatelessWidget {
 }
 
 class _RouteBox extends StatelessWidget {
-  const new({required this.painter, required this.height});
+  const new({required this.painter, required this.height, this.map});
 
   final ShareRoutePainter painter;
   final double height;
+  final ShareMapImages? map;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-    height: height,
-    child: ClipRRect(
-      child: ColoredBox(
-        color: AppColors.surfaceHigh,
-        child: CustomPaint(painter: painter, size: Size.infinite),
+  Widget build(BuildContext context) {
+    final tiles = map;
+    return SizedBox(
+      height: height,
+      child: ClipRRect(
+        child: ColoredBox(
+          color: AppColors.surfaceHigh,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (tiles != null) CustomPaint(painter: ShareTilesPainter(tiles)),
+              CustomPaint(painter: painter),
+              if (tiles != null)
+                const Positioned(right: 0, bottom: 0, child: ShareMapCredit()),
+            ],
+          ),
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _RouteBody extends StatelessWidget {
-  const new({required this.data});
+  const new({required this.data, this.map});
 
   final ShareCardData data;
+  final ShareMapImages? map;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -353,7 +379,8 @@ class _RouteBody extends StatelessWidget {
     children: [
       _RouteBox(
         height: ShareCardSize.routeHeight,
-        painter: ShareRoutePainter(points: data.route!),
+        map: map,
+        painter: ShareRoutePainter(points: data.route!, view: map?.view),
       ),
       const Spacer(),
       _StatGrid(stats: data.stats, columns: 3),
@@ -363,9 +390,10 @@ class _RouteBody extends StatelessWidget {
 }
 
 class _SnowBody extends StatelessWidget {
-  const new({required this.data});
+  const new({required this.data, this.map});
 
   final ShareCardData data;
+  final ShareMapImages? map;
 
   @override
   Widget build(BuildContext context) {
@@ -377,8 +405,10 @@ class _SnowBody extends StatelessWidget {
       children: [
         _RouteBox(
           height: ShareCardSize.routeHeight - Space.l,
+          map: map,
           painter: ShareRoutePainter(
             points: data.route!,
+            view: map?.view,
             color: AppColors.heat.first,
             spans: [...snowLiftSpans(parts), ...snowHeatSpans(parts, maxKmh)],
           ),

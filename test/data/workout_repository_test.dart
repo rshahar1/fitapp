@@ -1,3 +1,4 @@
+import 'package:fitapp/data/repositories/template_repository.dart';
 import 'package:fitapp/domain/progression.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -7,6 +8,41 @@ void main() {
   late Harness h;
   setUp(() => h = Harness());
   tearDown(() => h.close());
+
+  group('history templateName', () {
+    Future<void> fromTemplate(String templateId) async {
+      h.advance();
+      final templates = TemplateRepository(h.db);
+      final w = await templates.startWorkout(templateId);
+      final we = (await h.workouts.workoutDetail(w))!.exercises.first.row.id;
+      await h.workouts.logSet(we, setNo: 1, weight: 20, reps: 10);
+      h.advance(const Duration(minutes: 3));
+      await h.workouts.finishWorkout(w);
+    }
+
+    test('template workout reports the template name', () async {
+      final id = await TemplateRepository(h.db)
+          .create(name: 'Push day', exerciseIds: [inclineId]);
+      await fromTemplate(id);
+      expect((await h.workouts.history()).single.templateName, 'Push day');
+    });
+
+    test('ad-hoc workout reports null', () async {
+      await h.session([(20, 10)]);
+      expect((await h.workouts.history()).single.templateName, isNull);
+    });
+
+    test('null after the template is deleted', () async {
+      final templates = TemplateRepository(h.db);
+      final id = await templates.create(
+        name: 'Push day',
+        exerciseIds: [inclineId],
+      );
+      await fromTemplate(id);
+      await templates.delete(id);
+      expect((await h.workouts.history()).single.templateName, isNull);
+    });
+  });
 
   group('live workout', () {
     test('only one workout can be active', () async {

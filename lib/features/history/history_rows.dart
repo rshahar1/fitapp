@@ -15,14 +15,20 @@ import 'package:material_ui/material_ui.dart';
 /// Row for any history entry (workout or activity).
 class HistoryEntryRow extends StatelessWidget {
   /// Creates a row.
-  const new({super.key, required this.entry});
+  const new({super.key, required this.entry, this.compact = false});
 
   /// Entry shown.
   final HistoryEntry entry;
 
+  /// Whether gym workouts show only date and template name (Home's Recent).
+  final bool compact;
+
   @override
   Widget build(BuildContext context) => switch (entry) {
-    WorkoutHistoryEntry(:final workout) => HistoryWorkoutRow(item: workout),
+    WorkoutHistoryEntry(:final workout) =>
+      compact
+          ? HistoryWorkoutCompactRow(item: workout)
+          : HistoryWorkoutRow(item: workout),
     ActivityHistoryEntry(:final activity) => HistoryActivityRow(
       activity: activity,
     ),
@@ -113,6 +119,31 @@ class HistoryActivityRow extends StatelessWidget {
             : null,
         showChevron: true,
         onTap: () => context.push(Routes.activity(activity.id)),
+      ),
+    );
+  }
+}
+
+/// Compact gym workout row: date and template name only.
+class HistoryWorkoutCompactRow extends StatelessWidget {
+  const new({super.key, required this.item});
+
+  final WorkoutListItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final date = formatDateShort(item.startedAt.toLocal());
+    final name = item.templateName ?? 'Workout';
+    return Semantics(
+      button: true,
+      label: '$date, $name',
+      excludeSemantics: true,
+      child: GroupRow(
+        leading: const HistoryIconBadge(icon: gymWorkoutIcon),
+        title: date,
+        subtitle: name,
+        showChevron: true,
+        onTap: () => context.push(Routes.finishedWorkout(item.id)),
       ),
     );
   }

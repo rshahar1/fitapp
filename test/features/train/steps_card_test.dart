@@ -222,7 +222,7 @@ void main() {
       tester,
     ) async {
       final container = await pumpShell(tester);
-      expect(container.read(historyViewProvider), HistoryView.list);
+      container.read(historyViewProvider.notifier).view = HistoryView.list;
       await tester.tap(find.text('Steps today'));
       await tester.pumpAndSettle();
       expect(container.read(historyViewProvider), HistoryView.calendar);
@@ -236,7 +236,7 @@ void main() {
       final container = await pumpShell(tester);
       await tester.tap(find.text('See your daily steps from Google Fit'));
       await tester.pumpAndSettle();
-      expect(container.read(historyViewProvider), HistoryView.list);
+      expect(container.read(historyViewProvider), HistoryView.calendar);
       expect(find.text('history-branch'), findsNothing);
       await unmount(tester);
     });

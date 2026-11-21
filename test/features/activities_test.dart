@@ -336,6 +336,8 @@ void main() {
   ) async {
     await seedHistory(tester);
     await pump(tester, const HistoryScreen());
+    await tester.tap(find.text('List'));
+    await settle(tester);
     expect(find.byIcon(gymWorkoutIcon), findsOneWidget);
     expect(find.byIcon(activityIcon('running')), findsOneWidget);
     expect(find.text('Running · 45 min'), findsOneWidget);

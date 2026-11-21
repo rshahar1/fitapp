@@ -83,6 +83,11 @@ void main() {
     );
     router.go(location ?? Routes.history);
     await settle(tester);
+    // History opens on the calendar; these tests read the list.
+    if (find.text('List').evaluate().isNotEmpty) {
+      await tester.tap(find.text('List'));
+      await settle(tester);
+    }
   }
 
   Future<void> unmount(WidgetTester tester) async {

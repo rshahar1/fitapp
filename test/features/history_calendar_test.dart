@@ -138,7 +138,8 @@ void main() {
     await tester.tap(cell('Thursday 5 November'));
     await tester.pumpAndSettle();
     expect(find.text('No training'), findsNothing);
-    expect(find.text('Incline Dumbbell Bench Press'), findsOneWidget);
+    expect(find.text('Workout'), findsOneWidget);
+    expect(find.text('Incline Dumbbell Bench Press'), findsNothing);
     expect(find.textContaining('Cycling'), findsOneWidget);
   });
 
@@ -236,7 +237,8 @@ void main() {
       await pumpCalendar(tester, steps: src);
       await selectDay(tester, 'Thursday 5 November');
       expect(find.text('1,000 steps'), findsOneWidget);
-      expect(find.text('Incline Dumbbell Bench Press'), findsOneWidget);
+      expect(find.text('Workout'), findsOneWidget);
+      expect(find.text('Incline Dumbbell Bench Press'), findsNothing);
     });
 
     testWidgets('a no-training day still shows steps', (tester) async {

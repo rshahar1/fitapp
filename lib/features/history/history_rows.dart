@@ -1,7 +1,5 @@
 import 'package:fitapp/app/router.dart';
 import 'package:fitapp/app/theme/app_icons.dart';
-import 'package:fitapp/app/theme/app_theme.dart';
-import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/data/db/app_database.dart';
@@ -15,20 +13,14 @@ import 'package:material_ui/material_ui.dart';
 /// Row for any history entry (workout or activity).
 class HistoryEntryRow extends StatelessWidget {
   /// Creates a row.
-  const new({super.key, required this.entry, this.compact = false});
+  const new({super.key, required this.entry});
 
   /// Entry shown.
   final HistoryEntry entry;
 
-  /// Whether gym workouts show only date and template name (Home's Recent).
-  final bool compact;
-
   @override
   Widget build(BuildContext context) => switch (entry) {
-    WorkoutHistoryEntry(:final workout) =>
-      compact
-          ? HistoryWorkoutCompactRow(item: workout)
-          : HistoryWorkoutRow(item: workout),
+    WorkoutHistoryEntry(:final workout) => HistoryWorkoutRow(item: workout),
     ActivityHistoryEntry(:final activity) => HistoryActivityRow(
       activity: activity,
     ),
@@ -124,8 +116,8 @@ class HistoryActivityRow extends StatelessWidget {
   }
 }
 
-/// Compact gym workout row: date and template name only.
-class HistoryWorkoutCompactRow extends StatelessWidget {
+/// Gym workout row: date and template name only (History and Home's Recent).
+class HistoryWorkoutRow extends StatelessWidget {
   const new({super.key, required this.item});
 
   final WorkoutListItem item;
@@ -144,83 +136,6 @@ class HistoryWorkoutCompactRow extends StatelessWidget {
         subtitle: name,
         showChevron: true,
         onTap: () => context.push(Routes.finishedWorkout(item.id)),
-      ),
-    );
-  }
-}
-
-class HistoryWorkoutRow extends StatelessWidget {
-  const new({super.key, required this.item});
-
-  final WorkoutListItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    final date = formatDateShort(item.startedAt.toLocal());
-    final exercises = item.exerciseNames.join(', ');
-    final volume = formatVolume(item.volume);
-    final sets =
-        '${item.setCount} sets · '
-        '${formatShortDuration(item.duration)}';
-    return Semantics(
-      button: true,
-      label: '$date, $exercises, $volume, ${item.setCount} sets',
-      excludeSemantics: true,
-      child: InkWell(
-        onTap: () => context.push(Routes.finishedWorkout(item.id)),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: Sizes.tap + Space.xs),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: Space.m,
-              vertical: Space.s,
-            ),
-            child: Row(
-              children: [
-                const HistoryIconBadge(icon: gymWorkoutIcon),
-                const SizedBox(width: Space.m),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(date, style: text.bodyLarge),
-                      Text(
-                        exercises,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: text.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: Space.s),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      volume,
-                      style: context.plate.number(
-                        20,
-                        color: context.metrics.volume,
-                      ),
-                    ),
-                    Text(
-                      sets,
-                      style: text.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

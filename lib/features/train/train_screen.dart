@@ -109,10 +109,7 @@ class TrainScreen extends ConsumerWidget {
               )
             else
               Group(
-                children: [
-                  for (final e in recent)
-                    HistoryEntryRow(entry: e, compact: true),
-                ],
+                children: [for (final e in recent) HistoryEntryRow(entry: e)],
               ),
           ],
         ),

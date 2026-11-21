@@ -78,7 +78,7 @@ void main() {
     }
   }
 
-  testWidgets('groups workouts by month with exercises and volume', (
+  testWidgets('groups workouts by month with date and template name', (
     tester,
   ) async {
     await tester.runAsync(() async {
@@ -91,12 +91,11 @@ void main() {
     expect(find.text('History'), findsOneWidget);
     expect(find.text('November 2026'), findsOneWidget);
     expect(find.text('October 2026'), findsOneWidget);
-    expect(find.text('Incline Dumbbell Bench Press'), findsOneWidget);
-    expect(find.text('Lat Pulldown'), findsOneWidget);
-    expect(find.text('1,070 kg'), findsOneWidget);
-    expect(find.text('1,000 kg'), findsOneWidget);
-    expect(find.text('3 sets · 45m'), findsOneWidget);
-    expect(find.text('2 sets · 45m'), findsOneWidget);
+    expect(find.text('Workout'), findsNWidgets(2));
+    expect(find.text('Incline Dumbbell Bench Press'), findsNothing);
+    expect(find.text('Lat Pulldown'), findsNothing);
+    expect(find.text('1,070 kg'), findsNothing);
+    expect(find.text('3 sets · 45m'), findsNothing);
   });
 
   testWidgets('shows the empty state', (tester) async {

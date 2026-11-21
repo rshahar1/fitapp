@@ -228,25 +228,7 @@ void main() {
     await _dispose(tester, env);
   });
 
-  testWidgets('Resume shows for any finished workout while none is live', (
-    tester,
-  ) async {
-    final env = await seeded(tester);
-    final first = (await tester.runAsync(
-      () => env.finished([(20, 10), (20, 10), (22.5, 6)]),
-    ))!;
-    await tester.runAsync(
-      () => env.finished([(22.5, 10), (22.5, 10), (25, 5)]),
-    );
-    await _open(tester, env, first);
-    await tester.tap(find.byTooltip('Workout options'));
-    await _settle(tester);
-    expect(find.text('Resume workout'), findsOneWidget);
-    expect(find.text('Delete workout'), findsOneWidget);
-    await _dispose(tester, env);
-  });
-
-  testWidgets('Resume undoes progression and returns to live (§11.4)', (
+  testWidgets('finished menu holds only Edit, Share and Delete', (
     tester,
   ) async {
     final env = await seeded(tester);
@@ -256,10 +238,11 @@ void main() {
     await _open(tester, env, id);
     await tester.tap(find.byTooltip('Workout options'));
     await _settle(tester);
-    await tester.tap(find.text('Resume workout'));
-    await _settle(tester);
-    expect(await tester.runAsync(env.base), 20);
-    expect(find.text('live workout'), findsOneWidget);
+    expect(find.text('Edit workout'), findsOneWidget);
+    expect(find.text('Share'), findsOneWidget);
+    expect(find.text('Delete workout'), findsOneWidget);
+    expect(find.text('Resume workout'), findsNothing);
+    expect(find.text('Save as template'), findsNothing);
     await _dispose(tester, env);
   });
 

@@ -379,7 +379,7 @@ class _WorkoutView extends ConsumerWidget {
               tooltip: 'Done editing',
               onPressed: () => _toggleEdit(ref),
             ),
-          // Always shown: finished workouts hold Edit/Delete here, live ones
+          // Always shown: finished workouts hold Share/Edit/Delete here, live ones
           // hold Discard.
           PopupMenuButton<String>(
             tooltip: 'Workout options',
@@ -394,19 +394,19 @@ class _WorkoutView extends ConsumerWidget {
             itemBuilder: (_) => [
               if (readOnly)
                 const PopupMenuItem(
-                  value: 'edit',
+                  value: 'share',
                   child: ListTile(
-                    leading: Icon(AppIcons.edit),
-                    title: Text('Edit workout'),
+                    leading: Icon(AppIcons.share),
+                    title: Text('Share'),
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
               if (readOnly)
                 const PopupMenuItem(
-                  value: 'share',
+                  value: 'edit',
                   child: ListTile(
-                    leading: Icon(AppIcons.share),
-                    title: Text('Share'),
+                    leading: Icon(AppIcons.edit),
+                    title: Text('Edit workout'),
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),

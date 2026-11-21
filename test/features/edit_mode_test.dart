@@ -228,7 +228,7 @@ void main() {
     await _dispose(tester, env);
   });
 
-  testWidgets('finished menu holds only Edit, Share and Delete', (
+  testWidgets('finished menu holds only Share, Edit and Delete, in order', (
     tester,
   ) async {
     final env = await seeded(tester);
@@ -243,6 +243,11 @@ void main() {
     expect(find.text('Delete workout'), findsOneWidget);
     expect(find.text('Resume workout'), findsNothing);
     expect(find.text('Save as template'), findsNothing);
+    final shareY = tester.getTopLeft(find.text('Share')).dy;
+    final editY = tester.getTopLeft(find.text('Edit workout')).dy;
+    final deleteY = tester.getTopLeft(find.text('Delete workout')).dy;
+    expect(shareY, lessThan(editY));
+    expect(editY, lessThan(deleteY));
     await _dispose(tester, env);
   });
 

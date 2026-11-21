@@ -71,18 +71,18 @@ class ActivityDetailScreen extends ConsumerWidget {
               },
               itemBuilder: (_) => [
                 const PopupMenuItem(
-                  value: 'edit',
-                  child: ListTile(
-                    leading: Icon(AppIcons.edit),
-                    title: Text('Edit activity'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-                const PopupMenuItem(
                   value: 'share',
                   child: ListTile(
                     leading: Icon(AppIcons.share),
                     title: Text('Share'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: ListTile(
+                    leading: Icon(AppIcons.edit),
+                    title: Text('Edit activity'),
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),

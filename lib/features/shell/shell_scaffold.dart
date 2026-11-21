@@ -126,7 +126,7 @@ class _Tab extends StatelessWidget {
   }
 }
 
-/// Raised accent circle with a "Go" caption in the centre slot.
+/// Raised accent circle with the play icon and "Go" inside, in the centre slot.
 class _GoButton extends StatelessWidget {
   const new({required this.onTap});
 
@@ -142,35 +142,38 @@ class _GoButton extends StatelessWidget {
     onTap: onTap,
     child: Tooltip(
       message: label,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Material(
-            color: AppColors.accent,
-            shape: const CircleBorder(),
-            elevation: 4,
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: onTap,
-              child: const SizedBox.square(
-                dimension: Sizes.tap,
-                child: Icon(
-                  Icons.play_arrow_rounded,
-                  size: 32,
-                  color: AppColors.onAccent,
-                ),
+      child: Material(
+        color: AppColors.accent,
+        shape: const CircleBorder(),
+        elevation: 4,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: const SizedBox.square(
+            dimension: 56,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.play_arrow_rounded,
+                    size: 26,
+                    color: AppColors.onAccent,
+                  ),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.onAccent,
+                      height: 1,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          const Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.accent,
-            ),
-          ),
-        ],
+        ),
       ),
     ),
   );

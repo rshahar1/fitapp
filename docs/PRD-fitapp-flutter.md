@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.18, 21 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.19, 21 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -379,12 +379,12 @@ back to the exercise plan.
 - The live route thins itself to at most 2,000 points for every tracked type (feature 017).
 
 ### 5.9 Start/Log hub and You tab (feature 011)
-- **Go action** in the middle of the bottom bar (accent circle with a play icon and a "Go" caption, label "Go"; was "+" before
+- **Go action** in the middle of the bottom bar (56 dp accent circle with the play icon and "Go" inside it, label "Go"; was "+" before
   feature 031); opens the Go sheet from any
   tab and is never a selected tab. **You** tab (`/you`) lists **Exercise library** (`/exercises`), **Gym Templates** (`/templates`:
   template list, tap to edit, *New template*; feature 028) and **Settings** (`/settings`).
 - **Go sheet** (titled "Go"): *START NOW*: **Continue <session>** (only when a session is in progress), one row per **gym
-  template** (name, exercise summary; tap starts it; with no templates a **Create a gym template** row opens `/templates`),
+  template** (name only, no exercise list; tap starts it; with no templates a **Create a gym template** row opens `/templates`),
   **Running** / **Cycling** / **Snowboarding** (→ `/track/new?type=<id>`), **More sports** (non-live sports open the past-session form
   prefilled with the sport and today). *EARLIER*: **Log a past session**.
 - **One start guard** for gym and GPS starts on every entry point (Go sheet, Home hero). A blocked start shows
@@ -805,3 +805,5 @@ resolved on 12 Nov 2026; see the decisions log.
   caption); gym templates start from rows in the Go sheet, which offers *Create a gym template* when none exist (sections 5.5, 5.9).
 - **2.18 (21 Nov 2026):** feature 032, No caption on any share (owner request of 21 Nov 2026).
   - No share sends predefined caption text, for gym and every activity type: the image only, the owner adds their own text. The sharer interface takes no text and the caption helpers are removed (section 5.11).
+- **2.19 (21 Nov 2026):** feature 033, Go button polish (owner request of 21 Nov 2026). The "Go" text moves inside the play
+  button (no caption below it), and Go sheet template rows show the template name only, without the exercise list (section 5.9).

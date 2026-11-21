@@ -127,7 +127,13 @@ void main() {
       expect(go.width, greaterThanOrEqualTo(48));
       expect(go.height, greaterThanOrEqualTo(48));
       expect(find.bySemanticsLabel(_plus), findsOneWidget);
-      expect(find.text('Go'), findsOneWidget); // the caption
+      final circle = find.byWidgetPredicate(
+        (w) => w is Material && w.shape is CircleBorder,
+      );
+      expect(
+        find.descendant(of: circle, matching: find.text('Go')),
+        findsOneWidget,
+      );
       await unmount(tester);
     });
 
@@ -218,7 +224,8 @@ void main() {
       );
       await pumpApp(tester);
       await openHub(tester);
-      expect(find.text('Incline Dumbbell Bench Press'), findsOneWidget);
+      expect(find.text('Incline Dumbbell Bench Press'), findsNothing);
+      expect(find.text('Push'), findsOneWidget);
       await tester.tap(find.bySemanticsLabel('Start Push template'));
       await settle(tester);
       expect(location(), Routes.workout);

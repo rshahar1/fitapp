@@ -127,7 +127,6 @@ class StartHubSheet extends ConsumerWidget {
                       onTap: () => pick(TemplateChoice(t.id)),
                       child: GroupRow(
                         title: t.name,
-                        subtitle: t.exercises.map((e) => e.name).join(' · '),
                         leading: _icon(gymWorkoutIcon),
                         onTap: () => pick(TemplateChoice(t.id)),
                       ),

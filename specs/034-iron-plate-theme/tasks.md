@@ -58,7 +58,7 @@ layout structure; update the tests that cover the touched files.
 
 - [x] T022 [P] PRD v2.20 §2.2 rewrite + changelog in `docs/PRD-fitapp-flutter.md`; `CLAUDE.md` active feature → 034
 - [x] T023 Repo-wide sweep for leftovers (guard test green, manual grep of `lib/`), `dart format`, `flutter analyze`, `flutter test`; commit on the branch
-- [ ] T024 After explicit owner approval only: merge to main, push, bump version, build and send APK
+- [x] T024 After explicit owner approval only: merge to main, push, bump version, build and send APK
 
 ## Dependencies
 

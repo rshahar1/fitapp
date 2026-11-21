@@ -45,7 +45,7 @@ class PrivacyScreen extends StatelessWidget {
             'What FitApp does not do',
             'Step data is not stored in the FitApp database, not backed up, '
                 'and not sent anywhere. It is read when you open the app and '
-                'shown on the Train screen.',
+                'shown on the Home screen.',
           ),
           section(
             'How to turn it off',

@@ -73,7 +73,7 @@ Future<void> runGpsFlow(
     await settle();
   }
 
-  await tap(find.byTooltip('Start or log a session'));
+  await tap(find.byTooltip('Go'));
   await tap(find.text('Running'));
   expect(find.text('Searching for GPS'), findsOneWidget);
 
@@ -151,7 +151,7 @@ Future<void> runSnowFlow(
     await settle();
   }
 
-  await tap(find.byTooltip('Start or log a session'));
+  await tap(find.byTooltip('Go'));
   await tap(find.text('Snowboarding'));
   expect(find.text('Searching for GPS'), findsOneWidget);
 

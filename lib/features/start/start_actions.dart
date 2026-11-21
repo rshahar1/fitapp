@@ -10,7 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The session in progress as currently streamed, for display (hub Continue
-/// row, Train hero). Starts re-check the stored state at tap time instead.
+/// row, Home hero). Starts re-check the stored state at tap time instead.
 final sessionInProgressProvider = Provider<SessionInProgress?>((ref) {
   final workout = ref.watch(activeWorkoutProvider).value;
   final tracking = ref.watch(activeTrackingProvider).value;
@@ -23,7 +23,7 @@ final sessionInProgressProvider = Provider<SessionInProgress?>((ref) {
 final startActionsProvider = Provider<StartActions>(StartActions.new);
 
 /// Shared start logic for every entry point (feature 011): the hub and template
-/// STARTs (the Train hero only continues a session). Gym workouts start only
+/// STARTs (the Home hero only continues a session). Gym workouts start only
 /// from a template (feature 024). One guard for gym and GPS starts.
 class StartActions {
   const new(this._ref);

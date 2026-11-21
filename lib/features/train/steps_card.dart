@@ -13,7 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Today's step count on Train (feature 014). Hidden when the setting is off,
+/// Today's step count on Home (feature 014). Hidden when the setting is off,
 /// steps are unavailable, or the first read has not finished.
 class StepsCard extends ConsumerStatefulWidget {
   const new({super.key});

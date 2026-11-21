@@ -84,7 +84,7 @@ class _Missing extends StatelessWidget {
       icon: Icons.fitness_center,
       title: message,
       action: AppButton(
-        label: 'Back to Train',
+        label: 'Back to Home',
         onPressed: () => context.go(Routes.train),
       ),
     ),
@@ -233,7 +233,7 @@ class _WorkoutView extends ConsumerWidget {
         router.go(Routes.workout);
         return;
       } on Object {
-        // Fall through to Train if resuming is no longer possible.
+        // Fall through to Home if resuming is no longer possible.
       }
     }
     try {

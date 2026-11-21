@@ -1,4 +1,4 @@
-/// Train screen statistics per training type (feature 025): gym workouts and
+/// Home screen statistics per training type (feature 025): gym workouts and
 /// each activity type, counted for the current Sunday-to-Saturday week and
 /// all time.
 ///
@@ -51,7 +51,7 @@ bool isSameMonth(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month;
 
 /// The types of [breakdown] with at least one session this week, in order
-/// (Train's *By type* list, feature 028).
+/// (Home's *By type* list, feature 028).
 List<TypeCount> activeTypes(List<TypeCount> breakdown) => [
   for (final t in breakdown)
     if (t.thisWeek > 0) t,

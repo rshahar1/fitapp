@@ -56,9 +56,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('steps card sits below Templates, above the metrics', (
-    tester,
-  ) async {
+  testWidgets('steps card sits above the metrics', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -70,17 +68,15 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    final templates = tester.getTopLeft(find.text('TEMPLATES')).dy;
     final steps = tester.getTopLeft(find.text('Steps today')).dy;
     final metrics = tester.getTopLeft(find.text('THIS WEEK')).dy;
-    expect(templates, lessThan(steps));
     expect(steps, lessThan(metrics));
     await unmount(tester);
   });
 
   testWidgets('empty state has no empty gym start', (tester) async {
     await pump(tester);
-    expect(find.text('Train'), findsOneWidget);
+    expect(find.text('Home'), findsOneWidget);
     expect(find.text('Ready to train?'), findsNothing);
     expect(find.text('START GYM WORKOUT'), findsNothing);
     expect(find.text('No workouts yet'), findsOneWidget);

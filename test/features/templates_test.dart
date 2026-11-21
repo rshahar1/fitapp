@@ -7,7 +7,7 @@ import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/template_repository.dart';
 import 'package:fitapp/data/repositories/workout_repository.dart';
-import 'package:fitapp/features/train/train_screen.dart';
+import 'package:fitapp/features/start/start_hub_sheet.dart';
 import 'package:fitapp/features/workout/workout_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,6 +23,20 @@ class _NoHaptics implements Haptics {
   void tick() {}
   @override
   void warning() {}
+}
+
+class _GoHome extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: Center(
+      child: TextButton(
+        onPressed: () => showStartHub(context),
+        child: const Text('Open Go'),
+      ),
+    ),
+  );
 }
 
 void main() {
@@ -78,36 +92,18 @@ void main() {
     await settle(tester);
   }
 
-  testWidgets('Train shows empty hint, then templates', (tester) async {
-    await pumpApp(tester, const TrainScreen());
-    expect(
-      find.text(
-        'Create a template in You → Gym Templates to start a routine in one tap.',
-      ),
-      findsOneWidget,
-    );
-    await tester.runAsync(
-      () => templates.create(name: 'Push', exerciseIds: [_incline]),
-    );
-    await settle(tester);
-    expect(find.text('Push'), findsOneWidget);
-    expect(find.text('Incline Dumbbell Bench Press'), findsOneWidget);
-    expect(
-      find.text(
-        'Create a template in You → Gym Templates to start a routine in one tap.',
-      ),
-      findsNothing,
-    );
-    await unmount(tester);
-  });
+  /// A page with a button that opens the Go sheet.
+  const home = _GoHome();
 
-  testWidgets('START creates a live workout with the exercises', (
+  testWidgets('Go sheet START creates a live workout with the exercises', (
     tester,
   ) async {
     await tester.runAsync(
       () => templates.create(name: 'Push', exerciseIds: [_incline]),
     );
-    await pumpApp(tester, const TrainScreen());
+    await pumpApp(tester, home);
+    await tester.tap(find.text('Open Go'));
+    await settle(tester);
     await tester.tap(find.bySemanticsLabel('Start Push template'));
     await settle(tester);
     expect(find.text('live workout'), findsOneWidget);
@@ -119,14 +115,16 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('START while active shows the in-progress snackbar', (
+  testWidgets('Go sheet START while active shows the in-progress snackbar', (
     tester,
   ) async {
     final activeId = await tester.runAsync(() async {
       await templates.create(name: 'Push', exerciseIds: [_incline]);
       return (await workouts.startWorkout()).id;
     });
-    await pumpApp(tester, const TrainScreen());
+    await pumpApp(tester, home);
+    await tester.tap(find.text('Open Go'));
+    await settle(tester);
     await tester.tap(find.bySemanticsLabel('Start Push template'));
     await settle(tester);
     expect(find.text('Workout in progress. Finish it first.'), findsOneWidget);

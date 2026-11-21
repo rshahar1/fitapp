@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:fitapp/app/router.dart';
 import 'package:fitapp/app/theme/tokens.dart';
+import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/domain/activity_types.dart';
 import 'package:fitapp/domain/start_guard.dart';
 import 'package:fitapp/features/activities/activity_icons.dart';
@@ -8,6 +10,7 @@ import 'package:fitapp/features/activities/activity_sheet.dart';
 import 'package:fitapp/features/start/start_actions.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// What the user picked in the hub. The sheet closes first and the caller
@@ -34,7 +37,18 @@ final class LogPastChoice extends HubChoice {
   final String? typeId;
 }
 
-/// Opens the Start/Log hub (feature 011) and carries out the choice.
+/// Start a gym workout from the template [templateId] (feature 031).
+final class TemplateChoice extends HubChoice {
+  const new(this.templateId);
+  final String templateId;
+}
+
+/// Open Gym Templates to create the first template (feature 031).
+final class CreateTemplateChoice extends HubChoice {
+  const new();
+}
+
+/// Opens the Go hub (features 011, 031) and carries out the choice.
 Future<void> showStartHub(BuildContext context) async {
   final choice = await showModalBottomSheet<HubChoice>(
     context: context,
@@ -51,10 +65,15 @@ Future<void> showStartHub(BuildContext context) async {
       await actions.startTracking(context, typeId);
     case LogPastChoice(:final typeId):
       unawaited(showActivitySheet(context, initialTypeId: typeId));
+    case TemplateChoice(:final templateId):
+      await actions.startTemplate(context, templateId);
+    case CreateTemplateChoice():
+      unawaited(GoRouter.of(context).push(Routes.templates));
   }
 }
 
-/// The hub's content: "Start now" and "Earlier".
+/// The Go hub's content: "Start now" (continue, gym templates, GPS and logged
+/// types) and "Earlier".
 class StartHubSheet extends ConsumerWidget {
   const new({super.key});
 
@@ -63,6 +82,7 @@ class StartHubSheet extends ConsumerWidget {
     void pick(HubChoice choice) => Navigator.of(context).pop(choice);
     final text = Theme.of(context).textTheme;
     final session = ref.watch(sessionInProgressProvider);
+    final templates = ref.watch(templatesProvider).value ?? const [];
     final live = [
       for (final t in activityTypes)
         if (t.hasLiveTracking) t,
@@ -77,7 +97,7 @@ class StartHubSheet extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Start or log', style: text.titleLarge),
+            Text('Go', style: text.titleLarge),
             Group(
               header: 'Start now',
               children: [
@@ -91,6 +111,27 @@ class StartHubSheet extends ConsumerWidget {
                     showChevron: true,
                     onTap: () => pick(ContinueChoice(session)),
                   ),
+                if (templates.isEmpty)
+                  GroupRow(
+                    title: 'Create a gym template',
+                    leading: _icon(Icons.add),
+                    showChevron: true,
+                    onTap: () => pick(const CreateTemplateChoice()),
+                  )
+                else
+                  for (final t in templates)
+                    Semantics(
+                      button: true,
+                      label: 'Start ${t.name} template',
+                      excludeSemantics: true,
+                      onTap: () => pick(TemplateChoice(t.id)),
+                      child: GroupRow(
+                        title: t.name,
+                        subtitle: t.exercises.map((e) => e.name).join(' · '),
+                        leading: _icon(gymWorkoutIcon),
+                        onTap: () => pick(TemplateChoice(t.id)),
+                      ),
+                    ),
                 for (final t in live)
                   GroupRow(
                     title: t.label,

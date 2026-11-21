@@ -92,7 +92,7 @@ void main() {
     return w.id;
   });
 
-  testWidgets('discard confirms, deletes and returns to Train', (tester) async {
+  testWidgets('discard confirms, deletes and returns to Home', (tester) async {
     tester0 = tester;
     await tester.runAsync(repo.startWorkout);
     await pumpApp(tester);

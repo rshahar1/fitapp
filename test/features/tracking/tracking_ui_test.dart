@@ -141,7 +141,7 @@ void main() {
   group('activity sheet', () {
     testWidgets('no Start live for any type on a new entry', (tester) async {
       await pumpApp(tester);
-      await tester.tap(find.byTooltip('Start or log a session'));
+      await tester.tap(find.byTooltip('Go'));
       await settle(tester);
       await tester.tap(find.text('Log a past session'));
       await settle(tester);
@@ -179,7 +179,7 @@ void main() {
 
     testWidgets('hub Running opens the setup screen', (tester) async {
       await pumpApp(tester);
-      await tester.tap(find.byTooltip('Start or log a session'));
+      await tester.tap(find.byTooltip('Go'));
       await settle(tester);
       await tester.tap(find.text('Running'));
       await settle(tester);
@@ -192,7 +192,7 @@ void main() {
     ) async {
       await tester.runAsync(() => WorkoutRepository(db).startWorkout());
       await pumpApp(tester);
-      await tester.tap(find.byTooltip('Start or log a session'));
+      await tester.tap(find.byTooltip('Go'));
       await settle(tester);
       await tester.tap(find.text('Running'));
       await settle(tester);

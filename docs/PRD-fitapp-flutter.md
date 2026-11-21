@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.15, 21 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.17, 21 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -280,13 +280,12 @@ back to the exercise plan.
   shows the icon of its first session and "+N" for more, and tapping a day lists its entries.
 - Tapping an activity row opens the activity sheet to edit it or delete it (delete asks for confirmation).
 
-### 5.5 Home / Train tab
-- Date kicker, title, a hero card, the templates list (each with **START**; no *New* button, templates are created under
-  You → **Gym Templates**, feature 028) and stat tiles: *This week*, *This month*, *All time*, then a **By type** list. Below them,
+### 5.5 Home tab
+- Date kicker, title **Home** (the tab was called Train before feature 031), a hero card and stat tiles: *This week*, *This month*, *All time*, then a **By type** list. Below them,
   **Recent**: the 3 newest sessions of any type (gym workouts and activities, History rows), newest first. There is no empty gym start: gym workouts start only from a
-  template's **START**. The hero shows only while a session is in progress: **Continue workout** for a gym workout, or
+  template row in the **Go** sheet (section 5.9; templates are created under You → **Gym Templates**, feature 028). The hero shows only while a session is in progress: **Continue workout** for a gym workout, or
   "<Sport> in progress" with the ticking `mm:ss · km` and **Continue <sport>** for a GPS session (no separate tracking banner).
-  The Train header has no icons and there is no *Log activity* button (feature 011, section 5.9).
+  The Home header has no icons and there is no *Log activity* button (feature 011, section 5.9).
 - The **activity sheet** (opened from the hub's *Log a past session* and *More sports*; titled "Log a past session" for
   new entries, "Edit activity" when editing; no *Start live*): activity type, date (default today, never in the future), optional
   duration in minutes (1 to 1440), for running, cycling and snowboarding an optional **distance** (None/Set, typed in km with
@@ -380,15 +379,17 @@ back to the exercise plan.
 - The live route thins itself to at most 2,000 points for every tracked type (feature 017).
 
 ### 5.9 Start/Log hub and You tab (feature 011)
-- **[+] action** in the middle of the bottom bar (accent circle, label "Start or log a session"); opens the hub sheet from any
+- **Go action** in the middle of the bottom bar (accent circle with a play icon and a "Go" caption, label "Go"; was "+" before
+  feature 031); opens the Go sheet from any
   tab and is never a selected tab. **You** tab (`/you`) lists **Exercise library** (`/exercises`), **Gym Templates** (`/templates`:
   template list, tap to edit, *New template*; feature 028) and **Settings** (`/settings`).
-- **Hub sheet:** *START NOW*: **Continue <session>** (only when a session is in progress), **Gym workout**,
+- **Go sheet** (titled "Go"): *START NOW*: **Continue <session>** (only when a session is in progress), one row per **gym
+  template** (name, exercise summary; tap starts it; with no templates a **Create a gym template** row opens `/templates`),
   **Running** / **Cycling** / **Snowboarding** (→ `/track/new?type=<id>`), **More sports** (non-live sports open the past-session form
-  prefilled with the sport and today), gym templates. *EARLIER*: **Log a past session**.
-- **One start guard** for gym and GPS starts on every entry point (hub, Train hero, template START). A blocked start shows
+  prefilled with the sport and today). *EARLIER*: **Log a past session**.
+- **One start guard** for gym and GPS starts on every entry point (Go sheet, Home hero). A blocked start shows
   "<Workout|Running|Cycling|Snowboarding> in progress. Finish it first." with **Open**. Logging a past session is never blocked.
-- Train stats and Recent are unchanged (a later slice reworks them). Details: `specs/011-start-hub/` and `docs/ux/unified-start-proposal.md`.
+- Home stats and Recent are unchanged (a later slice reworks them). Details: `specs/011-start-hub/` and `docs/ux/unified-start-proposal.md`.
 
 ### 5.11 Sharing a session as an image (features 027, 029)
 - **Share action:** every finished gym workout and every activity (running, cycling, snowboarding, functional training, Pilates; GPS and manual)
@@ -408,9 +409,9 @@ back to the exercise plan.
 
 ```
 Bottom navigation (5 slots)
-├── Train      (home: hero Start/Continue, templates, stats, recent; no header icons)
+├── Home       (hero Continue, steps, stats, by type, recent; no header icons)
 ├── History    (workouts and activities by month → workout editor or activity sheet)
-├── [+]        action, not a tab: opens the Start/Log hub sheet from any tab (section 5.9)
+├── [Go]       action, not a tab: opens the Go sheet (templates, GPS, log) from any tab (section 5.9)
 ├── Progress   (weekly chart, exercises → exercise detail)
 └── You        (/you: Exercise library, Settings)
 
@@ -793,3 +794,6 @@ resolved on 12 Nov 2026; see the decisions log.
     gym finish summary keeps its **Share workout** button; the icon is the platform-adaptive share glyph.
   - The gym card lists every exercise (4:5 up to 8, taller up to 9:16, then two columns, then smaller rows); the
     "+N more exercises" cap is removed. Durations show as "27 min" / "1h 3m" / "4h" and stat grids scale all values together.
+- **2.17 (21 Nov 2026):** feature 031, Home & Go (owner request of 21 Nov 2026). The Train tab and screen are renamed
+  **Home** and lose the Templates section (the in-progress hero stays); the centre "+" becomes **Go** (play icon, "Go"
+  caption); gym templates start from rows in the Go sheet, which offers *Create a gym template* when none exist (sections 5.5, 5.9).

@@ -14,7 +14,7 @@ and Delete into the vertical ⋮ menu next to Share and drop the separate app-ba
 
 - `ShareMapCredit` ("© MapTiler © OpenStreetMap") is stacked bottom-right on the route box in
   `share_card_view.dart` (`_RouteBox`) whenever tiles loaded. The in-app maps (`route_map.dart`)
-  have their own attribution widget, not part of the share image.
+  have their own `RichAttributionWidget`, which pops open for 3 s each time a map opens.
 - `ActivityDetailScreen` (run, ride, snow, other activities) and `WorkoutScreen` (finished gym
   workout) both show Edit and Delete icon buttons beside the ⋮ menu.
 
@@ -25,6 +25,9 @@ and Delete into the vertical ⋮ menu next to Share and drop the separate app-ba
 1. **Given** a GPS run with map tiles, **When** the share preview opens, **Then** the route is
    drawn on the tiles and no "MapTiler" / "OpenStreetMap" text is on the card; sharing works.
 2. **Given** tiles fail, **Then** the plain route is shown and sharing works (unchanged).
+3. (Owner follow-up, after 0.0.30) **Given** a GPS activity opened from History, live tracking or
+   snow replay, **Then** no MapTiler / OpenStreetMap credit or info button appears on the map, not
+   even briefly.
 
 ### User Story 2 - Edit and Delete in the ⋮ menu (Priority: P1)
 
@@ -41,6 +44,7 @@ and Delete into the vertical ⋮ menu next to Share and drop the separate app-ba
 ## Requirements
 
 - **FR-001** The share card draws no map credit text; tiles, route, markers and capture stay.
+- **FR-005** No in-app map (`RouteMap`) shows an attribution popup or button.
 - **FR-002** Edit and Delete are ⋮ menu items with an icon and label (ListTile, like Share);
   Delete uses the danger colour and is last. No standalone Edit / Delete buttons.
 - **FR-003** Menu items follow the app's text direction (Material handles RTL mirroring).

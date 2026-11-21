@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:flutter/foundation.dart' show immutable, listEquals;
 import 'package:flutter_map/flutter_map.dart';
@@ -328,33 +327,6 @@ class _TileMapState extends State<_TileMap> {
                 child: const _Dot(kind: RouteMarkerKind.finish),
               ),
           ],
-        ),
-        RichAttributionWidget(
-          showFlutterMapAttribution: false,
-          popupInitialDisplayDuration: widget.interactive
-              ? const Duration(seconds: 3)
-              : Duration.zero,
-          popupBackgroundColor: AppColors.surface,
-          attributions: const [
-            TextSourceAttribution('MapTiler'),
-            TextSourceAttribution('OpenStreetMap contributors'),
-          ],
-          openButton: (context, open) => IconButton(
-            tooltip: 'Map attribution',
-            visualDensity: VisualDensity.compact,
-            iconSize: 18,
-            color: AppColors.textSecondary,
-            icon: const Icon(AppIcons.info),
-            onPressed: open,
-          ),
-          closeButton: (context, close) => IconButton(
-            tooltip: 'Close attribution',
-            visualDensity: VisualDensity.compact,
-            iconSize: 18,
-            color: AppColors.textSecondary,
-            icon: const Icon(AppIcons.close),
-            onPressed: close,
-          ),
         ),
       ],
     );

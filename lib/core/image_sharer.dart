@@ -8,13 +8,10 @@ import 'package:share_plus/share_plus.dart';
 /// Hands a rendered image to the operating system share sheet (feature 027).
 /// The app itself sends nothing; the user picks the target app.
 abstract interface class ImageSharer {
-  /// Shares the PNG [bytes] as [fileName] with an optional [text] caption.
+  /// Shares the PNG [bytes] as [fileName], with no text: the user adds
+  /// their own words in the target app (feature 032).
   /// Throws when the image cannot be written or the sheet cannot open.
-  Future<void> sharePng(
-    Uint8List bytes, {
-    required String fileName,
-    String? text,
-  });
+  Future<void> sharePng(Uint8List bytes, {required String fileName});
 }
 
 /// [ImageSharer] backed by `share_plus`. The image is written to a `share`
@@ -24,11 +21,7 @@ class SharePlusImageSharer implements ImageSharer {
   const new();
 
   @override
-  Future<void> sharePng(
-    Uint8List bytes, {
-    required String fileName,
-    String? text,
-  }) async {
+  Future<void> sharePng(Uint8List bytes, {required String fileName}) async {
     final tmp = await getTemporaryDirectory();
     final dir = Directory('${tmp.path}/share');
     if (dir.existsSync()) await dir.delete(recursive: true);
@@ -36,10 +29,7 @@ class SharePlusImageSharer implements ImageSharer {
     final file = File('${dir.path}/$fileName');
     await file.writeAsBytes(bytes, flush: true);
     await SharePlus.instance.share(
-      ShareParams(
-        files: [XFile(file.path, mimeType: 'image/png')],
-        text: text,
-      ),
+      ShareParams(files: [XFile(file.path, mimeType: 'image/png')]),
     );
   }
 }

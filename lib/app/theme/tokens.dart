@@ -1,54 +1,135 @@
 import 'dart:ui';
 
-/// Design tokens (PRD §2.2). The only place colors and sizes are defined.
+/// Design tokens (PRD §2.2, "Iron plate", feature 034). The only place
+/// colors, sizes and font families are defined.
+///
+/// Soot, chalk and competition-plate colors: plate yellow is the single
+/// action color; red, green, blue and white plates color the metrics.
 abstract final class AppColors {
-  static const background = Color(0xFF000000);
-  static const surface = Color(0xFF1C1C1E);
-  static const surfaceHigh = Color(0xFF2C2C2E);
-  static const textPrimary = Color(0xFFFFFFFF);
-  static const textSecondary = Color(0xFF8E8E93);
-  static const textTertiary = Color(0xFF5A5A5F);
-  static const accent = Color(0xFF11D16C);
-  static const onAccent = Color(0xFF000000);
-  static const accentSoft = Color(0x2611D16C); // accent at 15 %
-  /// Session in progress (feature 022).
-  static const live = Color(0xFFFF9F0A);
+  /// Soot: screens, the bottom bar, the canvas.
+  static const background = Color(0xFF15120F);
+
+  /// Cards, sheets, dialogs, menus.
+  static const surface = Color(0xFF201C18);
+
+  /// Rules, pressed rows, stepper wells, empty bars.
+  static const surfaceHigh = Color(0xFF2E2822);
+
+  /// Chalk.
+  static const textPrimary = Color(0xFFEDE6D8);
+  static const textSecondary = Color(0xFF9C9284);
+
+  /// Chevrons and empty check squares only (3.5:1, never body text).
+  static const textTertiary = Color(0xFF7A7064);
+
+  /// Plate yellow: the one action color.
+  static const accent = Color(0xFFF5C518);
+  static const onAccent = Color(0xFF15120F);
+  static const accentSoft = Color(0x26F5C518); // accent at 15 %
+
+  /// Information (owner review): plate blue marks read-only data — info
+  /// cards' top rules, counts, history badges, the current chart bar and
+  /// the calendar's workout days — while yellow stays the action color.
+  static const info = Color(0xFF3D7BF2);
+
+  /// Blue text and icons (readable, 6.6:1 on surface).
+  static const infoText = Color(0xFF6FA0FF);
+
+  /// [info] at 15 %.
+  static const infoSoft = Color(0x263D7BF2); // info at 15 %
+
+  /// Session in progress (feature 022): plate red, "recording", clearly
+  /// apart from the yellow actions. Rules, rails and the blinking square.
+  static const live = Color(0xFFE5352B);
+
+  /// The "LIVE" label (readable red, 6.0:1 on surface).
+  static const liveText = Color(0xFFFF6A5C);
+
+  /// The filled "Continue" button of a session in progress: a deeper red
+  /// so chalk text on it reaches 4.6:1.
+  static const liveFill = Color(0xFFC42A20);
+
+  /// Text and icons on [liveFill].
+  static const onLive = textPrimary;
 
   /// [live] at 15 %.
-  static const liveSoft = Color(0x26FF9F0A); // live at 15 %
-  static const danger = Color(0xFFFF453A);
-  static const metricSets = Color(0xFFFF453A);
-  static const metricReps = Color(0xFF11D16C);
-  static const metricVolume = Color(0xFF64D2FF);
-  static const metricWeight = Color(0xFFFF9F0A);
+  static const liveSoft = Color(0x26E5352B); // live at 15 %
+
+  /// The blinking "recording" square of a session in progress.
+  static const rec = live;
+
+  /// Destructive text and icons (readable red, 6.0:1 on surface).
+  static const danger = Color(0xFFFF6A5C);
+
+  /// Competition plates, for fills, rails, bars and large numbers.
+  static const plateRed = Color(0xFFE5352B);
+  static const plateBlue = Color(0xFF3D7BF2);
+  static const plateGreen = Color(0xFF2FB85C);
+
+  /// Metric colors (readable tints of the plates; weight is the white
+  /// plate so yellow stays the action color).
+  static const metricSets = Color(0xFFFF6A5C);
+  static const metricReps = plateGreen;
+  static const metricVolume = Color(0xFF6FA0FF);
+  static const metricWeight = textPrimary;
 
   /// Lift stretches of a snowboarding route (feature 017).
-  static const routeLift = Color(0xFF8E8E93);
+  static const routeLift = textSecondary;
 
-  /// Speed heatmap of a snowboarding route, slowest to fastest.
-  static const heat = [
-    Color(0xFF64D2FF),
-    Color(0xFF11D16C),
-    Color(0xFFFFD60A),
-    Color(0xFFFF9F0A),
-    Color(0xFFFF453A),
-  ];
+  /// Speed heatmap of a snowboarding route, slowest to fastest, in plate
+  /// order.
+  static const heat = [plateBlue, plateGreen, accent, heatOrange, plateRed];
 
-  /// Backdrop header wash: background at 45 % alpha.
-  static const backdropHeaderScrim = Color(0x73000000);
+  /// The orange step of [heat].
+  static const heatOrange = Color(0xFFF2711C);
 
-  /// Backdrop bottom darkening: background at 65 % alpha.
-  static const backdropBottomScrim = Color(0xA6000000);
+  /// Backdrop header wash: soot at 45 % alpha.
+  static const backdropHeaderScrim = Color(0x7315120F);
 
-  /// Set-milestone reward (feature 008): brighter accent, mint highlight,
-  /// gold spark and the dark green fill of the small figure icon.
-  static const accentBright = Color(0xFF2BE07F);
-  static const mint = Color(0xFF7CF5B0);
-  static const gold = Color(0xFFFFD60A);
-  static const rewardIconFill = Color(0xFF14261C);
+  /// Backdrop bottom darkening: soot at 65 % alpha.
+  static const backdropBottomScrim = Color(0xA615120F);
 
-  /// Reward scrim: background at 65 % alpha.
-  static const rewardScrim = Color(0xA6000000);
+  /// Fully transparent soot (gradient ends).
+  static const backgroundClear = Color(0x0015120F);
+
+  /// Set-milestone reward (feature 008): bright yellow flash, chalk
+  /// highlight, yellow spark and the figure fill.
+  static const accentBright = Color(0xFFFFD84A);
+  static const mint = textPrimary;
+  static const gold = accent;
+  static const rewardIconFill = surfaceHigh;
+
+  /// Reward scrim: soot at 65 % alpha.
+  static const rewardScrim = Color(0xA615120F);
+}
+
+/// Font families (bundled, SIL OFL 1.1).
+abstract final class AppFonts {
+  /// Big Shoulders Display, capitals only (800, 900): titles, names,
+  /// section headers, tags, the Go label.
+  static const display = 'PlateDisplay';
+
+  /// Barlow Condensed with tabular figures (600, 700, 800): big and
+  /// ticking numbers.
+  static const number = 'BarlowCondensed';
+
+  /// Barlow (400 to 700): everything else.
+  static const body = 'Barlow';
+}
+
+/// Rule and outline widths.
+abstract final class Strokes {
+  /// Rules inside grouped lists.
+  static const rule = 1.0;
+
+  /// Rules between sections.
+  static const section = 2.0;
+
+  /// Yellow top rule of primary cards.
+  static const cardTop = 4.0;
+
+  /// Outlined buttons, tape chips, empty check squares.
+  static const outline = 1.5;
 }
 
 /// Spacing scale.
@@ -62,10 +143,12 @@ abstract final class Space {
   static const xxl = 64.0;
 }
 
+/// Square corners everywhere (feature 034): cards are softened by 2 dp,
+/// chips and blocks are sharp.
 abstract final class Radii {
-  static const card = 14.0;
-  static const pill = 999.0;
-  static const chip = 10.0;
+  static const card = 2.0;
+  static const chip = 0.0;
+  static const block = 0.0;
 }
 
 abstract final class Sizes {

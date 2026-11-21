@@ -1,4 +1,6 @@
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/data/db/app_database.dart';
@@ -69,7 +71,7 @@ class SetTableHeader extends StatelessWidget {
             const SizedBox(
               width: _colCheck,
               child: Icon(
-                Icons.check,
+                AppIcons.check,
                 size: 16,
                 color: AppColors.textSecondary,
               ),
@@ -87,10 +89,14 @@ class SetRowView extends StatelessWidget {
     required this.line,
     required this.onCheck,
     required this.onTap,
+    this.isCurrent = false,
     super.key,
   });
 
   final SetLine line;
+
+  /// The next set to log: gets the accent left rail and tint.
+  final bool isCurrent;
 
   /// Null makes the row read-only (history review, feature 020).
   final VoidCallback? onCheck;
@@ -113,11 +119,10 @@ class SetRowView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme.titleMedium!
-        .copyWith(fontFeatures: tabular);
+    final text = context.plate.number(22, weight: FontWeight.w700);
     final logged = line.logged;
     final dim = logged == null;
-    final valueColor = dim ? AppColors.textTertiary : AppColors.textPrimary;
+    final valueColor = dim ? AppColors.textPrimary : AppColors.textSecondary;
     final weight = logged?.weight ?? line.weight;
     final reps = logged?.reps ?? line.reps;
     final prev = line.previous;
@@ -126,12 +131,12 @@ class SetRowView extends StatelessWidget {
       duration: Motion.fast,
       margin: const EdgeInsets.symmetric(vertical: Space.xxs),
       decoration: BoxDecoration(
-        color: logged != null ? AppColors.accentSoft : null,
-        borderRadius: BorderRadius.circular(Radii.chip),
-        border: Border.all(
-          color: line.isOverload
-              ? AppColors.accent.withValues(alpha: dim ? 0.5 : 1)
-              : const Color(0x00000000),
+        color: isCurrent ? AppColors.accentSoft : null,
+        border: Border(
+          left: BorderSide(
+            color: isCurrent ? AppColors.accent : Colors.transparent,
+            width: Strokes.cardTop,
+          ),
         ),
       ),
       child: Row(
@@ -142,7 +147,7 @@ class SetRowView extends StatelessWidget {
               label: _semantics,
               excludeSemantics: true,
               child: InkWell(
-                borderRadius: BorderRadius.circular(Radii.chip),
+                borderRadius: BorderRadius.zero,
                 onTap: onTap,
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(minHeight: Sizes.tap),
@@ -211,20 +216,13 @@ class _SetBadge extends StatelessWidget {
     if (!line.isOverload) {
       return Text(
         '${line.setNo}',
-        style: Theme.of(context).textTheme.titleSmall
-            ?.copyWith(color: AppColors.textSecondary, fontFeatures: tabular),
+        style: context.plate.number(24, color: AppColors.textSecondary),
       );
     }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: Space.s, vertical: 2),
-      decoration: BoxDecoration(
-        color: AppColors.accentSoft,
-        borderRadius: BorderRadius.circular(Radii.pill),
-      ),
-      child: const Text(
-        '↑',
-        style: TextStyle(color: AppColors.accent, fontWeight: FontWeight.w800),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: Space.s, vertical: 3),
+      color: AppColors.accent,
+      child: Text('↑', style: context.plate.tag()),
     );
   }
 }
@@ -259,14 +257,20 @@ class _CheckBox extends StatelessWidget {
               width: 28,
               height: 28,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: logged ? AppColors.accent : null,
+                color: logged ? AppColors.plateGreen : null,
                 border: logged
                     ? null
-                    : Border.all(color: AppColors.textTertiary, width: 2),
+                    : Border.all(
+                        color: AppColors.textTertiary,
+                        width: Strokes.outline,
+                      ),
               ),
               child: logged
-                  ? const Icon(Icons.check, size: 18, color: AppColors.onAccent)
+                  ? const Icon(
+                      AppIcons.check,
+                      size: 18,
+                      color: AppColors.onAccent,
+                    )
                   : null,
             ),
           ),

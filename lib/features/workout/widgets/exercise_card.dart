@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
@@ -245,6 +246,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
     final readOnly = widget.readOnly;
     final lines = buildSetLines(d, extraRows: readOnly ? 0 : _extraRows);
     return AppCard(
+      topRule: true,
       padding: const EdgeInsets.fromLTRB(Space.m, Space.s, Space.xs, Space.m),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -257,10 +259,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                   children: [
                     Text(
                       d.exercise.name,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.accent,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
                     if (plan != null)
                       Text(
@@ -278,7 +277,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
               if (!readOnly)
                 PopupMenuButton<String>(
                   tooltip: 'Exercise options for ${d.exercise.name}',
-                  icon: const Icon(Icons.more_vert),
+                  icon: const Icon(AppIcons.more),
                   onSelected: (v) async {
                     switch (v) {
                       case 'plan':
@@ -331,6 +330,16 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                   SetRowView(
                     key: ValueKey('set-${d.row.id}-${line.setNo}'),
                     line: line,
+                    isCurrent:
+                        !readOnly &&
+                        identical(
+                          line,
+                          lines.firstWhere(
+                            (l) => !l.isLogged,
+                            orElse: () => lines.last,
+                          ),
+                        ) &&
+                        !line.isLogged,
                     onCheck: readOnly
                         ? null
                         : () => line.isLogged
@@ -350,7 +359,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                         ref.read(hapticsProvider).tick();
                         setState(() => _extraRows++);
                       },
-                      icon: const Icon(Icons.add),
+                      icon: const Icon(AppIcons.add),
                       label: const Text('Add Set'),
                     ),
                   if (firstTwoSetsHit(d)) ...[
@@ -504,9 +513,9 @@ class CompareCard extends StatelessWidget {
     if (diff == null) {
       return Container(
         padding: const EdgeInsets.all(Space.m),
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppColors.surfaceHigh,
-          borderRadius: BorderRadius.circular(Radii.chip),
+          borderRadius: BorderRadius.zero,
         ),
         child: Text('FIRST SESSION', style: label),
       );
@@ -529,9 +538,9 @@ class CompareCard extends StatelessWidget {
         );
     return Container(
       padding: const EdgeInsets.all(Space.m),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.surfaceHigh,
-        borderRadius: BorderRadius.circular(Radii.chip),
+        borderRadius: BorderRadius.zero,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:drift/drift.dart'
     show DatabaseConnection, Value, driftRuntimeOptions;
 import 'package:drift/native.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/core/image_sharer.dart';
@@ -247,8 +248,8 @@ void main() {
         const SharePreviewScreen(subject: ShareSubject.activity, id: _runId),
         sharer: sharer,
       );
-      expect(find.text('SHARE IMAGE'), findsOneWidget);
-      await tester.tap(find.text('SHARE IMAGE'));
+      expect(find.text('Share image'), findsOneWidget);
+      await tester.tap(find.text('Share image'));
       await tester.pump();
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 300)),
@@ -297,7 +298,7 @@ void main() {
         await tester.pump();
         final after = tester.widget<ShareCardView>(find.byType(ShareCardView));
         expect(identical(after.data, before.data), isTrue);
-        await tester.tap(find.text('SHARE IMAGE'));
+        await tester.tap(find.text('Share image'));
         await tester.pump();
         await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 300)),
@@ -321,7 +322,7 @@ void main() {
         const SharePreviewScreen(subject: ShareSubject.activity, id: _runId),
         sharer: _FakeSharer(fail: true),
       );
-      await tester.tap(find.text('SHARE IMAGE'));
+      await tester.tap(find.text('Share image'));
       await tester.pump();
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 300)),
@@ -341,7 +342,7 @@ void main() {
         ),
       );
       expect(find.text('Nothing to share'), findsOneWidget);
-      expect(find.text('SHARE IMAGE'), findsNothing);
+      expect(find.text('Share image'), findsNothing);
       await unmount(tester);
     });
   });
@@ -353,11 +354,11 @@ void main() {
       await tester.runAsync(addRun);
       await pump(tester, const ActivityDetailScreen(activityId: _runId));
       expect(find.byTooltip('Share activity'), findsNothing);
-      expect(find.byIcon(Icons.adaptive.share), findsNothing);
+      expect(find.byIcon(AppIcons.share), findsNothing);
       await tester.tap(find.byTooltip('More options'));
       await tester.pumpAndSettle();
       expect(find.text('Share'), findsOneWidget);
-      expect(find.byIcon(Icons.adaptive.share), findsOneWidget);
+      expect(find.byIcon(AppIcons.share), findsOneWidget);
       await unmount(tester);
     });
 
@@ -375,7 +376,7 @@ void main() {
       await tester.tap(find.byTooltip('Workout options'));
       await tester.pumpAndSettle();
       expect(find.text('Share'), findsOneWidget);
-      expect(find.byIcon(Icons.adaptive.share), findsOneWidget);
+      expect(find.byIcon(AppIcons.share), findsOneWidget);
       await unmount(tester);
     });
   });
@@ -404,7 +405,7 @@ void main() {
       );
       await tester.tap(find.text('Open summary'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('SHARE WORKOUT'));
+      await tester.tap(find.text('Share workout'));
       await tester.pumpAndSettle();
       expect(choice, FinishChoice.share);
     });

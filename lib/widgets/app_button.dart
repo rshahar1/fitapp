@@ -1,12 +1,13 @@
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Visual style of an [AppButton].
 enum AppButtonVariant {
-  /// Green accent: start something.
+  /// Plate-yellow fill: start something.
   primary,
 
-  /// Neutral raised surface.
+  /// Outlined chalk rectangle.
   secondary,
 
   /// Destructive.
@@ -15,11 +16,11 @@ enum AppButtonVariant {
   /// Transparent, accent text.
   ghost,
 
-  /// Amber: continue a session in progress (feature 022).
+  /// Deep plate-red fill: continue a session in progress (feature 022).
   live,
 }
 
-/// Pill-shaped bold uppercase button.
+/// Rectangular button with a capitals display label (Iron plate).
 class AppButton extends StatelessWidget {
   /// Creates a button.
   const new({
@@ -31,7 +32,7 @@ class AppButton extends StatelessWidget {
     this.expand = false,
   });
 
-  /// Text (rendered uppercase).
+  /// Text (the display face draws capitals).
   final String label;
 
   /// Tap callback; null disables the button.
@@ -50,14 +51,14 @@ class AppButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final (bg, fg) = switch (variant) {
       AppButtonVariant.primary => (AppColors.accent, AppColors.onAccent),
-      AppButtonVariant.secondary => (
-        AppColors.surfaceHigh,
-        AppColors.textPrimary,
-      ),
-      AppButtonVariant.danger => (AppColors.surfaceHigh, AppColors.danger),
-      AppButtonVariant.live => (AppColors.live, AppColors.onAccent),
-      AppButtonVariant.ghost => (const Color(0x00000000), AppColors.accent),
+      AppButtonVariant.secondary => (Colors.transparent, AppColors.textPrimary),
+      AppButtonVariant.danger => (Colors.transparent, AppColors.danger),
+      AppButtonVariant.live => (AppColors.liveFill, AppColors.onLive),
+      AppButtonVariant.ghost => (Colors.transparent, AppColors.accent),
     };
+    final outlined =
+        variant == AppButtonVariant.secondary ||
+        variant == AppButtonVariant.danger;
     final enabled = onPressed != null;
     final button = TextButton(
       onPressed: onPressed,
@@ -68,7 +69,16 @@ class AppButton extends StatelessWidget {
         disabledForegroundColor: fg,
         minimumSize: const Size(Sizes.tap, Sizes.stepperHeight - Space.s),
         padding: const EdgeInsets.symmetric(horizontal: Space.l),
-        shape: const StadiumBorder(),
+        shape: RoundedRectangleBorder(
+          side: outlined
+              ? BorderSide(
+                  color: variant == AppButtonVariant.danger
+                      ? AppColors.danger
+                      : AppColors.textSecondary,
+                  width: Strokes.outline,
+                )
+              : BorderSide.none,
+        ),
         tapTargetSize: MaterialTapTargetSize.padded,
       ),
       child: Row(
@@ -78,12 +88,9 @@ class AppButton extends StatelessWidget {
           if (icon != null) ...[Icon(icon), const SizedBox(width: Space.s)],
           Flexible(
             child: Text(
-              label.toUpperCase(),
+              label,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.8,
-              ),
+              style: context.plate.display(17, color: fg),
             ),
           ),
         ],

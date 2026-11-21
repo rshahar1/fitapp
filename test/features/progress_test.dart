@@ -87,7 +87,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('Incline Dumbbell Bench Press'), findsOneWidget);
-      expect(find.text('Sessions'.toUpperCase()), findsOneWidget);
+      expect(find.text('Sessions'), findsOneWidget);
       expect(chartPoints(tester), n > 20 ? 20 : n);
       expect(
         find.text('First session'),
@@ -137,7 +137,7 @@ void main() {
     await pumpScreen(tester, const ProgressScreen());
 
     expect(find.text('Progress'), findsOneWidget);
-    expect(find.text('WORKOUTS PER WEEK'), findsOneWidget);
+    expect(find.text('Workouts per week'), findsOneWidget);
     expect(find.text('Incline Dumbbell Bench Press'), findsOneWidget);
     expect(find.text('22.5 kg'), findsOneWidget);
     final chart = tester.widget<BarChart>(find.byType(BarChart));

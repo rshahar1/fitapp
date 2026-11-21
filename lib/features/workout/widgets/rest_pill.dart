@@ -1,4 +1,5 @@
-import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/features/workout/rest_timer_controller.dart';
@@ -30,10 +31,10 @@ class RestPill extends ConsumerWidget {
               : 'Rest: ${shown.inSeconds} seconds left. Tap to dismiss.',
           excludeSemantics: true,
           child: Material(
-            color: overtime ? AppColors.surfaceHigh : AppColors.accentSoft,
-            shape: const StadiumBorder(),
+            color: overtime ? AppColors.surfaceHigh : AppColors.accent,
+            shape: const RoundedRectangleBorder(),
             child: InkWell(
-              customBorder: const StadiumBorder(),
+              customBorder: const RoundedRectangleBorder(),
               onTap: () => ref.read(restTimerProvider.notifier).dismiss(),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: Sizes.tap),
@@ -43,22 +44,21 @@ class RestPill extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.timer_outlined,
+                        AppIcons.timer,
                         size: 18,
                         color: overtime
                             ? AppColors.textSecondary
-                            : AppColors.accent,
+                            : AppColors.onAccent,
                       ),
                       const SizedBox(width: Space.s),
                       Text(
                         text,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              fontFeatures: tabular,
-                              color: overtime
-                                  ? AppColors.textSecondary
-                                  : AppColors.accent,
-                            ),
+                        style: context.plate.number(
+                          22,
+                          color: overtime
+                              ? AppColors.textSecondary
+                              : AppColors.onAccent,
+                        ),
                       ),
                     ],
                   ),

@@ -8,6 +8,7 @@ export 'empty_state.dart';
 export 'glow_line_chart.dart';
 export 'group.dart';
 export 'metric_tile.dart';
+export 'rec_dot.dart';
 export 'section_header.dart';
 export 'stat_tile.dart';
 export 'weekly_bar_chart.dart';

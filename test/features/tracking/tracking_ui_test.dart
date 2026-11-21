@@ -118,7 +118,7 @@ void main() {
     await settle(tester);
     source.emit(fix(0));
     await tester.pump();
-    await tester.tap(find.text('START'));
+    await tester.tap(find.text('Start'));
     await settle(tester);
   }
 
@@ -145,14 +145,14 @@ void main() {
       await settle(tester);
       await tester.tap(find.text('Log a past session'));
       await settle(tester);
-      expect(find.text('START LIVE'), findsNothing);
+      expect(find.text('Start live'), findsNothing);
       await tester.tap(find.text('Running'));
       await tester.pump();
-      expect(find.text('START LIVE'), findsNothing);
+      expect(find.text('Start live'), findsNothing);
       expect(find.text('or log it manually below'), findsNothing);
       await tester.tap(find.text('Cycling'));
       await tester.pump();
-      expect(find.text('START LIVE'), findsNothing);
+      expect(find.text('Start live'), findsNothing);
       await unmount(tester);
     });
 
@@ -173,7 +173,7 @@ void main() {
       );
       await settle(tester);
       expect(find.text('Edit activity'), findsOneWidget);
-      expect(find.text('START LIVE'), findsNothing);
+      expect(find.text('Start live'), findsNothing);
       await unmount(tester);
     });
 
@@ -216,7 +216,7 @@ void main() {
       await settle(tester);
       expect(find.text('Location is needed'), findsOneWidget);
       expect(find.textContaining('stays on this device'), findsOneWidget);
-      await tester.tap(find.text('CONTINUE'));
+      await tester.tap(find.text('Continue'));
       await settle(tester);
       expect(find.text('Searching for GPS'), findsOneWidget);
       await unmount(tester);
@@ -228,13 +228,13 @@ void main() {
       unawaited(router.push(Routes.newTrack('running')));
       await settle(tester);
       expect(find.text('Location permission denied'), findsOneWidget);
-      await tester.tap(find.text('OPEN SETTINGS'));
+      await tester.tap(find.text('Open settings'));
       await tester.pump();
       expect(source.appSettingsOpened, 1);
-      await tester.tap(find.text('LOG MANUALLY INSTEAD'));
+      await tester.tap(find.text('Log manually instead'));
       await settle(tester);
       expect(find.text('Log a past session'), findsOneWidget);
-      expect(find.text('START LIVE'), findsNothing);
+      expect(find.text('Start live'), findsNothing);
       await unmount(tester);
     });
 
@@ -245,7 +245,7 @@ void main() {
       await settle(tester);
       expect(find.text('Location is turned off'), findsOneWidget);
       expect(find.byType(RouteMap), findsOneWidget);
-      await tester.tap(find.text('TURN ON LOCATION'));
+      await tester.tap(find.text('Turn on location'));
       await tester.pump();
       expect(source.locationSettingsOpened, 1);
       await unmount(tester);
@@ -256,7 +256,7 @@ void main() {
       unawaited(router.push(Routes.newTrack('running')));
       await settle(tester);
       expect(find.text('Searching for GPS'), findsOneWidget);
-      await tester.tap(find.text('START'));
+      await tester.tap(find.text('Start'));
       await settle(tester);
       expect(
         container.read(trackingControllerProvider),
@@ -311,7 +311,7 @@ void main() {
       now = now.add(const Duration(seconds: 21));
       await tester.pump(const Duration(seconds: 2));
       expect(find.textContaining('GPS accuracy is low here'), findsOneWidget);
-      expect(find.text('START ANYWAY'), findsOneWidget);
+      expect(find.text('Start anyway'), findsOneWidget);
       await unmount(tester);
     });
 
@@ -322,7 +322,7 @@ void main() {
       await tester.tap(find.text('Start anyway'));
       await settle(tester);
       expect(container.read(trackingControllerProvider), isA<TrackingLive>());
-      expect(find.text('TIME'), findsOneWidget);
+      expect(find.text('Time'), findsOneWidget);
       expect(haptics.successes, 1);
       await unmount(tester);
     });
@@ -331,11 +331,11 @@ void main() {
   group('live screen', () {
     testWidgets('running metrics', (tester) async {
       await goLive(tester);
-      expect(find.text('TIME'), findsOneWidget);
-      expect(find.text('DISTANCE'), findsOneWidget);
-      expect(find.text('PACE'), findsOneWidget);
-      expect(find.text('AVG PACE'), findsOneWidget);
-      expect(find.text('LAST KM'), findsOneWidget);
+      expect(find.text('Time'), findsOneWidget);
+      expect(find.text('Distance'), findsOneWidget);
+      expect(find.text('Pace'), findsOneWidget);
+      expect(find.text('Avg pace'), findsOneWidget);
+      expect(find.text('Last km'), findsOneWidget);
       await emit(tester, 1, 40);
       final live = container.read(trackingControllerProvider) as TrackingLive;
       expect(live.state.distanceMeters, greaterThan(100));
@@ -346,11 +346,11 @@ void main() {
 
     testWidgets('cycling metrics', (tester) async {
       await goLive(tester, type: 'cycling');
-      expect(find.text('SPEED'), findsOneWidget);
-      expect(find.text('AVG SPEED'), findsOneWidget);
-      expect(find.text('ELAPSED'), findsOneWidget);
-      expect(find.text('CLIMB'), findsOneWidget);
-      expect(find.text('LAST KM'), findsNothing);
+      expect(find.text('Speed'), findsOneWidget);
+      expect(find.text('Avg speed'), findsOneWidget);
+      expect(find.text('Elapsed'), findsOneWidget);
+      expect(find.text('Climb'), findsOneWidget);
+      expect(find.text('Last km'), findsNothing);
       await emit(tester, 1, 30);
       expect(find.text('km/h'), findsWidgets);
       await unmount(tester);
@@ -359,14 +359,14 @@ void main() {
     testWidgets('pause and resume', (tester) async {
       await goLive(tester);
       await emit(tester, 1, 5);
-      await tester.tap(find.text('PAUSE'));
+      await tester.tap(find.text('Pause'));
       await settle(tester);
       expect(find.text('Paused'), findsOneWidget);
-      expect(find.text('RESUME'), findsOneWidget);
-      await tester.tap(find.text('RESUME'));
+      expect(find.text('Resume'), findsOneWidget);
+      await tester.tap(find.text('Resume'));
       await settle(tester);
       expect(find.text('Paused'), findsNothing);
-      expect(find.text('PAUSE'), findsOneWidget);
+      expect(find.text('Pause'), findsOneWidget);
       await unmount(tester);
     });
 
@@ -381,37 +381,37 @@ void main() {
 
       await tester.tap(find.bySemanticsLabel('Lock'));
       await tester.pump();
-      await tester.tap(find.text('PAUSE'));
+      await tester.tap(find.text('Pause'));
       await settle(tester);
-      expect(find.text('RESUME'), findsNothing);
+      expect(find.text('Resume'), findsNothing);
       expect(
         (container.read(
           trackingControllerProvider,
         ) as TrackingLive).state.manualPaused,
         isFalse,
       );
-      await hold(tester, find.text('FINISH'));
+      await hold(tester, find.text('Finish'));
       expect(find.text('Save'), findsNothing);
 
       await tester.tap(find.bySemanticsLabel('Unlock'));
       await tester.pump();
       expect(find.text('Hold to unlock'), findsOneWidget);
       await hold(tester, find.bySemanticsLabel('Unlock'));
-      await tester.tap(find.text('PAUSE'));
+      await tester.tap(find.text('Pause'));
       await settle(tester);
-      expect(find.text('RESUME'), findsOneWidget);
+      expect(find.text('Resume'), findsOneWidget);
       await unmount(tester);
     });
 
     testWidgets('finish needs a hold; a tap only hints', (tester) async {
       await goLive(tester);
-      await tester.tap(find.text('FINISH'));
+      await tester.tap(find.text('Finish'));
       await tester.pump();
       expect(find.text('Hold to finish'), findsOneWidget);
-      expect(find.text('SAVE'), findsNothing);
-      await hold(tester, find.text('FINISH'), 400);
-      expect(find.text('SAVE'), findsNothing);
-      await hold(tester, find.text('FINISH'));
+      expect(find.text('Save'), findsNothing);
+      await hold(tester, find.text('Finish'), 400);
+      expect(find.text('Save'), findsNothing);
+      await hold(tester, find.text('Finish'));
       await settle(tester);
       expect(find.text('Running summary'), findsOneWidget);
       await unmount(tester);
@@ -423,16 +423,16 @@ void main() {
       await goLive(tester);
       await emit(tester, 1, seconds);
       now = fixtureStart.add(Duration(seconds: seconds));
-      await hold(tester, find.text('FINISH'));
+      await hold(tester, find.text('Finish'));
       await settle(tester);
     }
 
     testWidgets('Save creates the activity and opens History', (tester) async {
       await toSheet(tester);
       expect(find.text('Running summary'), findsOneWidget);
-      expect(find.text('AVG PACE'), findsWidgets);
+      expect(find.text('Avg pace'), findsWidgets);
       await tester.enterText(find.byType(TextField), 'Easy loop');
-      await tester.tap(find.text('SAVE'));
+      await tester.tap(find.text('Save'));
       await settle(tester);
       final rows = (await tester.runAsync(
         () => ActivityRepository(db).list(),
@@ -451,7 +451,7 @@ void main() {
 
     testWidgets('a short activity asks before saving', (tester) async {
       await toSheet(tester, seconds: 20);
-      await tester.tap(find.text('SAVE'));
+      await tester.tap(find.text('Save'));
       await settle(tester);
       expect(find.text('Save this short activity?'), findsOneWidget);
       await tester.tap(find.text('Cancel'));
@@ -460,9 +460,14 @@ void main() {
         await tester.runAsync(() => ActivityRepository(db).list()),
         isEmpty,
       );
-      await tester.tap(find.text('SAVE'));
-      await settle(tester);
       await tester.tap(find.text('Save'));
+      await settle(tester);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('Save'),
+        ),
+      );
       await settle(tester);
       expect(
         await tester.runAsync(() => ActivityRepository(db).list()),
@@ -473,7 +478,7 @@ void main() {
 
     testWidgets('Discard confirms, then deletes the session', (tester) async {
       await toSheet(tester);
-      await tester.tap(find.text('DISCARD'));
+      await tester.tap(find.text('Discard'));
       await settle(tester);
       expect(find.text('Discard activity?'), findsOneWidget);
       await tester.tap(find.text('Cancel'));
@@ -482,9 +487,14 @@ void main() {
         await tester.runAsync(() => TrackingRepository(db).session()),
         isNotNull,
       );
-      await tester.tap(find.text('DISCARD'));
-      await settle(tester);
       await tester.tap(find.text('Discard'));
+      await settle(tester);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('Discard'),
+        ),
+      );
       await settle(tester);
       expect(
         await tester.runAsync(() => TrackingRepository(db).session()),
@@ -509,9 +519,9 @@ void main() {
       await settle(tester);
       expect(find.text('Running in progress'), findsOneWidget);
       expect(find.textContaining('0:30 · 0.'), findsOneWidget);
-      await tester.tap(find.text('CONTINUE RUNNING'));
+      await tester.tap(find.text('Continue running'));
       await settle(tester);
-      expect(find.text('TIME'), findsOneWidget);
+      expect(find.text('Time'), findsOneWidget);
       await unmount(tester);
     });
 
@@ -529,7 +539,7 @@ void main() {
       await tester.runAsync(() => recoverTrackingOnLaunch(container));
       await settle(tester);
       expect(container.read(trackingControllerProvider), isA<TrackingLive>());
-      expect(find.text('TIME'), findsOneWidget);
+      expect(find.text('Time'), findsOneWidget);
       await unmount(tester);
     });
 
@@ -554,7 +564,7 @@ void main() {
         ),
       );
       await settle(tester);
-      expect(find.text('SPEED'), findsOneWidget);
+      expect(find.text('Speed'), findsOneWidget);
       await unmount(tester);
     });
   });

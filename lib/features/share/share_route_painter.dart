@@ -7,7 +7,7 @@ import 'package:material_ui/material_ui.dart';
 
 /// Draws a route without map tiles for the share image (feature 027): the
 /// line in [color], optional coloured [spans] on top (snowboarding speed
-/// heatmap and lifts), a start dot and a finish dot.
+/// heatmap and lifts), a square start marker and a square finish marker.
 class ShareRoutePainter extends CustomPainter {
   const new({
     required this.points,
@@ -46,11 +46,11 @@ class ShareRoutePainter extends CustomPainter {
       ..color = c
       ..style = PaintingStyle.stroke
       ..strokeWidth = width
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
+      ..strokeCap = StrokeCap.square
+      ..strokeJoin = StrokeJoin.miter;
 
     final all = pathOf(0, xy.length - 1);
-    // A soft halo keeps the line readable on any background.
+    // A soot outline keeps the line readable on any background.
     canvas
       ..drawPath(all, stroke(AppColors.background, Sizes.routeStroke + 3))
       ..drawPath(all, stroke(color, Sizes.routeStroke));
@@ -60,12 +60,22 @@ class ShareRoutePainter extends CustomPainter {
     }
     void dot(Offset o, Color fill) {
       canvas
-        ..drawCircle(
-          o,
-          Sizes.mapMarker / 2,
+        ..drawRect(
+          Rect.fromCenter(
+            center: o,
+            width: Sizes.mapMarker,
+            height: Sizes.mapMarker,
+          ),
           Paint()..color = AppColors.background,
         )
-        ..drawCircle(o, Sizes.mapMarker / 2 - 2.5, Paint()..color = fill);
+        ..drawRect(
+          Rect.fromCenter(
+            center: o,
+            width: Sizes.mapMarker - 5,
+            height: Sizes.mapMarker - 5,
+          ),
+          Paint()..color = fill,
+        );
     }
 
     dot(at(0), AppColors.accent);

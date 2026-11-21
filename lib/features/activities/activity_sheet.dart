@@ -1,3 +1,4 @@
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/core/haptics.dart';
@@ -242,7 +243,7 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
                 style: text.bodySmall?.copyWith(color: AppColors.textSecondary),
               )
             else ...[
-              Text('DURATION', style: text.labelSmall),
+              Text('Duration', style: text.labelSmall),
               const SizedBox(height: Space.s),
               ChipSelector<bool>(
                 options: const [false, true],
@@ -261,7 +262,7 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
             ],
             if (!_isGps && _showDistance) ...[
               const SizedBox(height: Space.m),
-              Text('DISTANCE', style: text.labelSmall),
+              Text('Distance', style: text.labelSmall),
               const SizedBox(height: Space.s),
               ChipSelector<bool>(
                 options: const [false, true],
@@ -345,7 +346,7 @@ class _TypeTile extends StatelessWidget {
       onTap: onTap,
       child: Material(
         color: isSelected ? AppColors.accent : AppColors.surfaceHigh,
-        shape: const StadiumBorder(),
+        shape: const RoundedRectangleBorder(),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
@@ -358,10 +359,7 @@ class _TypeTile extends StatelessWidget {
                 children: [
                   ActivityIcon(type.id, size: 20, color: fg),
                   const SizedBox(width: Space.s),
-                  Text(
-                    type.label,
-                    style: TextStyle(fontWeight: FontWeight.w700, color: fg),
-                  ),
+                  Text(type.label, style: context.plate.tag(color: fg)),
                 ],
               ),
             ),

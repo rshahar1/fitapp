@@ -1,4 +1,5 @@
 import 'package:fitapp/app/router.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/widgets/widgets.dart';
@@ -17,7 +18,7 @@ class TemplatesScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Gym Templates')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(Routes.newTemplate),
-        icon: const Icon(Icons.add),
+        icon: const Icon(AppIcons.add),
         label: const Text('New template'),
       ),
       body: templates.when(
@@ -25,7 +26,7 @@ class TemplatesScreen extends ConsumerWidget {
         error: (_, _) => const Center(child: Text('Could not load templates.')),
         data: (items) => items.isEmpty
             ? const EmptyState(
-                icon: Icons.fitness_center,
+                icon: AppIcons.gym,
                 title: 'No templates yet',
                 message: 'Create a template to start a routine in one tap.',
               )

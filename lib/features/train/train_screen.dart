@@ -1,3 +1,5 @@
+import 'package:fitapp/app/theme/app_icons.dart';
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/data/providers.dart';
@@ -36,7 +38,7 @@ class TrainScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(Space.m),
           children: [
             Text(
-              DateFormat('EEEE, d MMMM').format(now.toLocal()).toUpperCase(),
+              DateFormat('EEEE, d MMMM').format(now.toLocal()),
               style: text.labelSmall,
             ),
             Text('Home', style: text.headlineLarge),
@@ -89,7 +91,10 @@ class TrainScreen extends ConsumerWidget {
                       subtitle: '${t.allTime} all time',
                       trailing: Text(
                         '${t.thisWeek} this week',
-                        style: const TextStyle(color: AppColors.accent),
+                        style: context.plate.number(
+                          18,
+                          color: AppColors.infoText,
+                        ),
                       ),
                     ),
                 ],
@@ -98,7 +103,7 @@ class TrainScreen extends ConsumerWidget {
             const SectionHeader('Recent'),
             if (recent.isEmpty)
               const EmptyState(
-                icon: Icons.fitness_center,
+                icon: AppIcons.gym,
                 title: 'No workouts yet',
                 message: 'Start your first workout to see it here.',
               )
@@ -166,7 +171,9 @@ class _HeroCard extends ConsumerWidget {
     }
 
     return AppCard(
-      borderColor: AppColors.live,
+      topRule: true,
+      leftRule: true,
+      topRuleColor: AppColors.live,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -174,28 +181,14 @@ class _HeroCard extends ConsumerWidget {
             children: [
               Flexible(child: Text(title, style: text.titleLarge)),
               const SizedBox(width: Space.s),
-              Semantics(
-                label: 'In progress',
-                excludeSemantics: true,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: Space.s),
-                  decoration: const ShapeDecoration(
-                    color: AppColors.liveSoft,
-                    shape: StadiumBorder(),
-                  ),
-                  child: Text(
-                    '● LIVE',
-                    style: text.labelSmall?.copyWith(color: AppColors.live),
-                  ),
-                ),
-              ),
+              const LiveTag(),
             ],
           ),
           if (line != null) ...[const SizedBox(height: Space.xs), line],
           const SizedBox(height: Space.m),
           AppButton(
             label: inProgress.continueLabel,
-            icon: Icons.play_arrow,
+            icon: AppIcons.play,
             variant: AppButtonVariant.live,
             expand: true,
             onPressed: () => actions.open(context, inProgress),

@@ -1,3 +1,4 @@
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/data/providers.dart';
@@ -49,14 +50,14 @@ class _Bar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.science_outlined, color: AppColors.metricWeight),
+          const Icon(AppIcons.science, color: AppColors.metricWeight),
           const SizedBox(width: Space.s),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'SIMULATED GPS',
+                  'Simulated GPS',
                   style: text.labelSmall?.copyWith(
                     color: AppColors.metricWeight,
                     fontWeight: FontWeight.w700,

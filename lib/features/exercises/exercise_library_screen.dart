@@ -1,4 +1,5 @@
 import 'package:fitapp/app/router.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
@@ -99,12 +100,12 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
     final exercises = ref.watch(exercisesProvider(_query.trim()));
     final trimmed = _query.trim();
     return Scaffold(
-      backgroundColor: const Color(0x00000000),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Gym Exercise Library'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add),
+            icon: const Icon(AppIcons.add),
             tooltip: 'New exercise',
             onPressed: _create,
           ),
@@ -119,7 +120,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
               textInputAction: TextInputAction.search,
               decoration: const InputDecoration(
                 hintText: 'Search exercises',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: Icon(AppIcons.search),
               ),
               onChanged: (v) => setState(() => _query = v),
             ),
@@ -128,7 +129,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
             child: exercises.when(
               loading: () => const SizedBox.shrink(),
               error: (e, _) => const EmptyState(
-                icon: Icons.error_outline,
+                icon: AppIcons.error,
                 title: 'Could not load exercises',
               ),
               data: (list) {
@@ -152,7 +153,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                             GroupRow(
                               title: 'Create "$trimmed"',
                               leading: const Icon(
-                                Icons.add_circle_outline,
+                                AppIcons.addBox,
                                 color: AppColors.accent,
                               ),
                               onTap: _create,
@@ -162,7 +163,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                       ),
                     if (list.isEmpty && exact)
                       const EmptyState(
-                        icon: Icons.fitness_center,
+                        icon: AppIcons.gym,
                         title: 'No exercises',
                       ),
                     for (final (g, items) in groupExercises(list)) ...[
@@ -175,7 +176,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                               subtitle: exerciseSubtitle(e),
                               trailing: PopupMenuButton<String>(
                                 tooltip: 'Options for ${e.name}',
-                                icon: const Icon(Icons.more_vert),
+                                icon: const Icon(AppIcons.more),
                                 onSelected: (v) =>
                                     v == 'edit' ? _edit(e) : _delete(e),
                                 itemBuilder: (_) => [

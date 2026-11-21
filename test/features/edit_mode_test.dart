@@ -136,7 +136,7 @@ Future<void> _editSet2Reps(
     find.bySemanticsLabel(increase ? 'Increase Reps' : 'Decrease Reps'),
   );
   await tester.pump();
-  await tester.tap(find.text('UPDATE'));
+  await tester.tap(find.text('Update'));
   await _settle(tester);
 }
 
@@ -187,23 +187,23 @@ void main() {
     // The data is shown, but nothing can be edited.
     expect(find.bySemanticsLabel(RegExp('Set 2, logged')), findsOneWidget);
     expect(find.text('Changes save automatically'), findsNothing);
-    expect(find.text('ADD EXERCISE'), findsNothing);
+    expect(find.text('Add Exercise'), findsNothing);
     expect(find.text('Add Set'), findsNothing);
     expect(find.byTooltip(RegExp('^Exercise options')), findsNothing);
     expect(find.byTooltip('Edit workout'), findsOneWidget);
     expect(find.byTooltip('Delete workout'), findsOneWidget);
     // No footer: no Done, Resume or Delete buttons at the bottom.
-    expect(find.text('DONE'), findsNothing);
-    expect(find.text('RESUME'), findsNothing);
-    expect(find.text('DELETE'), findsNothing);
+    expect(find.text('Done'), findsNothing);
+    expect(find.text('Resume'), findsNothing);
+    expect(find.text('Delete'), findsNothing);
     await tester.tap(find.bySemanticsLabel(RegExp('Set 2, logged')));
     await _settle(tester);
-    expect(find.text('UPDATE'), findsNothing);
+    expect(find.text('Update'), findsNothing);
 
     await tester.tap(find.byTooltip('Edit workout'));
     await _settle(tester);
     expect(find.text('Changes save automatically'), findsOneWidget);
-    expect(find.text('ADD EXERCISE'), findsOneWidget);
+    expect(find.text('Add Exercise'), findsOneWidget);
     expect(find.byTooltip('Done editing'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Done editing'));

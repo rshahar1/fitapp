@@ -1,3 +1,5 @@
+import 'package:fitapp/app/theme/app_icons.dart';
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart' show formatClock;
 import 'package:fitapp/domain/activity_types.dart'
@@ -16,7 +18,7 @@ String snowBadgeLabel(RunBadge badge) => switch (badge) {
   RunBadge.mostVertical => 'Most vertical',
 };
 
-/// Small pill naming a badge a run earned.
+/// Small tape label naming a badge a run earned.
 class SnowBadgeChip extends StatelessWidget {
   const new({required this.badge, super.key});
 
@@ -25,10 +27,7 @@ class SnowBadgeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.accentSoft,
-        borderRadius: BorderRadius.circular(Radii.chip),
-      ),
+      decoration: const BoxDecoration(color: AppColors.accentSoft),
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: Space.s,
@@ -36,8 +35,7 @@ class SnowBadgeChip extends StatelessWidget {
         ),
         child: Text(
           snowBadgeLabel(badge),
-          style: Theme.of(context).textTheme.labelSmall
-              ?.copyWith(color: AppColors.accent),
+          style: context.plate.tag(color: AppColors.accent),
         ),
       ),
     );
@@ -148,7 +146,7 @@ class _TimelineRow extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  isRun ? Icons.downhill_skiing : Icons.cable,
+                  isRun ? AppIcons.skiing : AppIcons.cable,
                   size: 20,
                   color: isRun ? AppColors.accent : AppColors.routeLift,
                 ),
@@ -178,7 +176,7 @@ class _TimelineRow extends StatelessWidget {
                 ),
                 if (isRun)
                   const Icon(
-                    Icons.chevron_right,
+                    AppIcons.chevronRight,
                     color: AppColors.textTertiary,
                   ),
               ],

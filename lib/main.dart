@@ -9,6 +9,7 @@ import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/tracking/sim/simulation_switch.dart';
 import 'package:fitapp/features/tracking/simulation_driver.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -16,6 +17,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  registerFontLicenses();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
   // Dev builds only: `--dart-define=SIMULATE_GPS=true` (feature 019). The
@@ -40,6 +42,21 @@ Future<void> main() async {
   runApp(
     UncontrolledProviderScope(container: container, child: const FitApp()),
   );
+}
+
+/// Adds the bundled typefaces' SIL OFL licences to the licence page
+/// (feature 034).
+void registerFontLicenses() {
+  LicenseRegistry.addLicense(() async* {
+    for (final (family, file) in const [
+      ('Big Shoulders Display (PlateDisplay)', 'OFL-BigShouldersDisplay.txt'),
+      ('Barlow', 'OFL-Barlow.txt'),
+      ('Barlow Condensed', 'OFL-BarlowCondensed.txt'),
+    ]) {
+      final text = await rootBundle.loadString('assets/fonts/$file');
+      yield LicenseEntryWithLineBreaks([family], text);
+    }
+  });
 }
 
 /// Cloud backup is optional (feature 013): without configuration, or if

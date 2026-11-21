@@ -74,7 +74,7 @@ void main() {
   }
 
   Future<void> openLive(WidgetTester tester) async {
-    await tap(tester, find.text('CONTINUE WORKOUT'));
+    await tap(tester, find.text('Continue workout'));
   }
 
   Future<void> openMenu(WidgetTester tester) async {
@@ -151,11 +151,11 @@ void main() {
     });
     await pumpApp(tester);
     await openLive(tester);
-    await tap(tester, find.text('FINISH'));
+    await tap(tester, find.text('Finish'));
     expect(find.text('Workout complete'), findsOneWidget);
-    await tap(tester, find.text('RESUME WORKOUT'));
+    await tap(tester, find.text('Resume workout'));
     expect(find.text('Workout complete'), findsNothing);
-    expect(find.text('RESUME WORKOUT'), findsNothing);
+    expect(find.text('Resume workout'), findsNothing);
     expect(await tester.runAsync(repo.activeWorkout), isNotNull);
     await unmount(tester);
   });

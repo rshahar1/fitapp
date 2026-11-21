@@ -1,10 +1,11 @@
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// How long a [HoldButton] must be pressed.
 const holdDuration = Duration(seconds: 1);
 
-/// A 56 dp pill button of the live footer.
+/// A 56 dp square button of the live footer.
 class FooterButton extends StatelessWidget {
   const new({
     required this.label,
@@ -37,7 +38,7 @@ class FooterButton extends StatelessWidget {
         opacity: enabled ? 1 : 0.4,
         child: Material(
           color: primary ? AppColors.accent : AppColors.surfaceHigh,
-          shape: const StadiumBorder(),
+          shape: const RoundedRectangleBorder(),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onPressed,
@@ -52,13 +53,9 @@ class FooterButton extends StatelessWidget {
                     const SizedBox(width: Space.s),
                     Flexible(
                       child: Text(
-                        label.toUpperCase(),
+                        label,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: fg,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.8,
-                        ),
+                        style: context.plate.display(16, color: fg),
                       ),
                     ),
                   ],
@@ -157,7 +154,7 @@ class _HoldButtonState extends State<HoldButton>
           onPointerCancel: (_) => _up(cancelled: true),
           child: Material(
             color: AppColors.surfaceHigh,
-            shape: const StadiumBorder(),
+            shape: const RoundedRectangleBorder(),
             clipBehavior: Clip.antiAlias,
             child: SizedBox(
               height: Sizes.control,
@@ -186,12 +183,11 @@ class _HoldButtonState extends State<HoldButton>
                         const SizedBox(width: Space.s),
                         Flexible(
                           child: Text(
-                            widget.label.toUpperCase(),
+                            widget.label,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
+                            style: context.plate.display(
+                              16,
                               color: widget.color,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.8,
                             ),
                           ),
                         ),

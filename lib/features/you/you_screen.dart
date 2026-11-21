@@ -1,4 +1,5 @@
 import 'package:fitapp/app/router.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:go_router/go_router.dart';
@@ -23,19 +24,19 @@ class YouScreen extends StatelessWidget {
               children: [
                 GroupRow(
                   title: 'Gym Exercise Library',
-                  leading: const Icon(Icons.list_alt),
+                  leading: const Icon(AppIcons.listAlt),
                   showChevron: true,
                   onTap: () => context.push(Routes.exercises),
                 ),
                 GroupRow(
                   title: 'Gym Templates',
-                  leading: const Icon(Icons.view_list_outlined),
+                  leading: const Icon(AppIcons.list),
                   showChevron: true,
                   onTap: () => context.push(Routes.templates),
                 ),
                 GroupRow(
                   title: 'Settings',
-                  leading: const Icon(Icons.settings_outlined),
+                  leading: const Icon(AppIcons.settings),
                   showChevron: true,
                   onTap: () => context.push(Routes.settings),
                 ),

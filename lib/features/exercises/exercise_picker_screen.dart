@@ -1,3 +1,4 @@
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/data/db/app_database.dart';
@@ -62,13 +63,13 @@ class _ExercisePickerScreenState extends ConsumerState<ExercisePickerScreen> {
     final exercises = ref.watch(exercisesProvider(_query.trim()));
     final trimmed = _query.trim();
     return Scaffold(
-      backgroundColor: const Color(0x00000000),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text(
           widget.workoutId == null ? 'Choose exercise' : 'Add exercise',
         ),
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: const Icon(AppIcons.close),
           tooltip: 'Close',
           onPressed: () => Navigator.of(context).pop(),
         ),
@@ -82,7 +83,7 @@ class _ExercisePickerScreenState extends ConsumerState<ExercisePickerScreen> {
               textInputAction: TextInputAction.search,
               decoration: const InputDecoration(
                 hintText: 'Search exercises',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: Icon(AppIcons.search),
               ),
               onChanged: (v) => setState(() => _query = v),
             ),
@@ -91,7 +92,7 @@ class _ExercisePickerScreenState extends ConsumerState<ExercisePickerScreen> {
             child: exercises.when(
               loading: () => const SizedBox.shrink(),
               error: (e, _) => const EmptyState(
-                icon: Icons.error_outline,
+                icon: AppIcons.error,
                 title: 'Could not load exercises',
               ),
               data: (list) {
@@ -116,7 +117,7 @@ class _ExercisePickerScreenState extends ConsumerState<ExercisePickerScreen> {
                             GroupRow(
                               title: 'Create "$trimmed"',
                               leading: const Icon(
-                                Icons.add_circle_outline,
+                                AppIcons.addBox,
                                 color: AppColors.accent,
                               ),
                               onTap: _create,

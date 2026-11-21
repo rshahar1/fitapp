@@ -149,9 +149,8 @@ class _CompareRow extends StatelessWidget {
                               _minBar,
                               c.maxWidth,
                             ),
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               color: AppColors.accent,
-                              borderRadius: BorderRadius.circular(Radii.chip),
                             ),
                           ),
                         ),

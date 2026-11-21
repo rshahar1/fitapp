@@ -1,4 +1,5 @@
 import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/domain/stats.dart';
 import 'package:material_ui/material_ui.dart';
@@ -16,11 +17,10 @@ class DeltaBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = Theme.of(context).textTheme.labelMedium
-        ?.copyWith(fontWeight: FontWeight.w700, fontFeatures: tabular);
+    final style = context.plate.tag().copyWith(fontFeatures: tabular);
     final d = delta;
     if (d == null) {
-      return Text('—', style: style?.copyWith(color: AppColors.textSecondary));
+      return Text('—', style: style.copyWith(color: AppColors.textSecondary));
     }
     final pct = d.percent;
     final number = pct == null
@@ -32,20 +32,28 @@ class DeltaBadge extends StatelessWidget {
       Trend.same => ('–', AppColors.textSecondary),
     };
     final shown = d.trend == Trend.same && pct == null ? ' 0%' : number;
-    return Text.rich(
-      TextSpan(
-        children: [
-          TextSpan(
-            text: glyph,
-            style: TextStyle(color: c),
-          ),
-          TextSpan(
-            text: shown,
-            style: const TextStyle(color: AppColors.textSecondary),
-          ),
-        ],
+    final up = d.trend == Trend.up;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: up ? color : Colors.transparent,
+        border: up
+            ? null
+            : Border.all(
+                color: d.trend == Trend.down
+                    ? AppColors.danger
+                    : AppColors.textTertiary,
+              ),
       ),
-      style: style,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: Space.xs + Space.xxs,
+          vertical: Space.xxs,
+        ),
+        child: Text(
+          '$glyph$shown',
+          style: style.copyWith(color: up ? AppColors.onAccent : c),
+        ),
+      ),
     );
   }
 }

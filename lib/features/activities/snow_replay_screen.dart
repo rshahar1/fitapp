@@ -1,3 +1,4 @@
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/data/db/app_database.dart';
@@ -101,7 +102,7 @@ class _SnowReplayScreenState extends ConsumerState<SnowReplayScreen>
       body = const Center(child: CircularProgressIndicator());
     } else if (track == null) {
       body = const EmptyState(
-        icon: Icons.replay,
+        icon: AppIcons.replay,
         title: 'Replay not available',
         message: 'This run has no stored track to replay.',
       );
@@ -193,7 +194,7 @@ class _SnowReplayScreenState extends ConsumerState<SnowReplayScreen>
                   minHeight: Sizes.tap,
                 ),
                 color: AppColors.accent,
-                icon: Icon(_playing ? Icons.pause : Icons.play_arrow),
+                icon: Icon(_playing ? AppIcons.pause : AppIcons.play),
                 onPressed: _toggle,
               ),
               Expanded(

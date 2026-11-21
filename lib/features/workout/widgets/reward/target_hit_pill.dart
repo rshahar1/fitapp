@@ -1,3 +1,4 @@
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/features/workout/widgets/reward/muscle_figure.dart';
 import 'package:material_ui/material_ui.dart';
@@ -33,12 +34,9 @@ class TargetHitPill extends StatelessWidget {
           child: Container(
             height: 28,
             padding: const EdgeInsets.symmetric(horizontal: 10),
-            decoration: BoxDecoration(
-              color: AppColors.accent.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(Radii.pill),
-              border: Border.all(
-                color: AppColors.accent.withValues(alpha: 0.5),
-              ),
+            decoration: const BoxDecoration(
+              color: AppColors.accent,
+              borderRadius: BorderRadius.zero,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -54,8 +52,7 @@ class TargetHitPill extends StatelessWidget {
                     'Target hit · sets 1–2',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.labelMedium
-                        ?.copyWith(color: AppColors.accent, fontSize: 12),
+                    style: context.plate.tag(),
                   ),
                 ),
               ],

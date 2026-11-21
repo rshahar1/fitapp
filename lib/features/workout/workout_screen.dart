@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:fitapp/app/router.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
@@ -81,7 +82,7 @@ class _Missing extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(),
     body: EmptyState(
-      icon: Icons.fitness_center,
+      icon: AppIcons.gym,
       title: message,
       action: AppButton(
         label: 'Back to Home',
@@ -390,7 +391,7 @@ class _WorkoutView extends ConsumerWidget {
         actions: [
           if (!isLive) ...[
             IconButton(
-              icon: Icon(editing ? Icons.check : Icons.edit_outlined),
+              icon: Icon(editing ? AppIcons.check : AppIcons.edit),
               tooltip: editing ? 'Done editing' : 'Edit workout',
               onPressed: () {
                 ref.read(hapticsProvider).tick();
@@ -398,7 +399,7 @@ class _WorkoutView extends ConsumerWidget {
               },
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline),
+              icon: const Icon(AppIcons.delete),
               color: AppColors.danger,
               tooltip: 'Delete workout',
               onPressed: () => _delete(context, ref),
@@ -415,11 +416,11 @@ class _WorkoutView extends ConsumerWidget {
               },
               itemBuilder: (_) => [
                 if (readOnly)
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'share',
                     child: ListTile(
-                      leading: Icon(Icons.adaptive.share),
-                      title: const Text('Share'),
+                      leading: Icon(AppIcons.share),
+                      title: Text('Share'),
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),
@@ -545,7 +546,7 @@ class _WorkoutView extends ConsumerWidget {
             if (!readOnly)
               AppButton(
                 label: 'Add Exercise',
-                icon: Icons.add,
+                icon: AppIcons.add,
                 variant: AppButtonVariant.secondary,
                 expand: true,
                 onPressed: () => context.push(Routes.addExercise(w.id)),

@@ -1,7 +1,8 @@
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Wrap of pill chips with a single selection.
+/// Wrap of tape-label chips with a single selection.
 class ChipSelector<T> extends StatelessWidget {
   /// Creates a selector.
   const new({
@@ -61,8 +62,15 @@ class _Chip extends StatelessWidget {
       excludeSemantics: true,
       onTap: onTap,
       child: Material(
-        color: isSelected ? AppColors.accent : AppColors.surfaceHigh,
-        shape: const StadiumBorder(),
+        color: isSelected ? AppColors.accent : Colors.transparent,
+        shape: RoundedRectangleBorder(
+          side: isSelected
+              ? BorderSide.none
+              : const BorderSide(
+                  color: AppColors.textTertiary,
+                  width: Strokes.outline,
+                ),
+        ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
@@ -77,11 +85,10 @@ class _Chip extends StatelessWidget {
                 widthFactor: 1,
                 child: Text(
                   label,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
+                  style: context.plate.tag(
                     color: isSelected
                         ? AppColors.onAccent
-                        : AppColors.textPrimary,
+                        : AppColors.textSecondary,
                   ),
                 ),
               ),

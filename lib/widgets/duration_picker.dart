@@ -1,4 +1,5 @@
-import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/core/haptics.dart';
@@ -63,12 +64,12 @@ class DurationPicker extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label.toUpperCase(), style: text.labelSmall),
+        Text(label, style: text.labelSmall),
         const SizedBox(height: Space.s),
         Row(
           children: [
             _StepButton(
-              icon: Icons.remove,
+              icon: AppIcons.remove,
               semanticLabel: 'Decrease $label',
               onPressed: canDec ? () => _set(ref, minutes - 5) : null,
             ),
@@ -89,9 +90,7 @@ class DurationPicker extends ConsumerWidget {
                         child: Text(
                           shown,
                           textAlign: TextAlign.center,
-                          style: text.headlineMedium?.copyWith(
-                            fontFeatures: tabular,
-                          ),
+                          style: context.plate.number(34),
                         ),
                       ),
                     ),
@@ -100,7 +99,7 @@ class DurationPicker extends ConsumerWidget {
               ),
             ),
             _StepButton(
-              icon: Icons.add,
+              icon: AppIcons.add,
               semanticLabel: 'Increase $label',
               onPressed: canInc ? () => _set(ref, minutes + 5) : null,
             ),
@@ -152,9 +151,7 @@ class _StepButton extends StatelessWidget {
       onTap: onPressed,
       child: Material(
         color: AppColors.surfaceHigh,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(Radii.chip)),
-        ),
+        shape: const RoundedRectangleBorder(),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onPressed,
@@ -211,7 +208,7 @@ class _WheelSheetState extends State<_WheelSheet> {
     required String unit,
     required ValueChanged<int> onSelected,
   }) {
-    final style = Theme.of(context).textTheme.titleLarge;
+    final style = context.plate.number(28);
     return Expanded(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,

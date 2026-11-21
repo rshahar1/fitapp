@@ -354,7 +354,7 @@ class _FireworkPainter extends CustomPainter {
     _ring(canvas);
     final paint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
+      ..strokeCap = StrokeCap.square
       ..blendMode = BlendMode.plus;
     for (final s in sparks) {
       final n = s.stepsAt(ms);
@@ -377,9 +377,8 @@ class _FireworkPainter extends CustomPainter {
   void _ring(Canvas canvas) {
     final k = (ms - BurstTimeline.mainBurst) / BurstTimeline.ring;
     if (k < 0 || k > 1) return;
-    canvas.drawCircle(
-      Offset.zero,
-      10 + k * 75,
+    canvas.drawRect(
+      Rect.fromCircle(center: Offset.zero, radius: 10 + k * 75),
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3 * (1 - k) + 0.5

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' show DatabaseConnection, driftRuntimeOptions;
 import 'package:drift/native.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/core/step_source.dart';
@@ -9,6 +10,7 @@ import 'package:fitapp/data/repositories/activity_repository.dart';
 import 'package:fitapp/data/repositories/workout_repository.dart';
 import 'package:fitapp/features/train/train_screen.dart';
 import 'package:fitapp/widgets/app_button.dart';
+import 'package:fitapp/widgets/rec_dot.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -69,7 +71,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     final steps = tester.getTopLeft(find.text('Steps today')).dy;
-    final metrics = tester.getTopLeft(find.text('THIS WEEK')).dy;
+    final metrics = tester.getTopLeft(find.text('This week')).dy;
     expect(steps, lessThan(metrics));
     await unmount(tester);
   });
@@ -78,7 +80,7 @@ void main() {
     await pump(tester);
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('Ready to train?'), findsNothing);
-    expect(find.text('START GYM WORKOUT'), findsNothing);
+    expect(find.text('Start gym workout'), findsNothing);
     expect(find.text('No workouts yet'), findsOneWidget);
     expect(find.text('0'), findsNWidgets(3));
     await unmount(tester);
@@ -107,11 +109,12 @@ void main() {
     await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     await tester.pumpAndSettle();
     expect(find.text('Workout in progress'), findsOneWidget);
-    expect(find.text('CONTINUE WORKOUT'), findsOneWidget);
-    expect(find.text('● LIVE'), findsOneWidget);
+    expect(find.text('Continue workout'), findsOneWidget);
+    expect(find.text('LIVE'), findsOneWidget);
+    expect(find.byType(RecDot), findsOneWidget);
     final button = tester.widget<AppButton>(find.byType(AppButton));
     expect(button.variant, AppButtonVariant.live);
-    expect(button.icon, Icons.play_arrow);
+    expect(button.icon, AppIcons.play);
     await unmount(tester);
   });
 
@@ -124,9 +127,9 @@ void main() {
 
   testWidgets('empty db: ALL TIME tile, no BY TYPE section', (tester) async {
     await pump(tester);
-    expect(find.text('ALL TIME'), findsOneWidget);
-    expect(find.text('TOTAL WORKOUTS'), findsNothing);
-    expect(find.text('BY TYPE'), findsNothing);
+    expect(find.text('All time'), findsOneWidget);
+    expect(find.text('Total workouts'), findsNothing);
+    expect(find.text('By type'), findsNothing);
     await unmount(tester);
   });
 
@@ -145,7 +148,7 @@ void main() {
     await pump(tester);
     await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     await tester.pumpAndSettle();
-    expect(find.text('BY TYPE'), findsOneWidget);
+    expect(find.text('By type'), findsOneWidget);
     expect(find.text('Gym'), findsOneWidget);
     // By type row plus the activity's Recent row (feature 028).
     expect(find.text('Cycling'), findsNWidgets(2));
@@ -170,7 +173,7 @@ void main() {
     await pump(tester);
     await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     await tester.pumpAndSettle();
-    expect(find.text('BY TYPE'), findsNothing);
+    expect(find.text('By type'), findsNothing);
     expect(find.text('0 this week'), findsNothing);
     await unmount(tester);
   });

@@ -1,4 +1,5 @@
-import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/core/haptics.dart';
@@ -62,13 +63,13 @@ class AppStepper extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label.toUpperCase(), style: text.labelSmall),
+        Text(label, style: text.labelSmall),
         const SizedBox(height: Space.s),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _StepButton(
-              icon: Icons.remove,
+              icon: AppIcons.remove,
               semanticLabel: 'Decrease $label',
               onPressed: canDec ? () => _change(ref, -step) : null,
             ),
@@ -80,12 +81,12 @@ class AppStepper extends ConsumerWidget {
                 child: Text(
                   unit == null ? shown : '$shown $unit',
                   textAlign: TextAlign.center,
-                  style: text.headlineMedium?.copyWith(fontFeatures: tabular),
+                  style: context.plate.number(34),
                 ),
               ),
             ),
             _StepButton(
-              icon: Icons.add,
+              icon: AppIcons.add,
               semanticLabel: 'Increase $label',
               onPressed: canInc ? () => _change(ref, step) : null,
             ),
@@ -117,9 +118,7 @@ class _StepButton extends StatelessWidget {
       onTap: onPressed,
       child: Material(
         color: AppColors.surfaceHigh,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(Radii.chip)),
-        ),
+        shape: const RoundedRectangleBorder(),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onPressed,

@@ -89,8 +89,8 @@ void main() {
     await pumpScreen(tester);
 
     expect(find.text('History'), findsOneWidget);
-    expect(find.text('NOVEMBER 2026'), findsOneWidget);
-    expect(find.text('OCTOBER 2026'), findsOneWidget);
+    expect(find.text('November 2026'), findsOneWidget);
+    expect(find.text('October 2026'), findsOneWidget);
     expect(find.text('Incline Dumbbell Bench Press'), findsOneWidget);
     expect(find.text('Lat Pulldown'), findsOneWidget);
     expect(find.text('1,070 kg'), findsOneWidget);

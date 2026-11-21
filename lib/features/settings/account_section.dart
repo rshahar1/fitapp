@@ -1,4 +1,5 @@
 import 'package:fitapp/app/router.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/sync/account_service.dart';
@@ -121,7 +122,7 @@ class _AccountSectionState extends ConsumerState<AccountSection> {
       children: [
         AppButton(
           label: _signingIn ? 'Signing in…' : 'Sign in with Google',
-          icon: Icons.login,
+          icon: AppIcons.login,
           expand: true,
           onPressed: _signingIn ? null : () => _signIn(service),
         ),
@@ -145,7 +146,7 @@ class _AccountSectionState extends ConsumerState<AccountSection> {
       subtitle: subtitle,
       onTap: onTap,
       trailing: danger
-          ? const Icon(Icons.delete_outline, color: AppColors.danger)
+          ? const Icon(AppIcons.delete, color: AppColors.danger)
           : null,
     );
   }

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:flutter/foundation.dart' show immutable, listEquals;
 import 'package:flutter_map/flutter_map.dart';
@@ -283,6 +284,8 @@ class _TileMapState extends State<_TileMap> {
               Polyline(
                 points: widget.route,
                 strokeWidth: Sizes.routeStroke,
+                strokeCap: StrokeCap.square,
+                strokeJoin: StrokeJoin.miter,
                 color: AppColors.accent,
                 // Light tiles need an edge to keep the line readable.
                 borderStrokeWidth: _edge,
@@ -294,6 +297,8 @@ class _TileMapState extends State<_TileMap> {
                   Polyline(
                     points: pts,
                     strokeWidth: Sizes.routeStroke,
+                    strokeCap: StrokeCap.square,
+                    strokeJoin: StrokeJoin.miter,
                     color: span.color,
                     borderStrokeWidth: _edge,
                     borderColor: AppColors.background,
@@ -333,7 +338,7 @@ class _TileMapState extends State<_TileMap> {
             visualDensity: VisualDensity.compact,
             iconSize: 18,
             color: AppColors.textSecondary,
-            icon: const Icon(Icons.info_outline),
+            icon: const Icon(AppIcons.info),
             onPressed: open,
           ),
           closeButton: (context, close) => IconButton(
@@ -341,7 +346,7 @@ class _TileMapState extends State<_TileMap> {
             visualDensity: VisualDensity.compact,
             iconSize: 18,
             color: AppColors.textSecondary,
-            icon: const Icon(Icons.close),
+            icon: const Icon(AppIcons.close),
             onPressed: close,
           ),
         ),
@@ -367,13 +372,11 @@ class _Dot extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: color,
-          shape: kind == RouteMarkerKind.km
-              ? BoxShape.rectangle
-              : BoxShape.circle,
-          borderRadius: kind == RouteMarkerKind.km
-              ? const BorderRadius.all(Radius.circular(Radii.chip))
-              : null,
-          border: Border.all(),
+
+          border: Border.all(
+            color: AppColors.background,
+            width: Strokes.outline,
+          ),
         ),
         child: SizedBox(
           width: kind == RouteMarkerKind.km ? null : Sizes.mapMarker,
@@ -456,8 +459,8 @@ class _RoutePainter extends CustomPainter {
           ..color = color
           ..style = PaintingStyle.stroke
           ..strokeWidth = Sizes.routeStroke
-          ..strokeCap = StrokeCap.round
-          ..strokeJoin = StrokeJoin.round,
+          ..strokeCap = StrokeCap.square
+          ..strokeJoin = StrokeJoin.miter,
       );
     }
 
@@ -467,13 +470,14 @@ class _RoutePainter extends CustomPainter {
       line(spanPoints(route, span), span.color);
     }
     void dot(LatLng p, Color color) {
+      Rect square(double half) =>
+          Rect.fromCenter(center: at(p), width: half * 2, height: half * 2);
       canvas
-        ..drawCircle(
-          at(p),
-          Sizes.mapMarker / 2 + 2,
+        ..drawRect(
+          square(Sizes.mapMarker / 2 + 2),
           Paint()..color = AppColors.background,
         )
-        ..drawCircle(at(p), Sizes.mapMarker / 2, Paint()..color = color);
+        ..drawRect(square(Sizes.mapMarker / 2), Paint()..color = color);
     }
 
     if (route.isNotEmpty) dot(route.first, AppColors.textPrimary);

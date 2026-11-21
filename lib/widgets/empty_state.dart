@@ -35,7 +35,7 @@ class EmptyState extends StatelessWidget {
           children: [
             Icon(icon, size: Space.xxl, color: AppColors.textTertiary),
             const SizedBox(height: Space.m),
-            Text(title, style: text.titleMedium, textAlign: TextAlign.center),
+            Text(title, style: text.titleLarge, textAlign: TextAlign.center),
             if (message != null) ...[
               const SizedBox(height: Space.s),
               Text(

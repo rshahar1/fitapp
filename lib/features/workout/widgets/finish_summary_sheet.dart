@@ -1,3 +1,4 @@
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/data/models.dart';
@@ -73,7 +74,7 @@ Future<FinishChoice> showFinishSummary(
           const SizedBox(height: Space.s),
           AppButton(
             label: 'Share workout',
-            icon: Icons.adaptive.share,
+            icon: AppIcons.share,
             expand: true,
             variant: AppButtonVariant.secondary,
             onPressed: () => Navigator.of(context).pop(FinishChoice.share),

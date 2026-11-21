@@ -1,5 +1,7 @@
 import 'package:fitapp/app/router.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/data/db/app_database.dart';
@@ -35,7 +37,7 @@ class ExerciseDetailScreen extends ConsumerWidget {
           actions: [
             if (exercise != null && exercise.isCustom)
               IconButton(
-                icon: const Icon(Icons.edit_outlined),
+                icon: const Icon(AppIcons.edit),
                 tooltip: 'Edit exercise',
                 onPressed: () =>
                     showCustomExerciseSheet(context, existing: exercise),
@@ -200,7 +202,7 @@ class _SummaryTabState extends State<_SummaryTab> {
         _PlanCard(exercise: widget.exercise, plan: widget.plan),
         if (!has)
           const EmptyState(
-            icon: Icons.show_chart,
+            icon: AppIcons.chart,
             title: 'No sessions yet',
             message: 'Finish a workout with this exercise to see progress.',
           ),
@@ -235,6 +237,8 @@ class _ChartCard extends StatelessWidget {
       _Metric.oneRm => ([for (final s in recent) s.best1RM], m.reps),
     };
     return AppCard(
+      topRule: true,
+      topRuleColor: AppColors.info,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -285,21 +289,15 @@ class _PrBadge extends StatelessWidget {
       excludeSemantics: true,
       child: DecoratedBox(
         decoration: const ShapeDecoration(
-          color: AppColors.accentSoft,
-          shape: StadiumBorder(),
+          color: AppColors.accent,
+          shape: RoundedRectangleBorder(),
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: Space.s + Space.xs,
             vertical: Space.xs,
           ),
-          child: Text(
-            'PR · $label',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppColors.accent,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          child: Text('PR · $label', style: context.plate.tag()),
         ),
       ),
     );
@@ -321,7 +319,7 @@ class _CompareCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label.toUpperCase(), style: text.labelSmall),
+          Text(label, style: text.labelSmall),
           const SizedBox(height: Space.xs),
           DeltaBadge(delta: d, color: c),
         ],
@@ -425,7 +423,7 @@ class _HistoryTab extends StatelessWidget {
   Widget build(BuildContext context) {
     if (sessions.isEmpty) {
       return const EmptyState(
-        icon: Icons.history,
+        icon: AppIcons.history,
         title: 'No sessions yet',
         message: 'Finished sessions show up here.',
       );
@@ -450,7 +448,7 @@ class _SessionCard extends StatelessWidget {
     final m = context.metrics;
     final date = formatDateShort(session.date.toLocal());
     final sets = [...session.sets]..sort((a, b) => a.setNo.compareTo(b.setNo));
-    final numbers = text.bodyLarge?.copyWith(fontFeatures: tabular);
+    final numbers = context.plate.number(20);
     return AppCard(
       onTap: () => context.push(Routes.finishedWorkout(session.workoutId)),
       child: Column(
@@ -471,14 +469,14 @@ class _SessionCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Text('${s.reps}', style: numbers?.copyWith(color: m.reps)),
+                  Text('${s.reps}', style: numbers.copyWith(color: m.reps)),
                   const SizedBox(width: Space.l),
                   SizedBox(
                     width: Space.xxl + Space.l,
                     child: Text(
                       formatKg(s.weight),
                       textAlign: TextAlign.end,
-                      style: numbers?.copyWith(color: m.weight),
+                      style: numbers.copyWith(color: m.weight),
                     ),
                   ),
                 ],

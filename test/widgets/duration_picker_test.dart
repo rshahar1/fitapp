@@ -1,3 +1,4 @@
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/widgets/widgets.dart';
@@ -60,13 +61,13 @@ void main() {
 
   testWidgets('plus and minus step by 5 and clamp', (tester) async {
     await tester.pumpWidget(_app(const _Harness(initial: 7, max: 10)));
-    await tester.tap(find.byIcon(Icons.remove));
+    await tester.tap(find.byIcon(AppIcons.remove));
     await tester.pump();
     expect(_value('5 min'), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.tap(find.byIcon(AppIcons.add));
     await tester.pump();
     expect(_value('10 min'), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.add), warnIfMissed: false);
+    await tester.tap(find.byIcon(AppIcons.add), warnIfMissed: false);
     await tester.pump();
     expect(_value('10 min'), findsOneWidget);
   });
@@ -86,7 +87,7 @@ void main() {
       const Offset(0, -44),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('DONE'));
+    await tester.tap(find.text('Done'));
     await tester.pumpAndSettle();
     expect(_value('2 h 35 min'), findsOneWidget);
   });
@@ -97,7 +98,7 @@ void main() {
     await tester.pumpWidget(_app(const _Harness(initial: 47)));
     await tester.tap(find.byKey(const Key('duration-value')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('DONE'));
+    await tester.tap(find.text('Done'));
     await tester.pumpAndSettle();
     expect(_value('45 min'), findsOneWidget);
   });

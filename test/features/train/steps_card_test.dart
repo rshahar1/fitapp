@@ -69,7 +69,7 @@ void main() {
     source.distanceGranted = false;
     await pump(tester);
     expect(find.text('1,234'), findsOneWidget);
-    expect(find.textContaining(' km'), findsNothing);
+    expect(find.textContaining(RegExp(r'\d km')), findsNothing);
     expect(find.byType(AppButton), findsOneWidget);
     source.meters = 2500;
     await tester.tap(find.byType(AppButton));
@@ -110,7 +110,7 @@ void main() {
     await pump(tester);
     expect(find.text('Steps today'), findsNothing);
     expect(find.byType(Card), findsNothing);
-    expect(find.text('CONNECT'), findsNothing);
+    expect(find.text('Connect'), findsNothing);
     await unmount(tester);
   });
 
@@ -124,7 +124,7 @@ void main() {
   testWidgets('needsInstall offers Health Connect', (tester) async {
     source.state = StepAccess.needsInstall;
     await pump(tester);
-    await tester.tap(find.text('GET HEALTH CONNECT'));
+    await tester.tap(find.text('Get Health Connect'));
     await tester.pumpAndSettle();
     expect(source.calls, ['install']);
     await unmount(tester);
@@ -135,7 +135,7 @@ void main() {
     source.state = StepAccess.notGranted;
     await pump(tester);
     expect(find.text('See your daily steps from Google Fit'), findsOneWidget);
-    await tester.tap(find.text('CONNECT'));
+    await tester.tap(find.text('Connect'));
     await tester.pumpAndSettle();
     expect(source.calls, ['request']);
     await unmount(tester);
@@ -147,7 +147,7 @@ void main() {
     source.state = StepAccess.notGranted;
     await pump(tester);
     expect(find.text('Show your daily steps and distance?'), findsOneWidget);
-    await tester.tap(find.text('NOT NOW'));
+    await tester.tap(find.text('Not now'));
     await tester.pumpAndSettle();
     expect(find.text('Show your daily steps and distance?'), findsNothing);
     expect(source.calls, isEmpty);
@@ -162,7 +162,7 @@ void main() {
   testWidgets('intro sheet: Connect requests access', (tester) async {
     source.state = StepAccess.notGranted;
     await pump(tester);
-    await tester.tap(find.text('CONNECT').last);
+    await tester.tap(find.text('Connect').last);
     await tester.pumpAndSettle();
     expect(source.calls, ['request']);
     expect(await tester.runAsync(settings.stepsIntroShown), isTrue);

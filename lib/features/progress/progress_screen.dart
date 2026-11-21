@@ -1,5 +1,7 @@
 import 'package:fitapp/app/router.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/data/models.dart';
@@ -33,7 +35,7 @@ class ProgressScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('WORKOUTS PER WEEK', style: text.labelSmall),
+                  Text('Workouts per week', style: text.labelSmall),
                   const SizedBox(height: Space.m),
                   weekly.when(
                     loading: () => const SizedBox(
@@ -58,7 +60,7 @@ class ProgressScreen extends ConsumerWidget {
               error: (_, _) => const Text('Could not load exercises.'),
               data: (items) => items.isEmpty
                   ? const EmptyState(
-                      icon: Icons.show_chart,
+                      icon: AppIcons.chart,
                       title: 'Nothing trained yet',
                       message: 'Finish a workout to see your progress here.',
                     )
@@ -92,8 +94,7 @@ class _ExerciseRow extends StatelessWidget {
         subtitle: 'Last: $last',
         trailing: Text(
           weight,
-          style: Theme.of(context).textTheme.bodyLarge
-              ?.copyWith(color: context.metrics.weight, fontFeatures: tabular),
+          style: context.plate.number(20, color: context.metrics.weight),
         ),
         showChevron: true,
         onTap: () => context.push(Routes.exercise(item.exercise.id)),

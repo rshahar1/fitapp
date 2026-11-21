@@ -1,3 +1,4 @@
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart' show formatActivityMinutes;
@@ -96,7 +97,7 @@ class SnowDaySection extends ConsumerWidget {
           SnowCompare(descents: descents, onReplay: replay),
         ],
         const SizedBox(height: Space.l),
-        Text('TIMELINE', style: text.labelSmall),
+        Text('Timeline', style: text.labelSmall),
         const SizedBox(height: Space.s),
         SnowTimeline(
           startedAt: activity.startedAt,
@@ -117,13 +118,10 @@ class _StyleMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        shape: BoxShape.circle,
-      ),
+      decoration: const BoxDecoration(color: AppColors.surface),
       child: PopupMenuButton<MapStyle>(
         tooltip: 'Map style',
-        icon: const Icon(Icons.layers_outlined),
+        icon: const Icon(AppIcons.layers),
         onSelected: onChoose,
         itemBuilder: (context) => [
           for (final s in MapStyle.values)
@@ -159,10 +157,7 @@ class _HeatLegend extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: AppColors.heat[i],
-                      shape: BoxShape.circle,
-                    ),
+                    decoration: BoxDecoration(color: AppColors.heat[i]),
                     child: const SizedBox.square(dimension: Space.s),
                   ),
                   const SizedBox(width: Space.xs),

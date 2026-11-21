@@ -101,8 +101,8 @@ class _ThumbnailPainter extends CustomPainter {
         ..color = AppColors.accent
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round,
+        ..strokeCap = StrokeCap.square
+        ..strokeJoin = StrokeJoin.miter,
     );
   }
 

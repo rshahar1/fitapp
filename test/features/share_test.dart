@@ -310,7 +310,8 @@ void main() {
       expect(urls, isNotEmpty);
       expect(urls.first.path, contains('/dataviz-dark/256/'));
       expect(urls.first.path, endsWith('@2x.png'));
-      expect(find.text('© MapTiler © OpenStreetMap'), findsOneWidget);
+      expect(find.text('© MapTiler © OpenStreetMap'), findsNothing);
+      expect(find.textContaining('MapTiler'), findsNothing);
       expect(
         find.byWidgetPredicate(
           (w) => w is CustomPaint && w.painter is ShareTilesPainter,

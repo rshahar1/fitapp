@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.21, 21 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.22, 21 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -417,9 +417,11 @@ back to the exercise plan.
   "<Workout|Running|Cycling|Snowboarding> in progress. Finish it first." with **Open**. Logging a past session is never blocked.
 - Home stats and Recent are unchanged (a later slice reworks them). Details: `specs/011-start-hub/` and `docs/ux/unified-start-proposal.md`.
 
-### 5.11 Sharing a session as an image (features 027, 029, 030, 032, 035)
+### 5.11 Sharing a session as an image (features 027, 029, 030, 032, 035, 036)
 - **Share action:** every finished gym workout and every activity (running, cycling, snowboarding, functional training, Pilates; GPS and manual)
-  has **Share** as an item in the ⋮ overflow menu of `/activity/:id` and `/workout/:id` (finished, not editing; no app-bar icon), plus a
+  has **Share** as an item in the ⋮ overflow menu of `/activity/:id` and `/workout/:id` (finished, not editing; no app-bar icon), next to **Edit** and
+  **Delete** (danger colour, last), which live in the same menu with no app-bar buttons (feature 036; while a gym workout is being
+  edited only a "Done editing" check stays in the app bar), plus a
   **Share workout** button on the gym finish summary. Every share control uses the platform-adaptive share glyph (Material share on Android) (feature 029).
 - **Preview screen** (`/share/workout/:id`, `/share/activity/:id`) shows a 1080×1350 PNG card in the dark style, tailored per type:
   run and ride: route drawn over map tiles (feature 035) with distance, pace, speed, duration, moving time, climb and best km; snowboarding day: speed-heat route,
@@ -432,7 +434,7 @@ back to the exercise plan.
   The preview captures the session as it was when opened (later database updates are ignored), waits for a painted frame and never shares a blank
   image: a blank capture is retried up to 3 times, otherwise the app shows "Could not share the image." and sends nothing.
 - **Map behind the route (feature 035):** route and snow cards draw MapTiler raster tiles (@2x) of the route's area under the route, fitted in one Web Mercator
-  projection (zoom 3 to 17), with a "© MapTiler © OpenStreetMap" credit; runs and rides use the Dark style, snowboarding the chosen map style. The preview
+  projection (zoom 3 to 17), with no credit text on the image (feature 036; the in-app maps keep their attribution); runs and rides use the Dark style, snowboarding the chosen map style. The preview
   waits for the tiles (at most 8 s; "Preparing…") before it can share; without a key, network or tiles the route is drawn on the plain background as before.
   Only tile requests leave the device, as for the in-app maps.
 - Pure logic lives in `lib/domain/share/` (`share_card.dart`, `route_projection.dart`, `map_tiles.dart`), the sharer in `lib/core/image_sharer.dart`, UI in `lib/features/share/`.
@@ -754,6 +756,7 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 | Progress bars use the same Sunday-to-Saturday weeks as Train, labelled by the week's Sunday date instead of ISO week numbers | Owner's decision (20 Nov 2026, feature 026, "Yes, align it"); one week definition across the app |
 | Share a finished session as a 1080×1350 image through the OS share sheet; no social features, nothing sent by the app, notes never on the image | Owner's decision (20 Nov 2026, feature 027); image export is not a social feature |
 | Share lives in the ⋮ menu with the platform-adaptive share icon; the gym card lists every exercise (taller card, columns, smaller rows) and durations are balanced with other stats | Owner's decision (21 Nov 2026, feature 029 review of 027); cleaner app bars, no hidden exercises, readable durations |
+| Edit and Delete join Share in the ⋮ menu of activity and finished workout detail; the share image shows no MapTiler / OpenStreetMap credit | Owner's decision (21 Nov 2026, feature 036); cleaner app bar and image. MapTiler and OSM terms ask for attribution on shared maps: accepted by the owner |
 | Distinct icons per row in History, including a dumbbell for gym workouts | Owner's decision (13 Nov 2026); tell sports and gym apart at a glance |
 | Resume any finished workout, discard live workouts, backdate gym sessions | Owner's decision (13 Nov 2026); a backdated or older session never rewrites a plan's base |
 | Exercises library with custom categories; History calendar | Owner's decision (13 Nov 2026); browse and edit exercises, review training by day |
@@ -845,3 +848,5 @@ resolved on 12 Nov 2026; see the decisions log.
 - **2.21 (21 Nov 2026):** feature 035 (owner request of 21 Nov 2026). Run, ride and snowboarding share images draw the route over
   real map tiles with a MapTiler / OpenStreetMap credit (section 5.11). Home drops the "By type" header, and gym rows under Recent
   show only the date and template name (section 5.5).
+- **2.22 (21 Nov 2026):** feature 036 (owner request of 21 Nov 2026). The route share image no longer prints the MapTiler /
+  OpenStreetMap credit, and Edit and Delete move into the ⋮ menu of the activity and finished workout screens (sections 5.11, 15).

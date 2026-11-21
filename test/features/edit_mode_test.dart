@@ -155,6 +155,13 @@ void main() {
     return env;
   }
 
+  Future<void> menuTap(WidgetTester tester, String item) async {
+    await tester.tap(find.byTooltip('Workout options'));
+    await _settle(tester);
+    await tester.tap(find.text(item));
+    await _settle(tester);
+  }
+
   testWidgets('edit latest: 9 reps -> base 20, back to 10 -> 22.5 (§11.5)', (
     tester,
   ) async {
@@ -163,8 +170,7 @@ void main() {
       () => env.finished([(20, 10), (20, 10), (22.5, 6)]),
     ))!;
     await _open(tester, env, id);
-    await tester.tap(find.byTooltip('Edit workout'));
-    await _settle(tester);
+    await menuTap(tester, 'Edit workout');
     expect(find.text('Changes save automatically'), findsOneWidget);
 
     await _editSet2Reps(tester, increase: false);
@@ -190,8 +196,14 @@ void main() {
     expect(find.text('Add Exercise'), findsNothing);
     expect(find.text('Add Set'), findsNothing);
     expect(find.byTooltip(RegExp('^Exercise options')), findsNothing);
-    expect(find.byTooltip('Edit workout'), findsOneWidget);
-    expect(find.byTooltip('Delete workout'), findsOneWidget);
+    expect(find.byTooltip('Edit workout'), findsNothing);
+    expect(find.byTooltip('Delete workout'), findsNothing);
+    await tester.tap(find.byTooltip('Workout options'));
+    await _settle(tester);
+    expect(find.text('Edit workout'), findsOneWidget);
+    expect(find.text('Delete workout'), findsOneWidget);
+    await tester.tapAt(const Offset(1, 1)); // dismiss the menu
+    await _settle(tester);
     // No footer: no Done, Resume or Delete buttons at the bottom.
     expect(find.text('Done'), findsNothing);
     expect(find.text('Resume'), findsNothing);
@@ -200,11 +212,15 @@ void main() {
     await _settle(tester);
     expect(find.text('Update'), findsNothing);
 
-    await tester.tap(find.byTooltip('Edit workout'));
-    await _settle(tester);
+    await menuTap(tester, 'Edit workout');
     expect(find.text('Changes save automatically'), findsOneWidget);
     expect(find.text('Add Exercise'), findsOneWidget);
     expect(find.byTooltip('Done editing'), findsOneWidget);
+    await tester.tap(find.byTooltip('Workout options'));
+    await _settle(tester);
+    expect(find.text('Edit workout'), findsNothing);
+    await tester.tapAt(const Offset(1, 1));
+    await _settle(tester);
 
     await tester.tap(find.byTooltip('Done editing'));
     await _settle(tester);
@@ -226,7 +242,7 @@ void main() {
     await tester.tap(find.byTooltip('Workout options'));
     await _settle(tester);
     expect(find.text('Resume workout'), findsOneWidget);
-    expect(find.byTooltip('Delete workout'), findsOneWidget);
+    expect(find.text('Delete workout'), findsOneWidget);
     await _dispose(tester, env);
   });
 
@@ -255,15 +271,13 @@ void main() {
       () => env.finished([(20, 10), (20, 10), (22.5, 6)]),
     ))!;
     await _open(tester, env, id);
-    await tester.tap(find.byTooltip('Delete workout'));
-    await _settle(tester);
+    await menuTap(tester, 'Delete workout');
     expect(find.text('Delete workout?'), findsOneWidget);
     await tester.tap(find.text('Cancel'));
     await _settle(tester);
     expect(await tester.runAsync(env.base), 22.5);
 
-    await tester.tap(find.byTooltip('Delete workout'));
-    await _settle(tester);
+    await menuTap(tester, 'Delete workout');
     await tester.tap(find.widgetWithText(TextButton, 'Delete'));
     await _settle(tester);
     expect(await tester.runAsync(env.base), 20);

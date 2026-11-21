@@ -357,8 +357,6 @@ class _RouteBox extends StatelessWidget {
             children: [
               if (tiles != null) CustomPaint(painter: ShareTilesPainter(tiles)),
               CustomPaint(painter: painter),
-              if (tiles != null)
-                const Positioned(right: 0, bottom: 0, child: ShareMapCredit()),
             ],
           ),
         ),

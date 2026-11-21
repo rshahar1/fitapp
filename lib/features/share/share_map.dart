@@ -180,24 +180,3 @@ class ShareTilesPainter extends CustomPainter {
   @override
   bool shouldRepaint(ShareTilesPainter old) => !identical(old.map, map);
 }
-
-/// The tile provider's credit, required on every image that shows tiles.
-class ShareMapCredit extends StatelessWidget {
-  const new({super.key});
-
-  @override
-  Widget build(BuildContext context) => ColoredBox(
-    color: AppColors.background.withValues(alpha: 0.75),
-    child: const Padding(
-      padding: EdgeInsets.symmetric(horizontal: Space.xs, vertical: 1),
-      child: Text(
-        '© MapTiler © OpenStreetMap',
-        style: TextStyle(
-          fontSize: ShareCardSize.minText,
-          color: AppColors.textSecondary,
-          height: 1.2,
-        ),
-      ),
-    ),
-  );
-}

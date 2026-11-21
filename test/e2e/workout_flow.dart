@@ -58,6 +58,7 @@ Future<void> runWorkoutFlow(
     await settle();
   }
 
+  await tap(find.byTooltip('Go'));
   await tap(find.bySemanticsLabel('Start Push template'));
   await tap(find.text('ADD EXERCISE'));
   await tap(find.text('Incline Dumbbell Bench Press'));

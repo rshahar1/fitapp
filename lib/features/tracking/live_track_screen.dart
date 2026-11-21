@@ -30,7 +30,7 @@ bool usesSpeed(String typeId) => typeId == 'cycling';
 LatLng toLatLng(GeoPoint p) => LatLng(p.lat, p.lon);
 
 /// The full-screen live tracking screen. Leaving it (back) keeps the session
-/// running; Train shows a banner to return.
+/// running; Home shows a banner to return.
 class LiveTrackScreen extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -93,7 +93,7 @@ class _LiveTrackScreenState extends ConsumerState<LiveTrackScreen> {
                 icon: Icons.directions_run,
                 title: 'No activity in progress.',
                 action: AppButton(
-                  label: 'Back to Train',
+                  label: 'Back to Home',
                   onPressed: () => context.go(Routes.train),
                 ),
               ),

@@ -6,16 +6,16 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Bottom bar with five slots (PRD §6, feature 011):
-/// `Train · History · [+] · Progress · You`. The centre "+" is an action that
-/// opens the Start/Log hub; it is never a selected destination.
+/// `Home · History · [Go] · Progress · You`. The centre "Go" is an action that
+/// opens the Go hub (Start/Log); it is never a selected destination.
 class ShellScaffold extends StatelessWidget {
   const new({required this.shell, super.key});
 
   final StatefulNavigationShell shell;
 
-  /// Branches in bar order; the "+" sits between History and Progress.
+  /// Branches in bar order; the "Go" sits between History and Progress.
   static const _tabs = [
-    (Icons.fitness_center_outlined, Icons.fitness_center, 'Train'),
+    (Icons.fitness_center_outlined, Icons.fitness_center, 'Home'),
     (Icons.history_outlined, Icons.history, 'History'),
     (Icons.show_chart_outlined, Icons.show_chart, 'Progress'),
     (Icons.person_outline, Icons.person, 'You'),
@@ -50,7 +50,7 @@ class ShellScaffold extends StatelessWidget {
                 tab(1),
                 Expanded(
                   child: Center(
-                    child: _PlusButton(
+                    child: _GoButton(
                       onTap: () => unawaited(showStartHub(context)),
                     ),
                   ),
@@ -126,13 +126,13 @@ class _Tab extends StatelessWidget {
   }
 }
 
-/// Raised accent circle in the centre slot.
-class _PlusButton extends StatelessWidget {
+/// Raised accent circle with a "Go" caption in the centre slot.
+class _GoButton extends StatelessWidget {
   const new({required this.onTap});
 
   final VoidCallback onTap;
 
-  static const label = 'Start or log a session';
+  static const label = 'Go';
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -142,18 +142,35 @@ class _PlusButton extends StatelessWidget {
     onTap: onTap,
     child: Tooltip(
       message: label,
-      child: Material(
-        color: AppColors.accent,
-        shape: const CircleBorder(),
-        elevation: 4,
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: const SizedBox.square(
-            dimension: Sizes.control,
-            child: Icon(Icons.add, size: 32, color: AppColors.onAccent),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Material(
+            color: AppColors.accent,
+            shape: const CircleBorder(),
+            elevation: 4,
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onTap,
+              child: const SizedBox.square(
+                dimension: Sizes.tap,
+                child: Icon(
+                  Icons.play_arrow_rounded,
+                  size: 32,
+                  color: AppColors.onAccent,
+                ),
+              ),
+            ),
           ),
-        ),
+          const Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.accent,
+            ),
+          ),
+        ],
       ),
     ),
   );

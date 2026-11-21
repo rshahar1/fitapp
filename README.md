@@ -81,9 +81,9 @@ and never blocks logging, also offline.
 
 ## Workout templates
 
-Templates are reusable exercise lists you start in one tap from the Train tab. Only user-created templates exist; there are no built-in ones.
+Templates are reusable exercise lists you start from the Go button's sheet. Only user-created templates exist; there are no built-in ones.
 
-- Create from scratch (Train tab, "New") by naming it (1 to 40 characters, unique ignoring case) and adding exercises, or save a running workout as a template from the workout screen menu ("Save as template").
+- Create from scratch (You → Gym Templates, "New template") by naming it (1 to 40 characters, unique ignoring case) and adding exercises, or save a running workout as a template from the workout screen menu ("Save as template").
 - Edit, reorder (drag handles) and delete templates in the template editor. Deleting a template never touches past workouts.
 - START on a template card creates the live workout with its exercises in order, all or nothing. If a workout is already in progress you are offered to continue it instead.
 - Each template exercise has its own plan (base weight, reps, sets >= 2, increment, optional rest), seeded from the exercise's own plan when it is added (create, edit, save from workout; an app upgrade copies the existing plans). The editor rows show it (for example "3 x 10 @ 20 kg · overload +2.5", or "No plan yet"); tap a row to edit it, saved with the template.
@@ -92,7 +92,7 @@ Templates are reusable exercise lists you start in one tap from the Train tab. O
 
 ## Other sport activities
 
-The Train tab has a **Log activity** button for Functional training, Cycling, Snowboarding, Running and Pilates: pick
+The **Go** sheet (*Log for today*, *Log a past session*) logs Functional training, Cycling, Snowboarding, Running and Pilates: pick
 the type and date (today by default, never in the future) and optionally a duration and a note. Running,
 cycling and snowboarding also take an optional distance in km (typed with `.` or `,`); History then shows the distance and, with a
 duration, the pace (running) or speed (cycling). **History**
@@ -150,7 +150,7 @@ nothing itself, the image is a temporary cache file and notes are never printed 
 - The **Date** row on the workout screen (live and finished) logs past gym sessions; time of day and duration
   are kept. Finishing only progresses a plan when the workout is the newest session for that plan.
   Pure helpers live in `lib/domain/workout_dates.dart`.
-- **Exercises** library (`/exercises`, header icon on Train and "All exercises" on Progress): create and edit
+- **Exercises** library (`/exercises`, You → Exercise library and "All exercises" on Progress): create and edit
   custom exercises, with a category (Chest, Back, Legs, Shoulders, Arms, Custom).
 - **History** has a List/Calendar switch: Month or Week calendar with prev/next, month and year picker, Today,
   a first-session icon per day and "+N" for more (pure helpers in `lib/domain/calendar.dart`).
@@ -232,7 +232,7 @@ at ~60 % of the screen height on any screen shape.
 
 ## Known limitations / not yet done
 
-- Daily steps (feature 014) read today's total from Health Connect (Google Fit writes there), read-only, on by default, off in Settings → Activity. Needs Android 8.0+ (`minSdk 26`). Before a Play release, file the Health Connect permission declaration and a hosted privacy policy URL in the Play Console. History shows a selected day's total (last 30 days; feature 015), and the Train steps card sits below Templates.
+- Daily steps (feature 014) read today's total from Health Connect (Google Fit writes there), read-only, on by default, off in Settings → Activity. Needs Android 8.0+ (`minSdk 26`). Before a Play release, file the Health Connect permission declaration and a hosted privacy policy URL in the Play Console. History shows a selected day's total (last 30 days; feature 015), and the Home steps card sits below the in-progress card.
 - Cloud backup (M7, feature 013) is built; the real two-phone Google sign-in check is manual (see `specs/013-cloud-sync/quickstart.md`).
 
 ## Roadmap

@@ -1,7 +1,5 @@
-import 'package:fitapp/app/router.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
-import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/domain/start_guard.dart';
 import 'package:fitapp/domain/tracking/track_reducer.dart' show elapsedAt;
@@ -14,13 +12,13 @@ import 'package:fitapp/features/train/steps_card.dart';
 import 'package:fitapp/features/workout/widgets/tick.dart';
 import 'package:fitapp/widgets/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Home tab: continue a session in progress, start a template, stats (this
-/// week, this month, all time), the types trained this week and the newest
-/// sessions of any type (feature 028). Templates are created under You.
+/// Home tab: continue a session in progress, stats (this week, this month,
+/// all time), the types trained this week and the newest sessions of any type
+/// (features 028, 031). Templates start from the Go sheet and are created
+/// under You.
 class TrainScreen extends ConsumerWidget {
   const new({super.key});
 
@@ -29,11 +27,8 @@ class TrainScreen extends ConsumerWidget {
     final text = Theme.of(context).textTheme;
     final stats = ref.watch(homeStatsProvider).value;
     final now = ref.watch(clockProvider)();
-    final templates = ref.watch(templatesProvider).value ?? const [];
     final recent = stats?.recent.take(3).toList() ?? const [];
     final byType = activeTypes(stats?.byType ?? const <TypeCount>[]);
-
-    final actions = ref.read(startActionsProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -44,29 +39,9 @@ class TrainScreen extends ConsumerWidget {
               DateFormat('EEEE, d MMMM').format(now.toLocal()).toUpperCase(),
               style: text.labelSmall,
             ),
-            Text('Train', style: text.headlineLarge),
+            Text('Home', style: text.headlineLarge),
             const SizedBox(height: Space.m),
             const _HeroCard(),
-            const SectionHeader('Templates'),
-            if (templates.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Space.m),
-                child: Text(
-                  'Create a template in You → Gym Templates to start a routine in one tap.',
-                  style: text.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              )
-            else
-              for (final t in templates)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: Space.s),
-                  child: _TemplateCard(
-                    template: t,
-                    onStart: () => actions.startTemplate(context, t.id),
-                  ),
-                ),
             const StepsCard(),
             const SizedBox(height: Space.m),
             Row(
@@ -138,67 +113,7 @@ class TrainScreen extends ConsumerWidget {
   }
 }
 
-class _TemplateCard extends StatelessWidget {
-  const new({required this.template, required this.onStart});
-
-  final TemplateSummary template;
-  final VoidCallback onStart;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    return AppCard(
-      onTap: () => context.push(Routes.template(template.id)),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(template.name, style: text.titleMedium),
-                const SizedBox(height: Space.xs),
-                Text(
-                  template.exercises.map((e) => e.name).join(' · '),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: text.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: Space.s),
-          Semantics(
-            button: true,
-            label: 'Start ${template.name} template',
-            excludeSemantics: true,
-            onTap: onStart,
-            child: TextButton(
-              onPressed: onStart,
-              style: TextButton.styleFrom(
-                backgroundColor: AppColors.accent,
-                foregroundColor: AppColors.onAccent,
-                minimumSize: const Size(Sizes.tap, Sizes.tap),
-                padding: const EdgeInsets.symmetric(horizontal: Space.m),
-                shape: const StadiumBorder(),
-              ),
-              child: const Text(
-                'START',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// The "continue" surface on Train: shown only while a gym workout or GPS
+/// The "continue" surface on Home: shown only while a gym workout or GPS
 /// session is in progress (features 011, 024). There is no empty gym start;
 /// gym workouts start from a template.
 class _HeroCard extends ConsumerWidget {

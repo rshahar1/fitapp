@@ -6,7 +6,7 @@ import 'package:fitapp/features/tracking/tracking_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// On app launch: when a tracking session was left behind (the app was
-/// killed mid-run), resume it and open the live screen on top of Train.
+/// killed mid-run), resume it and open the live screen on top of Home.
 Future<void> recoverTrackingOnLaunch(ProviderContainer container) async {
   final row = await container.read(trackingRepositoryProvider).session();
   if (row == null) return;

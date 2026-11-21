@@ -42,7 +42,7 @@ class HistoryScreen extends ConsumerWidget {
 /// History screen view: grouped list or month calendar.
 enum HistoryView { list, calendar }
 
-/// Which History view is showing; the Train steps card sets it to calendar.
+/// Which History view is showing; the Home steps card sets it to calendar.
 class HistoryViewNotifier extends Notifier<HistoryView> {
   @override
   HistoryView build() => HistoryView.list;

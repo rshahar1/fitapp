@@ -1,6 +1,6 @@
 /// One session at a time (feature 011): names the session in progress (a gym
 /// workout or a GPS tracking session) and decides whether a new gym or GPS
-/// start is allowed. Every start entry point (hub, Train hero, templates)
+/// start is allowed. Every start entry point (hub, Home hero, templates)
 /// uses this guard.
 ///
 /// Pure Dart. No Flutter, database or I/O imports (constitution principle II).

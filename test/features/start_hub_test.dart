@@ -22,7 +22,7 @@ import 'package:material_ui/material_ui.dart';
 import '../data/fake_location_source.dart';
 
 const _inclineId = '00000000-0000-4000-8000-000000000002';
-const _plus = 'Start or log a session';
+const _plus = 'Go';
 
 class _Haptics implements Haptics {
   @override
@@ -99,6 +99,11 @@ void main() {
     await settle(tester);
   }
 
+  final sheetTitle = find.descendant(
+    of: find.byType(StartHubSheet),
+    matching: find.text('Go'),
+  );
+
   Future<void> openHub(WidgetTester tester) async {
     await tester.tap(find.byTooltip(_plus));
     await settle(tester);
@@ -111,15 +116,18 @@ void main() {
   Future<WorkoutRow?> activeWorkout() => WorkoutRepository(db).activeWorkout();
 
   group('bottom bar', () {
-    testWidgets('five slots; + is labelled and at least 48 dp', (tester) async {
+    testWidgets('five slots; Go is labelled and at least 48 dp', (
+      tester,
+    ) async {
       await pumpApp(tester);
-      for (final label in ['Train', 'History', 'Progress', 'You']) {
+      for (final label in ['Home', 'History', 'Progress', 'You']) {
         expect(tab(label), findsOneWidget);
       }
-      final plus = tester.getSize(find.byTooltip(_plus));
-      expect(plus.width, greaterThanOrEqualTo(48));
-      expect(plus.height, greaterThanOrEqualTo(48));
+      final go = tester.getSize(find.byTooltip(_plus));
+      expect(go.width, greaterThanOrEqualTo(48));
+      expect(go.height, greaterThanOrEqualTo(48));
       expect(find.bySemanticsLabel(_plus), findsOneWidget);
+      expect(find.text('Go'), findsOneWidget); // the caption
       await unmount(tester);
     });
 
@@ -134,12 +142,12 @@ void main() {
         router.go(at);
         await settle(tester);
         await openHub(tester);
-        expect(find.text('Start or log'), findsOneWidget, reason: at);
+        expect(sheetTitle, findsOneWidget, reason: at);
         expect(find.text('Log a past session'), findsOneWidget, reason: at);
         expect(location(), at);
-        Navigator.of(tester.element(find.text('Start or log'))).pop();
+        Navigator.of(tester.element(sheetTitle)).pop();
         await settle(tester);
-        expect(find.text('Start or log'), findsNothing);
+        expect(sheetTitle, findsNothing);
         expect(location(), at);
       }
       await unmount(tester);
@@ -164,7 +172,7 @@ void main() {
     });
   });
 
-  group('Train', () {
+  group('Home', () {
     testWidgets('no empty gym start, header icons or Log activity', (
       tester,
     ) async {
@@ -176,13 +184,41 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('template starts in one tap', (tester) async {
+    testWidgets('shows no template card or START even with templates', (
+      tester,
+    ) async {
       await tester.runAsync(
         () =>
             TemplateRepository(db)
                 .create(name: 'Push', exerciseIds: [_inclineId]),
       );
       await pumpApp(tester);
+      expect(find.text('Home'), findsWidgets);
+      expect(find.text('Push'), findsNothing);
+      expect(find.text('START'), findsNothing);
+      expect(find.bySemanticsLabel('Start Push template'), findsNothing);
+      await unmount(tester);
+    });
+
+    testWidgets('GPS session shows in the hero', (tester) async {
+      await tester.runAsync(startTracking);
+      await pumpApp(tester);
+      expect(find.text('Running in progress'), findsOneWidget);
+      expect(find.text('CONTINUE RUNNING'), findsOneWidget);
+      await unmount(tester);
+    });
+  });
+
+  group('Go templates', () {
+    testWidgets('template starts in one tap from the hub', (tester) async {
+      await tester.runAsync(
+        () =>
+            TemplateRepository(db)
+                .create(name: 'Push', exerciseIds: [_inclineId]),
+      );
+      await pumpApp(tester);
+      await openHub(tester);
+      expect(find.text('Incline Dumbbell Bench Press'), findsOneWidget);
       await tester.tap(find.bySemanticsLabel('Start Push template'));
       await settle(tester);
       expect(location(), Routes.workout);
@@ -190,17 +226,14 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('GPS session shows in the hero; template START is blocked', (
-      tester,
-    ) async {
+    testWidgets('GPS session running: template row is blocked', (tester) async {
       await tester.runAsync(() async {
         await TemplateRepository(db)
             .create(name: 'Push', exerciseIds: [_inclineId]);
         await startTracking();
       });
       await pumpApp(tester);
-      expect(find.text('Running in progress'), findsOneWidget);
-      expect(find.text('CONTINUE RUNNING'), findsOneWidget);
+      await openHub(tester);
       await tester.tap(find.bySemanticsLabel('Start Push template'));
       await settle(tester);
       expect(
@@ -210,6 +243,17 @@ void main() {
       expect(find.text('Open'), findsOneWidget);
       expect(await tester.runAsync(activeWorkout), isNull);
       expect(location(), Routes.train);
+      await unmount(tester);
+    });
+
+    testWidgets('no templates: Create a gym template opens Gym Templates', (
+      tester,
+    ) async {
+      await pumpApp(tester);
+      await openHub(tester);
+      await tester.tap(find.text('Create a gym template'));
+      await settle(tester);
+      expect(location(), Routes.templates);
       await unmount(tester);
     });
   });
@@ -255,18 +299,10 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('has no Gym workout, template rows or More sports', (
-      tester,
-    ) async {
-      await tester.runAsync(
-        () =>
-            TemplateRepository(db)
-                .create(name: 'Legs', exerciseIds: [_inclineId]),
-      );
+    testWidgets('has no empty Gym workout row or More sports', (tester) async {
       await pumpApp(tester, at: Routes.you);
       await openHub(tester);
       expect(find.text('Gym workout'), findsNothing);
-      expect(find.text('Legs'), findsNothing);
       expect(find.text('More sports'), findsNothing);
       await unmount(tester);
     });

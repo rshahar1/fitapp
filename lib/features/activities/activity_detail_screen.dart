@@ -56,11 +56,6 @@ class ActivityDetailScreen extends ConsumerWidget {
         actions: [
           if (activity != null) ...[
             IconButton(
-              icon: const Icon(Icons.ios_share),
-              tooltip: 'Share activity',
-              onPressed: () => context.push(Routes.shareActivity(activity.id)),
-            ),
-            IconButton(
               icon: const Icon(Icons.edit_outlined),
               tooltip: 'Edit activity',
               onPressed: () => showActivitySheet(context, existing: activity),
@@ -70,6 +65,21 @@ class ActivityDetailScreen extends ConsumerWidget {
               color: AppColors.danger,
               tooltip: 'Delete activity',
               onPressed: () => _delete(context, ref, activity),
+            ),
+            PopupMenuButton<String>(
+              tooltip: 'More options',
+              onSelected: (_) =>
+                  context.push(Routes.shareActivity(activity.id)),
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'share',
+                  child: ListTile(
+                    leading: Icon(Icons.adaptive.share),
+                    title: const Text('Share'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
             ),
           ],
         ],

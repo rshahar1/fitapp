@@ -16,9 +16,6 @@ import 'package:fitapp/domain/tracking/snow_summary.dart';
 import 'package:fitapp/domain/training_breakdown.dart' show gymTypeId;
 import 'package:meta/meta.dart';
 
-/// Most exercise lines on a card; with more, one line less plus "+N more".
-const maxShareExerciseLines = 7;
-
 /// How a card is laid out.
 enum ShareLayout {
   /// Route drawing above the stats (GPS runs, rides).
@@ -34,17 +31,129 @@ enum ShareLayout {
   basic,
 }
 
+/// A piece of a stat value: digits drawn large, or a unit drawn small.
+@immutable
+class ShareStatPart {
+  const new(this.text, {this.isUnit = false, this.tight = false});
+
+  final String text;
+  final bool isUnit;
+
+  /// A unit written without a space before it ("1h 3m").
+  final bool tight;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ShareStatPart &&
+      other.text == text &&
+      other.isUnit == isUnit &&
+      other.tight == tight;
+
+  @override
+  int get hashCode => Object.hash(text, isUnit, tight);
+}
+
 /// One figure on the card: "5.2" "km" under "Distance".
 @immutable
 class ShareStat {
-  const new(this.label, this.value, [this.unit]);
+  /// A value with an optional unit.
+  new(this.label, String value, [String? unit])
+    : parts = List.unmodifiable([
+        ShareStatPart(value),
+        if (unit != null) ShareStatPart(unit, isUnit: true),
+      ]);
+
+  /// A value made of several parts, e.g. "1" "h" "3" "m".
+  new parts(this.label, List<ShareStatPart> parts)
+    : parts = List.unmodifiable(parts);
 
   final String label;
-  final String value;
-  final String? unit;
+  final List<ShareStatPart> parts;
 
+  /// "5.2 km", "27 min", "1h 3m".
   @override
-  String toString() => unit == null ? value : '$value $unit';
+  String toString() {
+    final out = StringBuffer();
+    for (final p in parts) {
+      if (out.isNotEmpty && !(p.isUnit && p.tight)) out.write(' ');
+      out.write(p.text);
+    }
+    return out.toString();
+  }
+}
+
+/// A duration stat: "27 min", "1h 3m", "4h" with digits and units as
+/// separate parts, so the digits match other stats in size.
+ShareStat durationShareStat(String label, int minutes) {
+  final h = minutes ~/ 60;
+  final m = minutes % 60;
+  if (h == 0) {
+    return ShareStat.parts(label, [
+      ShareStatPart('$m'),
+      const ShareStatPart('min', isUnit: true),
+    ]);
+  }
+  return ShareStat.parts(label, [
+    ShareStatPart('$h'),
+    const ShareStatPart('h', isUnit: true, tight: true),
+    if (m > 0) ...[
+      ShareStatPart('$m'),
+      const ShareStatPart('m', isUnit: true, tight: true),
+    ],
+  ]);
+}
+
+/// How the exercise list of a gym card is laid out.
+@immutable
+class ShareListLayout {
+  const new({
+    required this.cardHeight,
+    required this.columns,
+    required this.rowHeight,
+  });
+
+  final double cardHeight;
+
+  /// 1, or 2 (rows then show the name above the set line).
+  final int columns;
+  final double rowHeight;
+}
+
+/// Lays out [count] exercise rows on a gym card whose fixed parts take
+/// [overhead]: one column at [baseHeight] when it fits; otherwise one column
+/// on a taller card up to [maxHeight]; otherwise two columns of
+/// [twoColumnRowHeight] rows; otherwise two columns at [maxHeight] with rows
+/// shrunk until everything fits. Nothing is ever left out.
+ShareListLayout shareListLayout(
+  int count, {
+  required double baseHeight,
+  required double maxHeight,
+  required double overhead,
+  required double rowHeight,
+  required double twoColumnRowHeight,
+}) {
+  final one = overhead + count * rowHeight;
+  if (one <= maxHeight) {
+    return ShareListLayout(
+      cardHeight: one < baseHeight ? baseHeight : one,
+      columns: 1,
+      rowHeight: rowHeight,
+    );
+  }
+  final rows = (count + 1) ~/ 2;
+  final two = overhead + rows * twoColumnRowHeight;
+  if (two <= maxHeight) {
+    return ShareListLayout(
+      cardHeight: two < baseHeight ? baseHeight : two,
+      columns: 2,
+      rowHeight: twoColumnRowHeight,
+    );
+  }
+  return ShareListLayout(
+    cardHeight: maxHeight,
+    columns: 2,
+    rowHeight: (maxHeight - overhead) / rows,
+  );
 }
 
 /// Time of a snowboarding day split into riding, lifts and rest.
@@ -85,7 +194,6 @@ class ShareCardData {
     this.segments,
     this.breakdown,
     this.exercises = const [],
-    this.hiddenExercises = 0,
   });
 
   final ShareLayout layout;
@@ -107,11 +215,8 @@ class ShareCardData {
   /// Snow layout only, and only when some time was recorded.
   final ShareTimeBreakdown? breakdown;
 
-  /// Strength layout only.
+  /// Strength layout only: every exercise with logged sets.
   final List<ShareExerciseLine> exercises;
-
-  /// Exercises left off the card ("+N more exercises").
-  final int hiddenExercises;
 }
 
 /// The stored values of an activity that a card may show.
@@ -216,7 +321,7 @@ ShareCardData activityShareCard(ActivityShareInput a) {
         ),
         _ => null,
       },
-    if (minutes != null) ShareStat('Duration', _minutesText(minutes)),
+    if (minutes != null) durationShareStat('Duration', minutes),
     if (moving != null) ShareStat('Moving time', _clock(moving)),
     if (climb != null) ShareStat('Climb', formatGrouped(climb), 'm'),
     if (a.typeId == 'running' && splits.isNotEmpty)
@@ -269,7 +374,7 @@ ShareCardData _snowCard(
       if (drop != null) ShareStat('Vertical', formatGrouped(drop), 'm'),
       if (runs != null) ShareStat('Runs', '$runs'),
       if (meters != null) ShareStat('Distance', distanceKmText(meters), 'km'),
-      if (minutes != null) ShareStat('Total time', _minutesText(minutes)),
+      if (minutes != null) durationShareStat('Total time', minutes),
       if (longest != null)
         ShareStat('Longest run', distanceKmText(longest), 'km'),
     ]),
@@ -297,8 +402,6 @@ ShareCardData workoutShareCard(WorkoutShareInput w) {
   }
   final end = w.endedAt;
   final minutes = end == null ? 0 : end.difference(w.startedAt).inMinutes;
-  final fits = done.length <= maxShareExerciseLines;
-  final shown = fits ? done : done.take(maxShareExerciseLines - 1).toList();
   final name = w.name?.trim();
   return ShareCardData(
     layout: ShareLayout.strength,
@@ -306,14 +409,13 @@ ShareCardData workoutShareCard(WorkoutShareInput w) {
     title: name == null || name.isEmpty ? 'Workout' : name,
     startedAt: w.startedAt,
     stats: List.unmodifiable([
-      if (minutes > 0) ShareStat('Duration', _minutesText(minutes)),
+      if (minutes > 0) durationShareStat('Duration', minutes),
       if (sets > 0) ShareStat('Sets', '$sets'),
       if (reps > 0) ShareStat('Reps', formatGrouped(reps)),
       if (volume.round() > 0)
         ShareStat('Volume', formatGrouped(volume.round()), 'kg'),
     ]),
-    exercises: List.unmodifiable(shown.map(exerciseShareLine)),
-    hiddenExercises: done.length - shown.length,
+    exercises: List.unmodifiable(done.map(exerciseShareLine)),
   );
 }
 
@@ -391,15 +493,6 @@ String _clock(int seconds) {
   final m = (seconds % 3600) ~/ 60;
   final s = seconds % 60;
   return h > 0 ? '$h:${_two(m)}:${_two(s)}' : '$m:${_two(s)}';
-}
-
-/// "45 min", "1 h 30 min", "2 h" (as on the activity screens).
-String _minutesText(int minutes) {
-  final h = minutes ~/ 60;
-  final m = minutes % 60;
-  if (h == 0) return '$m min';
-  if (m == 0) return '$h h';
-  return '$h h $m min';
 }
 
 /// "60 kg", "42.5 kg", "22.25 kg".

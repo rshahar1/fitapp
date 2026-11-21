@@ -13,7 +13,7 @@ String _route() => encodePolyline([
 ]);
 
 Map<String, String> _stats(ShareCardData c) => {
-  for (final s in c.stats) s.label: '${s.value}${s.unit ?? ''}',
+  for (final s in c.stats) s.label: s.toString(),
 };
 
 ShareExercise _ex(
@@ -51,12 +51,12 @@ void main() {
         'Best km',
       ]);
       expect(_stats(c), {
-        'Distance': '5.2km',
-        'Avg pace': '5:12/km',
+        'Distance': '5.2 km',
+        'Avg pace': '5:12 /km',
         'Duration': '27 min',
         'Moving time': '26:40',
-        'Climb': '42m',
-        'Best km': '4:58/km',
+        'Climb': '42 m',
+        'Best km': '4:58 /km',
       });
     });
 
@@ -74,9 +74,9 @@ void main() {
       );
       expect(c.layout, ShareLayout.route);
       expect(_stats(c), {
-        'Distance': '36.75km',
-        'Avg speed': '24.5km/h',
-        'Duration': '1 h 30 min',
+        'Distance': '36.75 km',
+        'Avg speed': '24.5 km/h',
+        'Duration': '1h 30m',
       });
     });
 
@@ -175,12 +175,12 @@ void main() {
       expect(c.breakdown!.restSeconds, 6000);
       expect(c.breakdown!.totalSeconds, 19200);
       expect(_stats(c), {
-        'Top speed': '62.6km/h',
-        'Vertical': '3,240m',
+        'Top speed': '62.6 km/h',
+        'Vertical': '3,240 m',
         'Runs': '12',
-        'Distance': '18.4km',
-        'Total time': '5 h 20 min',
-        'Longest run': '2.1km',
+        'Distance': '18.4 km',
+        'Total time': '5h 20m',
+        'Longest run': '2.1 km',
       });
     });
 
@@ -209,7 +209,7 @@ void main() {
         ),
       );
       expect(c.layout, ShareLayout.basic);
-      expect(_stats(c), {'Distance': '25km', 'Duration': '4 h'});
+      expect(_stats(c), {'Distance': '25 km', 'Duration': '4h'});
     });
   });
 
@@ -239,8 +239,8 @@ void main() {
       expect(c.layout, ShareLayout.basic);
       expect(c.route, isNull);
       expect(_stats(c), {
-        'Distance': '10km',
-        'Avg pace': '5:00/km',
+        'Distance': '10 km',
+        'Avg pace': '5:00 /km',
         'Duration': '50 min',
       });
     });
@@ -326,12 +326,11 @@ void main() {
       expect(c.title, 'Workout');
       expect(c.typeId, 'gym');
       expect(c.exercises.map((e) => e.name), ['Bench press', 'Curl']);
-      expect(c.hiddenExercises, 0);
       expect(_stats(c), {
-        'Duration': '1 h 2 min',
+        'Duration': '1h 2m',
         'Sets': '4',
         'Reps': '34',
-        'Volume': '1,640kg',
+        'Volume': '1,640 kg',
       });
     });
 
@@ -351,30 +350,91 @@ void main() {
       expect(_stats(c), {'Sets': '1', 'Reps': '20'});
     });
 
-    test('seven exercises all fit', () {
+    test('every exercise is listed, never "+N more"', () {
       final c = workoutShareCard(
         WorkoutShareInput(
           startedAt: _day,
           exercises: [
-            for (var i = 0; i < 7; i++) _ex('E$i', [(10, 5)]),
+            for (var i = 0; i < 40; i++) _ex('E$i', [(10, 5)]),
           ],
         ),
       );
-      expect(c.exercises, hasLength(7));
-      expect(c.hiddenExercises, 0);
+      expect(c.exercises, hasLength(40));
+      expect(c.exercises.last.name, 'E39');
+    });
+  });
+
+  group('duration stats', () {
+    String text(int minutes) =>
+        durationShareStat('Duration', minutes).toString();
+
+    test('compact text', () {
+      expect(text(27), '27 min');
+      expect(text(60), '1h');
+      expect(text(63), '1h 3m');
+      expect(text(240), '4h');
+      expect(text(1439), '23h 59m');
     });
 
-    test('long lists keep six and count the rest', () {
-      final c = workoutShareCard(
-        WorkoutShareInput(
-          startedAt: _day,
-          exercises: [
-            for (var i = 0; i < 11; i++) _ex('E$i', [(10, 5)]),
-          ],
-        ),
+    test('digits and units are separate parts', () {
+      final s = durationShareStat('Duration', 63);
+      expect(
+        [for (final p in s.parts) (p.text, p.isUnit)],
+        [('1', false), ('h', true), ('3', false), ('m', true)],
       );
-      expect(c.exercises, hasLength(6));
-      expect(c.hiddenExercises, 5);
+      expect(
+        [for (final p in durationShareStat('Duration', 27).parts) p.text],
+        ['27', 'min'],
+      );
+    });
+
+    test('plain stats keep value and unit', () {
+      final s = ShareStat('Distance', '5.2', 'km');
+      expect(s.toString(), '5.2 km');
+      expect(ShareStat('Runs', '12').toString(), '12');
+    });
+  });
+
+  group('exercise list layout', () {
+    ShareListLayout layout(int n) => shareListLayout(
+      n,
+      baseHeight: 450,
+      maxHeight: 640,
+      overhead: 210,
+      rowHeight: 30,
+      twoColumnRowHeight: 40,
+    );
+
+    test('fits the base card', () {
+      for (final n in [0, 1, 8]) {
+        final l = layout(n);
+        expect(l.cardHeight, 450, reason: '$n');
+        expect(l.columns, 1);
+        expect(l.rowHeight, 30);
+      }
+    });
+
+    test('grows the card in one column', () {
+      expect(layout(9).cardHeight, 480);
+      expect(layout(14).cardHeight, 630);
+      expect(layout(14).columns, 1);
+    });
+
+    test('two columns once one column passes the max height', () {
+      final l = layout(15);
+      expect(l.columns, 2);
+      expect(l.rowHeight, 40);
+      expect(l.cardHeight, 530); // 8 rows of 40 + 210
+      final full = layout(20);
+      expect(full.columns, 2);
+      expect(full.cardHeight, 610);
+    });
+
+    test('shrinks rows at the max height so nothing is cut', () {
+      final l = layout(40);
+      expect(l.columns, 2);
+      expect(l.cardHeight, 640);
+      expect(l.rowHeight * 20, closeTo(430, 1e-9));
     });
   });
 

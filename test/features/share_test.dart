@@ -181,27 +181,42 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('strength card with 11 exercises shows +5 more', (
-      tester,
-    ) async {
-      final data = workoutShareCard(
-        WorkoutShareInput(
-          name: 'Big day',
-          startedAt: DateTime.utc(2026, 3, 7, 9),
-          endedAt: DateTime.utc(2026, 3, 7, 10, 15),
-          exercises: [
-            for (var i = 1; i <= 11; i++)
-              ShareExercise(
-                name: 'Exercise number $i',
-                sets: const [(60, 8), (60, 8), (60, 8)],
-              ),
-          ],
-        ),
-      );
-      await pumpCard(tester, data);
-      expect(find.text('+5 more exercises'), findsOneWidget);
-      await unmount(tester);
-    });
+    for (final (count, height, columns) in [
+      (8, 450.0, 1),
+      (11, 540.0, 1),
+      (20, 610.0, 2),
+      (40, 640.0, 2),
+    ]) {
+      testWidgets('strength card lists all $count exercises', (tester) async {
+        final data = workoutShareCard(
+          WorkoutShareInput(
+            name: 'Big day',
+            startedAt: DateTime.utc(2026, 3, 7, 9),
+            endedAt: DateTime.utc(2026, 3, 7, 10, 15),
+            exercises: [
+              for (var i = 1; i <= count; i++)
+                ShareExercise(
+                  name: 'Exercise number $i',
+                  sets: const [(60, 8), (60, 8), (60, 8)],
+                ),
+            ],
+          ),
+        );
+        await pumpCard(tester, data);
+        final layout = ShareCardView.listLayout(count);
+        expect(layout.cardHeight, closeTo(height, 1));
+        expect(layout.columns, columns);
+        expect(
+          tester.getSize(find.byType(ShareCardView)).height,
+          closeTo(height, 1),
+        );
+        for (var i = 1; i <= count; i++) {
+          expect(find.text('Exercise number $i'), findsOneWidget);
+        }
+        expect(find.textContaining('more exercise'), findsNothing);
+        await unmount(tester);
+      });
+    }
 
     testWidgets('basic card with no stats says Logged in FitApp', (
       tester,
@@ -288,21 +303,21 @@ void main() {
   });
 
   group('entry points', () {
-    testWidgets('activity detail has a Share activity button', (tester) async {
+    testWidgets('activity detail offers Share in the overflow menu', (
+      tester,
+    ) async {
       await tester.runAsync(addRun);
       await pump(tester, const ActivityDetailScreen(activityId: _runId));
-      expect(find.byTooltip('Share activity'), findsOneWidget);
-      expect(
-        find.ancestor(
-          of: find.byIcon(Icons.ios_share),
-          matching: find.byType(IconButton),
-        ),
-        findsWidgets,
-      );
+      expect(find.byTooltip('Share activity'), findsNothing);
+      expect(find.byIcon(Icons.adaptive.share), findsNothing);
+      await tester.tap(find.byTooltip('More options'));
+      await tester.pumpAndSettle();
+      expect(find.text('Share'), findsOneWidget);
+      expect(find.byIcon(Icons.adaptive.share), findsOneWidget);
       await unmount(tester);
     });
 
-    testWidgets('finished workout screen has a Share workout button', (
+    testWidgets('finished workout offers Share in the overflow menu', (
       tester,
     ) async {
       final h = Harness();
@@ -312,7 +327,11 @@ void main() {
         () => h.session(const [(20, 10), (20, 10)]),
       );
       await pump(tester, WorkoutScreen(workoutId: session!.$1), database: h.db);
-      expect(find.byTooltip('Share workout'), findsOneWidget);
+      expect(find.byTooltip('Share workout'), findsNothing);
+      await tester.tap(find.byTooltip('Workout options'));
+      await tester.pumpAndSettle();
+      expect(find.text('Share'), findsOneWidget);
+      expect(find.byIcon(Icons.adaptive.share), findsOneWidget);
       await unmount(tester);
     });
   });

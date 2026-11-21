@@ -25,18 +25,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Whether a finished workout may be resumed right now.
-final canResumeProvider = FutureProvider.autoDispose.family<bool, String>((
-  ref,
-  id,
-) {
-  // Re-evaluate whenever the active workout or history changes.
-  ref
-    ..watch(activeWorkoutProvider)
-    ..watch(historyProvider);
-  return ref.watch(workoutRepositoryProvider).canResume(id);
-});
-
 /// Live workout (no [workoutId]) or a finished workout, shown read-only
 /// until Edit is tapped (feature 020).
 class WorkoutScreen extends ConsumerStatefulWidget {
@@ -314,15 +302,6 @@ class _WorkoutView extends ConsumerWidget {
     );
   }
 
-  Future<void> _resume(BuildContext context, WidgetRef ref) async {
-    final ok = await guard(
-      context,
-      () =>
-          ref.read(workoutRepositoryProvider).resumeWorkout(detail.workout.id),
-    );
-    if (ok && context.mounted) context.go(Routes.workout);
-  }
-
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
     final confirmed = await confirmDestructive(
       context,
@@ -384,11 +363,10 @@ class _WorkoutView extends ConsumerWidget {
     final session = liveSession?.workoutId == w.id ? liveSession : null;
     final now = ref.watch(clockProvider)();
     final shownDay = session?.day ?? dateOnly(w.startedAt.toLocal());
-    // A finished workout has no footer (feature 020): Resume lives in the
-    // options menu with Edit, Share and Delete (feature 036), back leaves
-    // the screen; while editing only "Done editing" stays in the app bar.
-    final canResume =
-        !isLive && (ref.watch(canResumeProvider(w.id)).value ?? false);
+    // A finished workout has no footer (feature 020): its options menu holds
+    // only Edit, Share and Delete (feature 037); Resume is offered from the
+    // finish summary. Back leaves the screen; while editing only "Done
+    // editing" stays in the app bar.
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -408,7 +386,6 @@ class _WorkoutView extends ConsumerWidget {
             onSelected: (v) => switch (v) {
               'edit' => _toggleEdit(ref),
               'discard' => _discard(context, ref, session),
-              'resume' => _resume(context, ref),
               'share' => context.push(Routes.shareWorkout(w.id)),
               'delete' => _delete(context, ref),
               'template' => _saveAsTemplate(context, ref),
@@ -433,12 +410,7 @@ class _WorkoutView extends ConsumerWidget {
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
-              if (canResume)
-                const PopupMenuItem(
-                  value: 'resume',
-                  child: Text('Resume workout'),
-                ),
-              if (detail.exercises.isNotEmpty)
+              if (isLive && detail.exercises.isNotEmpty)
                 const PopupMenuItem(
                   value: 'template',
                   child: Text('Save as template'),

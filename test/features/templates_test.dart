@@ -134,15 +134,14 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('Save as template from a finished workout', (tester) async {
-    final id = await tester.runAsync(() async {
+  testWidgets('Save as template from a live workout', (tester) async {
+    await tester.runAsync(() async {
       final w = await workouts.startWorkout();
       final we = await workouts.addExercise(w.id, _incline);
       await workouts.logSet(we.id, setNo: 1, weight: 20, reps: 10);
-      await workouts.finishWorkout(w.id);
       return w.id;
     });
-    await pumpApp(tester, WorkoutScreen(workoutId: id));
+    await pumpApp(tester, const WorkoutScreen());
     await tester.tap(find.byTooltip('Workout options'));
     await settle(tester);
     await tester.tap(find.text('Save as template'));

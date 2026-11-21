@@ -293,12 +293,12 @@ back to the exercise plan.
 
 ### 5.4 History
 - Finished workouts and logged activities in one list, newest first, grouped by month. Each row has an icon:
-  a dumbbell for gym workouts, the sport's own icon for activities. Workout rows show the date, exercise names,
-  total **volume** (metric-volume color), set count and duration; activity rows show the type, date, distance, duration, pace (running) or speed (cycling) when both distance and
+  a dumbbell for gym workouts, the sport's own icon for activities. Workout rows show the dumbbell, the date and the
+  template name (or "Workout"), like Home's Recent (no exercise names, volume or sets); activity rows show the type, date, distance, duration, pace (running) or speed (cycling) when both distance and
   duration are set, and note.
 - Tapping a workout row opens it in **edit mode** (same screen as live logging): "changes save automatically",
-  and footer buttons **Done**, **Resume** (only if allowed) and **Delete**.
-- **Resume** works for any finished workout while none is live, also from the finish summary; a resumed workout
+  and a ⋮ menu that holds only **Edit workout**, **Share** and **Delete workout** (feature 037).
+- **Resume** works for any finished workout while none is live, from the finish summary only (not from the History menu); a resumed workout
   keeps its earlier duration (device-local live-session record). Finishing rewrites a plan's base only when the
   workout is the newest session for that plan; backdated or older resumed sessions never do.
 - A **List / Calendar** switch: Month or Week calendar with prev/next, a month and year picker and Today; each day
@@ -757,6 +757,7 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 | Share a finished session as a 1080×1350 image through the OS share sheet; no social features, nothing sent by the app, notes never on the image | Owner's decision (20 Nov 2026, feature 027); image export is not a social feature |
 | Share lives in the ⋮ menu with the platform-adaptive share icon; the gym card lists every exercise (taller card, columns, smaller rows) and durations are balanced with other stats | Owner's decision (21 Nov 2026, feature 029 review of 027); cleaner app bars, no hidden exercises, readable durations |
 | Edit and Delete join Share in the ⋮ menu of activity and finished workout detail; no MapTiler / OpenStreetMap credit on the share image or on any in-app map | Owner's decision (21 Nov 2026, feature 036); cleaner app bar and image. MapTiler and OSM terms ask for attribution on shared maps: accepted by the owner |
+| History gym rows match Recent; the finished workout ⋮ menu holds only Edit, Share and Delete (no Resume, no Save as template) | Owner's decision (21 Nov 2026, feature 037); consistent with other activity types. Resume stays on the finish summary; templates are saved from a live workout or built in the editor |
 | Distinct icons per row in History, including a dumbbell for gym workouts | Owner's decision (13 Nov 2026); tell sports and gym apart at a glance |
 | Resume any finished workout, discard live workouts, backdate gym sessions | Owner's decision (13 Nov 2026); a backdated or older session never rewrites a plan's base |
 | Exercises library with custom categories; History calendar | Owner's decision (13 Nov 2026); browse and edit exercises, review training by day |
@@ -850,3 +851,4 @@ resolved on 12 Nov 2026; see the decisions log.
   show only the date and template name (section 5.5).
 - **2.22 (21 Nov 2026):** feature 036 (owner request of 21 Nov 2026). The route share image no longer prints the MapTiler /
   OpenStreetMap credit, the in-app maps drop their attribution popup, and Edit and Delete move into the ⋮ menu of the activity and finished workout screens (sections 5.11, 15).
+- **2.23 (21 Nov 2026):** feature 037 (owner request of 21 Nov 2026). History gym rows show only the date and template name like Home's Recent, and the finished workout ⋮ menu holds only Edit, Share and Delete; Resume stays on the finish summary (sections 5.4, 15).

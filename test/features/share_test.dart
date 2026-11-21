@@ -270,6 +270,56 @@ void main() {
       await unmount(tester);
     });
 
+    testWidgets(
+      'gym share sends the image only and ignores later database writes',
+      (tester) async {
+        final h = Harness();
+        addTearDown(h.close);
+        await tester.runAsync(h.plan);
+        final session = await tester.runAsync(
+          () => h.session(const [(20, 10), (20, 10)]),
+        );
+        final sharer = _FakeSharer();
+        await pump(
+          tester,
+          SharePreviewScreen(subject: ShareSubject.workout, id: session!.$1),
+          database: h.db,
+          sharer: sharer,
+        );
+        expect(find.byType(ShareCardView), findsOneWidget);
+        final before = tester.widget<ShareCardView>(find.byType(ShareCardView));
+        // Sync-like churn after finishing: writes keep re-emitting the
+        // workout stream while the preview is open.
+        for (var i = 0; i < 3; i++) {
+          await tester.runAsync(
+            () => h.db.customStatement('UPDATE workouts SET dirty = 0'),
+          );
+          await tester.pump();
+        }
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+        await tester.pump();
+        final after = tester.widget<ShareCardView>(find.byType(ShareCardView));
+        expect(identical(after.data, before.data), isTrue);
+        await tester.tap(find.text('SHARE IMAGE'));
+        await tester.pump();
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 300)),
+        );
+        await tester.pump();
+        expect(sharer.calls, hasLength(1));
+        expect(sharer.calls.single.text, isNull);
+        expect(sharer.calls.single.bytes.sublist(0, 4), [
+          0x89,
+          0x50,
+          0x4E,
+          0x47,
+        ]);
+        await unmount(tester);
+      },
+    );
+
     testWidgets('a failing sharer shows the error snackbar', (tester) async {
       await tester.runAsync(addRun);
       await pump(

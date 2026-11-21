@@ -439,6 +439,29 @@ void main() {
   });
 
   group('file name and caption', () {
+    test('gym shares carry no caption, activities keep theirs', () {
+      final gym = workoutShareCard(
+        WorkoutShareInput(
+          name: 'Push day',
+          startedAt: _day,
+          endedAt: _day.add(const Duration(minutes: 63)),
+          exercises: [
+            _ex('Bench press', [(60, 8)]),
+          ],
+        ),
+      );
+      expect(shareCaptionFor(gym), isNull);
+      final run = activityShareCard(
+        ActivityShareInput(
+          typeId: 'running',
+          startedAt: _day,
+          durationMinutes: 50,
+          distanceMeters: 10000,
+        ),
+      );
+      expect(shareCaptionFor(run), 'Running · 10 km · 5:00 /km');
+    });
+
     test('file name uses type and local date', () {
       expect(
         shareFileName('running', DateTime(2026, 3, 7, 23)),

@@ -453,6 +453,12 @@ String shareFileName(String typeId, DateTime startedAt) {
   return 'fitapp-$safe-${d.year}-${two(d.month)}-${two(d.day)}.png';
 }
 
+/// The text sent with the image of [c], or null for none: gym shares send
+/// the image only (the owner adds their own words), activities send
+/// [shareCaption] (feature 030).
+String? shareCaptionFor(ShareCardData c) =>
+    c.layout == ShareLayout.strength ? null : shareCaption(c);
+
 /// Text sent along with the image: the title and the first two stats.
 String shareCaption(ShareCardData c) =>
     [c.title, ...c.stats.take(2).map((s) => s.toString())].join(' · ');

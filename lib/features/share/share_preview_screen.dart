@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:fitapp/app/theme/tokens.dart';
@@ -5,6 +6,7 @@ import 'package:fitapp/core/image_sharer.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/models.dart';
 import 'package:fitapp/data/providers.dart';
+import 'package:fitapp/domain/share/image_check.dart';
 import 'package:fitapp/domain/share/share_card.dart';
 import 'package:fitapp/features/share/share_card_view.dart';
 import 'package:fitapp/widgets/widgets.dart';
@@ -65,9 +67,17 @@ class SharePreviewScreen extends ConsumerStatefulWidget {
   ConsumerState<SharePreviewScreen> createState() => _SharePreviewState();
 }
 
+/// Capture attempts before a blank image is reported as an error.
+const _captureAttempts = 3;
+
 class _SharePreviewState extends ConsumerState<SharePreviewScreen> {
   final _boundary = GlobalKey();
   bool _busy = false;
+
+  /// The card as it was when the preview opened. Later database writes
+  /// (e.g. sync right after finishing a workout) must not rebuild the card
+  /// while it is being captured (feature 030).
+  ShareCardData? _frozen;
 
   /// The card, or null while loading or when there is nothing to share.
   AsyncValue<ShareCardData?> _card() => switch (widget.subject) {
@@ -83,23 +93,49 @@ class _SharePreviewState extends ConsumerState<SharePreviewScreen> {
           ),
   };
 
-  Future<void> _share(ShareCardData data) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final sharer = ref.read(imageSharerProvider);
-    setState(() => _busy = true);
-    try {
+  /// The card as a PNG, or null when every attempt came back blank. Each
+  /// attempt waits for a painted frame first.
+  Future<Uint8List?> _capture() async {
+    for (var attempt = 0; attempt < _captureAttempts; attempt++) {
+      WidgetsBinding.instance.scheduleFrame();
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return null;
       final boundary =
           _boundary.currentContext!.findRenderObject()!
               as RenderRepaintBoundary;
       final image = await boundary.toImage(
         pixelRatio: ShareCardSize.pixelRatio,
       );
-      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-      image.dispose();
+      try {
+        final raw = await image.toByteData();
+        if (raw == null ||
+            isBlankImage(
+              raw.buffer.asUint8List(),
+              width: image.width,
+              height: image.height,
+            )) {
+          continue;
+        }
+        final png = await image.toByteData(format: ui.ImageByteFormat.png);
+        return png?.buffer.asUint8List();
+      } finally {
+        image.dispose();
+      }
+    }
+    return null;
+  }
+
+  Future<void> _share(ShareCardData data) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final sharer = ref.read(imageSharerProvider);
+    setState(() => _busy = true);
+    try {
+      final png = await _capture();
+      if (png == null) throw StateError('blank share image');
       await sharer.sharePng(
-        bytes!.buffer.asUint8List(),
+        png,
         fileName: shareFileName(data.typeId, data.startedAt),
-        text: shareCaption(data),
+        text: shareCaptionFor(data),
       );
     } on Object {
       messenger.showSnackBar(
@@ -113,7 +149,7 @@ class _SharePreviewState extends ConsumerState<SharePreviewScreen> {
   @override
   Widget build(BuildContext context) {
     final card = _card();
-    final data = card.value;
+    final data = _frozen ??= card.value;
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -122,7 +158,7 @@ class _SharePreviewState extends ConsumerState<SharePreviewScreen> {
               : 'Share activity',
         ),
       ),
-      body: card.hasError
+      body: data == null && card.hasError
           ? const Center(child: Text('Could not load this session.'))
           : data == null
           ? (card.isLoading

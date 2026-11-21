@@ -371,6 +371,11 @@ class _WorkoutView extends ConsumerWidget {
     );
   }
 
+  void _toggleEdit(WidgetRef ref) {
+    ref.read(hapticsProvider).tick();
+    onToggleEdit();
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final w = detail.workout;
@@ -380,7 +385,8 @@ class _WorkoutView extends ConsumerWidget {
     final now = ref.watch(clockProvider)();
     final shownDay = session?.day ?? dateOnly(w.startedAt.toLocal());
     // A finished workout has no footer (feature 020): Resume lives in the
-    // options menu, Edit and Delete in the app bar, back leaves the screen.
+    // options menu with Edit, Share and Delete (feature 036), back leaves
+    // the screen; while editing only "Done editing" stays in the app bar.
     final canResume =
         !isLive && (ref.watch(canResumeProvider(w.id)).value ?? false);
     return Scaffold(
@@ -389,58 +395,73 @@ class _WorkoutView extends ConsumerWidget {
           isLive ? 'Workout' : formatDateShort(w.startedAt.toLocal()),
         ),
         actions: [
-          if (!isLive) ...[
+          if (!isLive && editing)
             IconButton(
-              icon: Icon(editing ? AppIcons.check : AppIcons.edit),
-              tooltip: editing ? 'Done editing' : 'Edit workout',
-              onPressed: () {
-                ref.read(hapticsProvider).tick();
-                onToggleEdit();
-              },
+              icon: const Icon(AppIcons.check),
+              tooltip: 'Done editing',
+              onPressed: () => _toggleEdit(ref),
             ),
-            IconButton(
-              icon: const Icon(AppIcons.delete),
-              color: AppColors.danger,
-              tooltip: 'Delete workout',
-              onPressed: () => _delete(context, ref),
-            ),
-          ],
-          if (isLive || detail.exercises.isNotEmpty || canResume || readOnly)
-            PopupMenuButton<String>(
-              tooltip: 'Workout options',
-              onSelected: (v) => switch (v) {
-                'discard' => _discard(context, ref, session),
-                'resume' => _resume(context, ref),
-                'share' => context.push(Routes.shareWorkout(w.id)),
-                _ => _saveAsTemplate(context, ref),
-              },
-              itemBuilder: (_) => [
-                if (readOnly)
-                  const PopupMenuItem(
-                    value: 'share',
-                    child: ListTile(
-                      leading: Icon(AppIcons.share),
-                      title: Text('Share'),
-                      contentPadding: EdgeInsets.zero,
+          // Always shown: finished workouts hold Edit/Delete here, live ones
+          // hold Discard.
+          PopupMenuButton<String>(
+            tooltip: 'Workout options',
+            onSelected: (v) => switch (v) {
+              'edit' => _toggleEdit(ref),
+              'discard' => _discard(context, ref, session),
+              'resume' => _resume(context, ref),
+              'share' => context.push(Routes.shareWorkout(w.id)),
+              'delete' => _delete(context, ref),
+              'template' => _saveAsTemplate(context, ref),
+              _ => null,
+            },
+            itemBuilder: (_) => [
+              if (readOnly)
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: ListTile(
+                    leading: Icon(AppIcons.edit),
+                    title: Text('Edit workout'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              if (readOnly)
+                const PopupMenuItem(
+                  value: 'share',
+                  child: ListTile(
+                    leading: Icon(AppIcons.share),
+                    title: Text('Share'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              if (canResume)
+                const PopupMenuItem(
+                  value: 'resume',
+                  child: Text('Resume workout'),
+                ),
+              if (detail.exercises.isNotEmpty)
+                const PopupMenuItem(
+                  value: 'template',
+                  child: Text('Save as template'),
+                ),
+              if (!isLive)
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: ListTile(
+                    leading: Icon(AppIcons.delete, color: AppColors.danger),
+                    title: Text(
+                      'Delete workout',
+                      style: TextStyle(color: AppColors.danger),
                     ),
+                    contentPadding: EdgeInsets.zero,
                   ),
-                if (canResume)
-                  const PopupMenuItem(
-                    value: 'resume',
-                    child: Text('Resume workout'),
-                  ),
-                if (detail.exercises.isNotEmpty)
-                  const PopupMenuItem(
-                    value: 'template',
-                    child: Text('Save as template'),
-                  ),
-                if (isLive)
-                  const PopupMenuItem(
-                    value: 'discard',
-                    child: Text('Discard workout'),
-                  ),
-              ],
-            ),
+                ),
+              if (isLive)
+                const PopupMenuItem(
+                  value: 'discard',
+                  child: Text('Discard workout'),
+                ),
+            ],
+          ),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(64),

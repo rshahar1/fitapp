@@ -106,7 +106,9 @@ void main() {
   Future<void> openRowThenEdit(WidgetTester tester, String row) async {
     await tester.tap(find.text(row));
     await settle(tester);
-    await tester.tap(find.byTooltip('Edit activity'));
+    await tester.tap(find.byTooltip('More options'));
+    await settle(tester);
+    await tester.tap(find.text('Edit activity'));
     await settle(tester);
   }
 
@@ -368,15 +370,23 @@ void main() {
     await tester.tap(find.text('Running · 45 min'));
     await settle(tester);
 
-    await tester.tap(find.byTooltip('Delete activity'));
+    await tester.tap(find.byTooltip('More options'));
+
+    await settle(tester);
+
+    await tester.tap(find.text('Delete activity'));
     await settle(tester);
     expect(find.text('Delete activity?'), findsOneWidget);
     await tester.tap(find.text('Cancel'));
     await settle(tester);
     expect(await activities(tester), hasLength(1));
-    expect(find.byTooltip('Edit activity'), findsOneWidget);
+    expect(find.byTooltip('More options'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Delete activity'));
+    await tester.tap(find.byTooltip('More options'));
+
+    await settle(tester);
+
+    await tester.tap(find.text('Delete activity'));
     await settle(tester);
     await tester.tap(
       find.descendant(
@@ -386,7 +396,7 @@ void main() {
     );
     await settle(tester);
     expect(await activities(tester), isEmpty);
-    expect(find.byTooltip('Edit activity'), findsNothing);
+    expect(find.byTooltip('More options'), findsNothing);
     await unmount(tester);
   });
 }

@@ -281,7 +281,9 @@ void main() {
     ) async {
       final id = (await tester.runAsync(addDay))!;
       await pumpApp(tester, location: Routes.activity(id));
-      await tester.tap(find.byTooltip('Edit activity'));
+      await tester.tap(find.byTooltip('More options'));
+      await settle(tester);
+      await tester.tap(find.text('Edit activity'));
       await settle(tester);
       expect(find.text('Edit activity'), findsOneWidget);
       expect(find.text('Snowboarding'), findsWidgets);

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:fitapp/app/router.dart';
@@ -56,27 +57,43 @@ class ActivityDetailScreen extends ConsumerWidget {
         title: Text(activity == null ? '' : activityLabel(activity.typeId)),
         actions: [
           if (activity != null) ...[
-            IconButton(
-              icon: const Icon(AppIcons.edit),
-              tooltip: 'Edit activity',
-              onPressed: () => showActivitySheet(context, existing: activity),
-            ),
-            IconButton(
-              icon: const Icon(AppIcons.delete),
-              color: AppColors.danger,
-              tooltip: 'Delete activity',
-              onPressed: () => _delete(context, ref, activity),
-            ),
             PopupMenuButton<String>(
               tooltip: 'More options',
-              onSelected: (_) =>
-                  context.push(Routes.shareActivity(activity.id)),
+              onSelected: (value) {
+                switch (value) {
+                  case 'edit':
+                    unawaited(showActivitySheet(context, existing: activity));
+                  case 'share':
+                    unawaited(context.push(Routes.shareActivity(activity.id)));
+                  case 'delete':
+                    unawaited(_delete(context, ref, activity));
+                }
+              },
               itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: ListTile(
+                    leading: Icon(AppIcons.edit),
+                    title: Text('Edit activity'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
                 const PopupMenuItem(
                   value: 'share',
                   child: ListTile(
                     leading: Icon(AppIcons.share),
                     title: Text('Share'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: ListTile(
+                    leading: Icon(AppIcons.delete, color: AppColors.danger),
+                    title: Text(
+                      'Delete activity',
+                      style: TextStyle(color: AppColors.danger),
+                    ),
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),

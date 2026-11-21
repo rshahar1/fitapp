@@ -189,7 +189,7 @@ void main() {
       await tester.tap(find.byIcon(AppIcons.pilates));
       await settle(tester);
       expect(find.byType(ActivityDetailScreen), findsOneWidget);
-      expect(find.byTooltip('Edit activity'), findsOneWidget);
+      expect(find.byTooltip('More options'), findsOneWidget);
       expect(find.text('Log a past session'), findsNothing);
       await unmount(tester);
     });
@@ -219,8 +219,10 @@ void main() {
       expect(find.text('Splits'), findsNothing);
       expect(find.text('Note'), findsOneWidget);
       expect(find.text('Felt good'), findsOneWidget);
-      expect(find.byTooltip('Delete activity'), findsOneWidget);
-      await tester.tap(find.byTooltip('Edit activity'));
+      expect(find.byTooltip('More options'), findsOneWidget);
+      await tester.tap(find.byTooltip('More options'));
+      await settle(tester);
+      await tester.tap(find.text('Edit activity'));
       await settle(tester);
       expect(find.text('Edit activity'), findsOneWidget);
       await unmount(tester);
@@ -274,7 +276,9 @@ void main() {
     ) async {
       final id = (await tester.runAsync(addGps))!;
       await pumpApp(tester, location: Routes.activity(id));
-      await tester.tap(find.byTooltip('Edit activity'));
+      await tester.tap(find.byTooltip('More options'));
+      await settle(tester);
+      await tester.tap(find.text('Edit activity'));
       await settle(tester);
       expect(find.text('Edit activity'), findsOneWidget);
       expect(find.text('Set'), findsNothing);
@@ -302,7 +306,9 @@ void main() {
       await pumpApp(tester);
       await tester.tap(find.byIcon(AppIcons.running));
       await settle(tester);
-      await tester.tap(find.byTooltip('Delete activity'));
+      await tester.tap(find.byTooltip('More options'));
+      await settle(tester);
+      await tester.tap(find.text('Delete activity'));
       await settle(tester);
       expect(find.text('Delete activity?'), findsOneWidget);
       await tester.tap(find.text('Cancel'));
@@ -311,7 +317,9 @@ void main() {
         await tester.runAsync(() => ActivityRepository(db).activity(id)),
         isNotNull,
       );
-      await tester.tap(find.byTooltip('Delete activity'));
+      await tester.tap(find.byTooltip('More options'));
+      await settle(tester);
+      await tester.tap(find.text('Delete activity'));
       await settle(tester);
       await tester.tap(find.text('Delete'));
       await settle(tester);

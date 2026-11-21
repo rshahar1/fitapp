@@ -263,11 +263,7 @@ class _ExerciseCardState extends ConsumerState<ExerciseCard> {
                     ),
                     if (plan != null)
                       Text(
-                        [
-                          planSummary(plan, perHand: d.exercise.isPerHand),
-                          if (d.planSource == PlanSourceKind.template)
-                            'template plan',
-                        ].join(' · '),
+                        planSummary(plan, perHand: d.exercise.isPerHand),
                         style: Theme.of(context).textTheme.bodySmall
                             ?.copyWith(color: AppColors.textSecondary),
                       ),

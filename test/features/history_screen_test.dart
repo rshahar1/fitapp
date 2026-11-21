@@ -53,23 +53,33 @@ void main() {
     await repo.finishWorkout(w.id);
   }
 
-  Future<void> pumpScreen(WidgetTester tester, {HistoryView? view}) async {
+  Future<void> pumpScreen(
+    WidgetTester tester, {
+    HistoryView? view,
+    bool openList = true,
+  }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           databaseProvider.overrideWithValue(db),
-          if (view != null) ...[
-            stepSourceProvider.overrideWithValue(FakeStepSource()),
-            clockProvider.overrideWithValue(() => DateTime(2026, 10, 10, 18)),
-          ],
+          stepSourceProvider.overrideWithValue(FakeStepSource()),
+          clockProvider.overrideWithValue(() => DateTime(2026, 10, 10, 18)),
           if (view != null)
             historyViewProvider.overrideWith(() => _FixedView(view)),
         ],
         child: MaterialApp(theme: buildAppTheme(), home: const HistoryScreen()),
       ),
     );
+    addTearDown(() async {
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pump(const Duration(milliseconds: 10));
+    });
     await tester.runAsync(() => Future<void>.delayed(Duration.zero));
-    if (view == null) {
+    if (view == null && openList) {
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(find.text('List'));
       await tester.pumpAndSettle();
     } else {
       // The calendar keeps loading step data, so it never fully settles.
@@ -99,7 +109,7 @@ void main() {
   });
 
   testWidgets('shows the empty state', (tester) async {
-    await pumpScreen(tester);
+    await pumpScreen(tester, openList: false);
     expect(find.text('Nothing logged yet'), findsOneWidget);
     expect(
       find.text('Finished workouts and activities show up here.'),
@@ -118,10 +128,21 @@ void main() {
       await tester.pump(const Duration(milliseconds: 10));
     });
 
-    testWidgets('defaults to the list view', (tester) async {
+    testWidgets('opens on the calendar, with Calendar left of List', (
+      tester,
+    ) async {
       await tester.runAsync(() => finished(_incline, [(20, 10)]));
-      await pumpScreen(tester);
-      expect(find.byType(HistoryCalendar), findsNothing);
+      await pumpScreen(tester, openList: false);
+      expect(find.byType(HistoryCalendar), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Calendar')).dx <
+            tester.getTopLeft(find.text('List')).dx,
+        isTrue,
+      );
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pump(const Duration(milliseconds: 10));
     });
   });
 }

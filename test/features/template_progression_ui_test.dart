@@ -97,7 +97,7 @@ void main() {
     );
     await settle(tester);
     expect(find.textContaining('22.5 kg'), findsWidgets);
-    expect(find.textContaining('template plan'), findsOneWidget);
+    expect(find.textContaining('template plan'), findsNothing);
 
     expect(find.text('Add Set'), findsNothing);
     expect(find.byKey(ValueKey('set-${ids.$3}-3')), findsOneWidget);

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.22, 21 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.24, 21 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -265,7 +265,7 @@ back to the exercise plan.
 ### 5.3 Live workout (Hevy-style)
 - **Start** a workout from a template's **START** on the home tab, or **Continue** if one is in progress. At most one workout is active.
 - Header: elapsed **Duration**, live **Volume**, **Sets** done, and a **Finish** button.
-- Per exercise, a card with the name, plan summary (`3 × 10 @ 20 kg · overload +2.5 · per hand`, plus `· template plan` when the workout came from a template), and a `⋮`
+- Per exercise, a card with the name, plan summary (`3 × 10 @ 20 kg · overload +2.5 · per hand`; no `template plan` label, feature 038), and a `⋮`
   menu (Remove exercise, Edit plan). *Edit plan* edits the template plan for template exercises.
 - **Set table:** SET (number, or ↑ for overload) · PREVIOUS (same set number from the
   previous session of this exercise, e.g. `20 kg × 10`, or `—`) · KG · REPS · ✓.
@@ -301,7 +301,7 @@ back to the exercise plan.
 - **Resume** works for any finished workout while none is live, from the finish summary only (not from the History menu); a resumed workout
   keeps its earlier duration (device-local live-session record). Finishing rewrites a plan's base only when the
   workout is the newest session for that plan; backdated or older resumed sessions never do.
-- A **List / Calendar** switch: Month or Week calendar with prev/next, a month and year picker and Today; each day
+- A **Calendar / List** switch (Calendar on the left and shown by default, feature 038): Month or Week calendar with prev/next, a month and year picker and Today; each day
   shows the icon of its first session and "+N" for more, and tapping a day lists its entries.
 - Tapping an activity row opens the activity sheet to edit it or delete it (delete asks for confirmation).
 
@@ -851,4 +851,5 @@ resolved on 12 Nov 2026; see the decisions log.
   show only the date and template name (section 5.5).
 - **2.22 (21 Nov 2026):** feature 036 (owner request of 21 Nov 2026). The route share image no longer prints the MapTiler /
   OpenStreetMap credit, the in-app maps drop their attribution popup, and Edit and Delete move into the ⋮ menu of the activity and finished workout screens (sections 5.11, 15).
+- **2.24 (21 Nov 2026):** feature 038 (owner request of 21 Nov 2026). History opens on the Calendar view and the switch reads Calendar | List; workout exercise cards no longer show the `· template plan` label (sections 5.3, 5.4).
 - **2.23 (21 Nov 2026):** feature 037 (owner request of 21 Nov 2026). History gym rows show only the date and template name like Home's Recent, and the finished workout ⋮ menu holds only Edit, Share and Delete; Resume stays on the finish summary (sections 5.4, 15).

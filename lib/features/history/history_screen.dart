@@ -43,10 +43,10 @@ class HistoryScreen extends ConsumerWidget {
 /// History screen view: grouped list or month calendar.
 enum HistoryView { list, calendar }
 
-/// Which History view is showing; the Home steps card sets it to calendar.
+/// Which History view is showing; defaults to the calendar.
 class HistoryViewNotifier extends Notifier<HistoryView> {
   @override
-  HistoryView build() => HistoryView.list;
+  HistoryView build() => HistoryView.calendar;
 
   /// The view being shown.
   HistoryView get view => state;
@@ -89,14 +89,14 @@ class _HistoryList extends ConsumerWidget {
         SegmentedButton<HistoryView>(
           segments: const [
             ButtonSegment(
-              value: HistoryView.list,
-              icon: Icon(AppIcons.list),
-              label: Text('List'),
-            ),
-            ButtonSegment(
               value: HistoryView.calendar,
               icon: Icon(AppIcons.calendar),
               label: Text('Calendar'),
+            ),
+            ButtonSegment(
+              value: HistoryView.list,
+              icon: Icon(AppIcons.list),
+              label: Text('List'),
             ),
           ],
           selected: {view},

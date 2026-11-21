@@ -9,15 +9,6 @@ void main() {
   testWidgets('camera leaves the world view when the first point arrives', (
     tester,
   ) async {
-    // The test font makes the attribution text overflow; that is not under
-    // test here.
-    final onError = FlutterError.onError;
-    FlutterError.onError = (details) {
-      if (!details.exceptionAsString().contains('overflowed')) {
-        onError?.call(details);
-      }
-    };
-    addTearDown(() => FlutterError.onError = onError);
     LatLng? point;
     late StateSetter set;
     await tester.pumpWidget(
@@ -45,6 +36,10 @@ void main() {
     MapCamera camera() =>
         MapCamera.of(tester.element(find.byType(TileLayer).first));
     expect(camera().zoom, 2);
+    // No map credit anywhere in the app (feature 036).
+    expect(find.byType(RichAttributionWidget), findsNothing);
+    expect(find.textContaining('MapTiler'), findsNothing);
+    expect(find.textContaining('OpenStreetMap'), findsNothing);
 
     set(() => point = const LatLng(32.08, 34.78));
     await tester.pump();

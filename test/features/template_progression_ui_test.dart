@@ -115,7 +115,7 @@ void main() {
     );
     await tester.tap(find.bySemanticsLabel('Increase Sets'));
     await tester.pump();
-    await tester.tap(find.text('SAVE PLAN'));
+    await tester.tap(find.text('Save plan'));
     await settle(tester);
 
     final t = await tester.runAsync(() => templates.template(ids.$1));

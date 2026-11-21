@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show DatabaseConnection, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:fitapp/app/router.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/data/db/app_database.dart';
@@ -114,12 +115,12 @@ void main() {
       .then((v) => v ?? const []);
 
   Future<void> openSheet(WidgetTester tester) async {
-    await tester.tap(find.text('OPEN SHEET'));
+    await tester.tap(find.text('Open sheet'));
     await tester.pumpAndSettle();
   }
 
   Future<void> save(WidgetTester tester) async {
-    await tester.tap(find.text('SAVE'));
+    await tester.tap(find.text('Save'));
     await settle(tester);
   }
 
@@ -127,7 +128,7 @@ void main() {
       tester
           .widget<TextButton>(
             find.ancestor(
-              of: find.text('SAVE'),
+              of: find.text('Save'),
               matching: find.byType(TextButton),
             ),
           )
@@ -177,7 +178,7 @@ void main() {
     expect(value, findsOneWidget);
     final plus = find.descendant(
       of: find.byType(DurationPicker),
-      matching: find.byIcon(Icons.add),
+      matching: find.byIcon(AppIcons.add),
     );
     await tester.tap(plus);
     await tester.pump();
@@ -213,7 +214,7 @@ void main() {
     expect(find.text('Pilates'), findsOneWidget);
     await tester.tap(find.text('Pilates'));
     await tester.pump();
-    expect(find.text('DISTANCE'), findsNothing);
+    expect(find.text('Distance'), findsNothing);
     await save(tester);
     expect((await activities(tester)).single.typeId, 'pilates');
     await unmount(tester);
@@ -222,13 +223,13 @@ void main() {
   testWidgets('Distance section only for distance types', (tester) async {
     await pump(tester, const _Host());
     await openSheet(tester);
-    expect(find.text('DISTANCE'), findsNothing);
+    expect(find.text('Distance'), findsNothing);
     await tester.tap(find.text('Functional training'));
     await tester.pump();
-    expect(find.text('DISTANCE'), findsNothing);
+    expect(find.text('Distance'), findsNothing);
     await tester.tap(find.text('Running'));
     await tester.pump();
-    expect(find.text('DISTANCE'), findsOneWidget);
+    expect(find.text('Distance'), findsOneWidget);
     await unmount(tester);
   });
 
@@ -237,7 +238,7 @@ void main() {
     await openSheet(tester);
     await tester.tap(find.text('Snowboarding'));
     await tester.pump();
-    expect(find.text('DISTANCE'), findsOneWidget);
+    expect(find.text('Distance'), findsOneWidget);
     await unmount(tester);
   });
 

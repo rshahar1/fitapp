@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:fitapp/app/router.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/models.dart';
@@ -271,7 +273,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
             ? const SizedBox.shrink()
             : _missing
             ? const EmptyState(
-                icon: Icons.error_outline,
+                icon: AppIcons.error,
                 title: 'Template not found',
               )
             : ReorderableListView.builder(
@@ -295,7 +297,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
                   padding: const EdgeInsets.only(top: Space.m),
                   child: AppButton(
                     label: 'Add exercise',
-                    icon: Icons.add,
+                    icon: AppIcons.add,
                     variant: AppButtonVariant.secondary,
                     expand: true,
                     onPressed: _add,
@@ -326,7 +328,10 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(e.name, style: text.titleMedium),
+                                      Text(
+                                        e.name,
+                                        style: context.plate.display(18),
+                                      ),
                                       Text(
                                         plan == null
                                             ? 'No plan yet'
@@ -350,7 +355,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
                               minWidth: Sizes.tap,
                               minHeight: Sizes.tap,
                             ),
-                            icon: const Icon(Icons.close),
+                            icon: const Icon(AppIcons.close),
                             onPressed: () => _remove(e),
                           ),
                           ReorderableDragStartListener(
@@ -359,7 +364,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
                               width: Sizes.tap,
                               height: Sizes.tap,
                               child: Icon(
-                                Icons.drag_handle,
+                                AppIcons.dragHandle,
                                 color: AppColors.textSecondary,
                               ),
                             ),

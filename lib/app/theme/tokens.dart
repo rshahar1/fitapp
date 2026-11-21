@@ -27,11 +27,36 @@ abstract final class AppColors {
   static const onAccent = Color(0xFF15120F);
   static const accentSoft = Color(0x26F5C518); // accent at 15 %
 
-  /// Session in progress (feature 022): safety orange.
-  static const live = Color(0xFFF2711C);
+  /// Information (owner review): plate blue marks read-only data — info
+  /// cards' top rules, counts, history badges, the current chart bar and
+  /// the calendar's workout days — while yellow stays the action color.
+  static const info = Color(0xFF3D7BF2);
+
+  /// Blue text and icons (readable, 6.6:1 on surface).
+  static const infoText = Color(0xFF6FA0FF);
+
+  /// [info] at 15 %.
+  static const infoSoft = Color(0x263D7BF2); // info at 15 %
+
+  /// Session in progress (feature 022): plate red, "recording", clearly
+  /// apart from the yellow actions. Rules, rails and the blinking square.
+  static const live = Color(0xFFE5352B);
+
+  /// The "LIVE" label (readable red, 6.0:1 on surface).
+  static const liveText = Color(0xFFFF6A5C);
+
+  /// The filled "Continue" button of a session in progress: a deeper red
+  /// so chalk text on it reaches 4.6:1.
+  static const liveFill = Color(0xFFC42A20);
+
+  /// Text and icons on [liveFill].
+  static const onLive = textPrimary;
 
   /// [live] at 15 %.
-  static const liveSoft = Color(0x26F2711C); // live at 15 %
+  static const liveSoft = Color(0x26E5352B); // live at 15 %
+
+  /// The blinking "recording" square of a session in progress.
+  static const rec = live;
 
   /// Destructive text and icons (readable red, 6.0:1 on surface).
   static const danger = Color(0xFFFF6A5C);
@@ -53,7 +78,10 @@ abstract final class AppColors {
 
   /// Speed heatmap of a snowboarding route, slowest to fastest, in plate
   /// order.
-  static const heat = [plateBlue, plateGreen, accent, live, plateRed];
+  static const heat = [plateBlue, plateGreen, accent, heatOrange, plateRed];
+
+  /// The orange step of [heat].
+  static const heatOrange = Color(0xFFF2711C);
 
   /// Backdrop header wash: soot at 45 % alpha.
   static const backdropHeaderScrim = Color(0x7315120F);

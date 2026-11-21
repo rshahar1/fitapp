@@ -2,6 +2,7 @@ import 'package:drift/drift.dart'
     show DatabaseConnection, Value, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:fitapp/app/router.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/data/db/app_database.dart';
@@ -119,12 +120,12 @@ void main() {
       await pumpApp(tester);
       // Same icons and colour as the History calendar (feature 022).
       expect(find.byType(RouteThumbnail), findsNothing);
-      expect(find.byIcon(Icons.directions_bike), findsOneWidget);
-      expect(find.byIcon(Icons.directions_run), findsOneWidget);
-      for (final icon in [Icons.directions_bike, Icons.directions_run]) {
+      expect(find.byIcon(AppIcons.cycling), findsOneWidget);
+      expect(find.byIcon(AppIcons.running), findsOneWidget);
+      for (final icon in [AppIcons.cycling, AppIcons.running]) {
         expect(tester.widget<Icon>(find.byIcon(icon)).color, AppColors.accent);
       }
-      expect(find.byIcon(Icons.location_on), findsOneWidget);
+      expect(find.byIcon(AppIcons.locationOn), findsOneWidget);
       expect(find.bySemanticsLabel(RegExp('GPS tracked')), findsOneWidget);
       await unmount(tester);
     });
@@ -164,7 +165,7 @@ void main() {
       });
       await pumpApp(tester);
       expect(find.byType(RouteThumbnail), findsNothing);
-      expect(find.byIcon(Icons.directions_run), findsOneWidget);
+      expect(find.byIcon(AppIcons.running), findsOneWidget);
       await unmount(tester);
     });
 
@@ -179,13 +180,13 @@ void main() {
         );
       });
       await pumpApp(tester);
-      await tester.tap(find.byIcon(Icons.directions_run));
+      await tester.tap(find.byIcon(AppIcons.running));
       await settle(tester);
       expect(find.text('Easy loop'), findsOneWidget);
-      expect(find.text('SPLITS'), findsOneWidget);
+      expect(find.text('Splits'), findsOneWidget);
       router.pop();
       await settle(tester);
-      await tester.tap(find.byIcon(Icons.self_improvement));
+      await tester.tap(find.byIcon(AppIcons.pilates));
       await settle(tester);
       expect(find.byType(ActivityDetailScreen), findsOneWidget);
       expect(find.byTooltip('Edit activity'), findsOneWidget);
@@ -209,14 +210,14 @@ void main() {
       ))!;
       await pumpApp(tester, location: Routes.activity(id));
       expect(find.byType(RouteMap), findsNothing);
-      expect(find.text('DISTANCE'), findsOneWidget);
+      expect(find.text('Distance'), findsOneWidget);
       expect(find.text('5'), findsOneWidget);
-      expect(find.text('DURATION'), findsOneWidget);
-      expect(find.text('AVG PACE'), findsOneWidget);
-      expect(find.text('MOVING TIME'), findsNothing);
-      expect(find.text('CLIMB'), findsNothing);
-      expect(find.text('SPLITS'), findsNothing);
-      expect(find.text('NOTE'), findsOneWidget);
+      expect(find.text('Duration'), findsOneWidget);
+      expect(find.text('Avg pace'), findsOneWidget);
+      expect(find.text('Moving time'), findsNothing);
+      expect(find.text('Climb'), findsNothing);
+      expect(find.text('Splits'), findsNothing);
+      expect(find.text('Note'), findsOneWidget);
       expect(find.text('Felt good'), findsOneWidget);
       expect(find.byTooltip('Delete activity'), findsOneWidget);
       await tester.tap(find.byTooltip('Edit activity'));
@@ -237,7 +238,7 @@ void main() {
       expect(find.text('Pilates'), findsOneWidget);
       expect(find.byType(RouteMap), findsNothing);
       expect(find.byType(MetricTile), findsNothing);
-      expect(find.text('NOTE'), findsNothing);
+      expect(find.text('Note'), findsNothing);
       await unmount(tester);
     });
 
@@ -246,12 +247,12 @@ void main() {
       await pumpApp(tester, location: Routes.activity(id));
       expect(find.byType(RouteMap), findsOneWidget);
       expect(find.text('Running'), findsOneWidget);
-      expect(find.text('DISTANCE'), findsOneWidget);
+      expect(find.text('Distance'), findsOneWidget);
       expect(find.text('2.2'), findsOneWidget);
-      expect(find.text('MOVING TIME'), findsOneWidget);
+      expect(find.text('Moving time'), findsOneWidget);
       expect(find.text('11:40'), findsOneWidget);
-      expect(find.text('AVG PACE'), findsOneWidget);
-      expect(find.text('CLIMB'), findsOneWidget);
+      expect(find.text('Avg pace'), findsOneWidget);
+      expect(find.text('Climb'), findsOneWidget);
       expect(find.text('km 1'), findsOneWidget);
       expect(find.text('5:30'), findsOneWidget);
       expect(find.text('5:00'), findsOneWidget);
@@ -263,8 +264,8 @@ void main() {
     testWidgets('cycling shows average speed', (tester) async {
       final id = (await tester.runAsync(() => addGps(type: 'cycling')))!;
       await pumpApp(tester, location: Routes.activity(id));
-      expect(find.text('AVG SPEED'), findsOneWidget);
-      expect(find.text('AVG PACE'), findsNothing);
+      expect(find.text('Avg speed'), findsOneWidget);
+      expect(find.text('Avg pace'), findsNothing);
       await unmount(tester);
     });
 
@@ -281,7 +282,7 @@ void main() {
       expect(find.textContaining('come from the GPS'), findsOneWidget);
       expect(find.text('Pilates'), findsNothing);
       await tester.enterText(find.byType(TextField), 'Tempo');
-      await tester.tap(find.text('SAVE'));
+      await tester.tap(find.text('Save'));
       await settle(tester);
       final a = (await tester.runAsync(
         () => ActivityRepository(db).activity(id),
@@ -299,7 +300,7 @@ void main() {
     testWidgets('Delete confirms, deletes and pops', (tester) async {
       final id = (await tester.runAsync(addGps))!;
       await pumpApp(tester);
-      await tester.tap(find.byIcon(Icons.directions_run));
+      await tester.tap(find.byIcon(AppIcons.running));
       await settle(tester);
       await tester.tap(find.byTooltip('Delete activity'));
       await settle(tester);

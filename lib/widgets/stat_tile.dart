@@ -1,4 +1,4 @@
-import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -27,12 +27,12 @@ class StatTile extends StatelessWidget {
         children: [
           Text(
             value,
-            style: text.titleLarge?.copyWith(
+            style: context.plate.number(
+              24,
               color: color ?? AppColors.textPrimary,
-              fontFeatures: tabular,
             ),
           ),
-          Text(label.toUpperCase(), style: text.labelSmall),
+          Text(label, style: text.labelSmall),
         ],
       ),
     );

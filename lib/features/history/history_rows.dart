@@ -1,5 +1,7 @@
 import 'package:fitapp/app/router.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/data/db/app_database.dart';
@@ -49,10 +51,7 @@ class HistoryIconBadge extends StatelessWidget {
     return Container(
       width: Sizes.tap - Space.s,
       height: Sizes.tap - Space.s,
-      decoration: BoxDecoration(
-        color: AppColors.accentSoft,
-        borderRadius: BorderRadius.circular(Radii.chip),
-      ),
+      decoration: const BoxDecoration(color: AppColors.accentSoft),
       child: icon != null
           ? Icon(icon, size: 22, color: AppColors.accent)
           : ActivityIcon(typeId!, size: 22, color: AppColors.accent),
@@ -107,7 +106,7 @@ class HistoryActivityRow extends StatelessWidget {
         subtitle: subtitle,
         trailing: isGps
             ? const Icon(
-                Icons.location_on,
+                AppIcons.locationOn,
                 size: 16,
                 color: AppColors.textSecondary,
               )
@@ -174,9 +173,9 @@ class HistoryWorkoutRow extends StatelessWidget {
                   children: [
                     Text(
                       volume,
-                      style: text.bodyLarge?.copyWith(
+                      style: context.plate.number(
+                        20,
                         color: context.metrics.volume,
-                        fontFeatures: tabular,
                       ),
                     ),
                     Text(

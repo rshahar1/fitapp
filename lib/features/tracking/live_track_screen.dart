@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:fitapp/app/router.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/core/haptics.dart';
@@ -90,7 +92,7 @@ class _LiveTrackScreenState extends ConsumerState<LiveTrackScreen> {
         body: _recovering || state is TrackingFinished
             ? const Center(child: CircularProgressIndicator())
             : EmptyState(
-                icon: Icons.directions_run,
+                icon: AppIcons.running,
                 title: 'No activity in progress.',
                 action: AppButton(
                   label: 'Back to Home',
@@ -111,7 +113,7 @@ class _LiveTrackScreenState extends ConsumerState<LiveTrackScreen> {
           automaticallyImplyLeading: false,
           leading: IconButton(
             tooltip: 'Back',
-            icon: const Icon(Icons.arrow_back),
+            icon: const Icon(AppIcons.back),
             onPressed: _locked ? null : () => _leave(context),
           ),
           title: Text(activityLabel(state.typeId)),
@@ -140,10 +142,10 @@ class _LiveTrackScreenState extends ConsumerState<LiveTrackScreen> {
               if (!state.serviceEnabled)
                 const _GpsBanner(
                   'Location is off. Turn it on to keep tracking.',
-                  icon: Icons.location_disabled,
+                  icon: AppIcons.locationDisabled,
                 )
               else if (state.gpsIssue != null)
-                _GpsBanner(state.gpsIssue!, icon: Icons.gps_not_fixed),
+                _GpsBanner(state.gpsIssue!, icon: AppIcons.gpsSearching),
               if (snow == null) ...[
                 _StatusRow(track: track, accuracy: state.accuracy),
                 _Tiles(typeId: state.typeId, track: track),
@@ -184,7 +186,7 @@ class _LiveTrackScreenState extends ConsumerState<LiveTrackScreen> {
                 Expanded(
                   child: FooterButton(
                     label: paused ? 'Resume' : 'Pause',
-                    icon: paused ? Icons.play_arrow : Icons.pause,
+                    icon: paused ? AppIcons.play : AppIcons.pause,
                     primary: paused,
                     onPressed: _locked
                         ? null
@@ -197,7 +199,7 @@ class _LiveTrackScreenState extends ConsumerState<LiveTrackScreen> {
                 if (_locked)
                   HoldButton(
                     label: 'Unlock',
-                    icon: Icons.lock,
+                    icon: AppIcons.lock,
                     iconOnly: true,
                     onCompleted: () => setState(() => _locked = false),
                     onShortPress: () => _hint('Hold to unlock'),
@@ -205,7 +207,7 @@ class _LiveTrackScreenState extends ConsumerState<LiveTrackScreen> {
                 else
                   FooterButton(
                     label: 'Lock',
-                    icon: Icons.lock_open,
+                    icon: AppIcons.lockOpen,
                     iconOnly: true,
                     onPressed: () => setState(() => _locked = true),
                   ),
@@ -213,7 +215,7 @@ class _LiveTrackScreenState extends ConsumerState<LiveTrackScreen> {
                 Expanded(
                   child: HoldButton(
                     label: 'Finish',
-                    icon: Icons.flag,
+                    icon: AppIcons.flag,
                     onCompleted: _locked ? null : () => _finish(state),
                     onShortPress: () => _hint('Hold to finish'),
                   ),
@@ -259,17 +261,13 @@ class _Hero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    final style = text.displayLarge?.copyWith(
-      fontWeight: FontWeight.w800,
-      color: AppColors.textPrimary,
-      fontFeatures: tabular,
-    );
+    final style = context.plate.number(56);
     final speed = usesSpeed(typeId);
     return Semantics(
       container: true,
       child: Column(
         children: [
-          Text(speed ? 'SPEED' : 'TIME', style: text.labelSmall),
+          Text(speed ? 'Speed' : 'Time', style: text.labelSmall),
           if (speed)
             Text(formatSpeedMps(track.currentSpeedMps), style: style)
           else
@@ -310,7 +308,7 @@ class _StatusRow extends StatelessWidget {
           child: DecoratedBox(
             decoration: const ShapeDecoration(
               color: AppColors.surfaceHigh,
-              shape: StadiumBorder(),
+              shape: RoundedRectangleBorder(),
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(
@@ -319,10 +317,7 @@ class _StatusRow extends StatelessWidget {
               ),
               child: Text(
                 label,
-                style: TextStyle(
-                  color: context.metrics.weight,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: context.plate.tag(color: context.metrics.weight),
               ),
             ),
           ),

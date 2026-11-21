@@ -42,12 +42,12 @@ void main() {
 
   testWidgets('shows nothing without a simulation', (tester) async {
     await pump(tester, withSim: false);
-    expect(find.text('SIMULATED GPS'), findsNothing);
+    expect(find.text('Simulated GPS'), findsNothing);
   });
 
   testWidgets('shows the banner, status and speeds', (tester) async {
     await pump(tester);
-    expect(find.text('SIMULATED GPS'), findsOneWidget);
+    expect(find.text('Simulated GPS'), findsOneWidget);
     expect(find.text('Val Thorens · at the base'), findsOneWidget);
     for (final s in ['1×', '5×', '10×', '30×']) {
       expect(find.text(s), findsOneWidget);

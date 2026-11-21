@@ -1,8 +1,9 @@
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/widgets/section_header.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Rounded surface card with hairline-separated children.
+/// Square surface card with 1 dp rule-separated children.
 class Group extends StatelessWidget {
   /// Creates a group.
   const new({super.key, required this.children, this.header});
@@ -18,7 +19,7 @@ class Group extends StatelessWidget {
     final items = <Widget>[];
     for (var i = 0; i < children.length; i++) {
       if (i > 0) {
-        items.add(const Divider(indent: Space.m));
+        items.add(const Divider(height: Strokes.rule, thickness: Strokes.rule));
       }
       items.add(children[i]);
     }
@@ -110,7 +111,10 @@ class GroupRow extends StatelessWidget {
               ],
               if (showChevron) ...[
                 const SizedBox(width: Space.xs),
-                const Icon(Icons.chevron_right, color: AppColors.textTertiary),
+                const Icon(
+                  AppIcons.chevronRight,
+                  color: AppColors.textTertiary,
+                ),
               ],
             ],
           ),

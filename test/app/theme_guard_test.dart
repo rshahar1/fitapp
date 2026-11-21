@@ -5,8 +5,18 @@ import 'package:flutter_test/flutter_test.dart';
 /// Feature 034 (SC-001): nothing of the previous look may remain.
 void main() {
   const oldPalette = [
-    '1C1C1E', '2C2C2E', '8E8E93', '5A5A5F', '11D16C', '2BE07F', '7CF5B0',
-    '64D2FF', 'FF9F0A', 'FF453A', 'FFD60A', '14261C',
+    '1C1C1E',
+    '2C2C2E',
+    '8E8E93',
+    '5A5A5F',
+    '11D16C',
+    '2BE07F',
+    '7CF5B0',
+    '64D2FF',
+    'FF9F0A',
+    'FF453A',
+    'FFD60A',
+    '14261C',
   ];
   final banned = <String, RegExp>{
     'stock Material icon': RegExp(r'\bIcons\.'),
@@ -20,11 +30,12 @@ void main() {
     ),
   };
 
-  List<File> dartFiles(String dir) => Directory(dir)
-      .listSync(recursive: true)
-      .whereType<File>()
-      .where((f) => f.path.endsWith('.dart'))
-      .toList();
+  List<File> dartFiles(String dir) =>
+      Directory(dir)
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))
+          .toList();
 
   for (final dir in ['lib', 'test']) {
     test('no leftover of the old look in $dir/', () {

@@ -60,7 +60,7 @@ Future<void> runWorkoutFlow(
 
   await tap(find.byTooltip('Go'));
   await tap(find.bySemanticsLabel('Start Push template'));
-  await tap(find.text('ADD EXERCISE'));
+  await tap(find.text('Add Exercise'));
   await tap(find.text('Incline Dumbbell Bench Press'));
 
   // Plan: base 20 (8 × 2.5), defaults 10 reps × 3 sets, +2.5.
@@ -73,7 +73,7 @@ Future<void> runWorkoutFlow(
     await tester.pump();
   }
   // Two matching buttons exist; the last is the one on top.
-  final btn = find.widgetWithText(AppButton, 'START WITH THIS PLAN');
+  final btn = find.widgetWithText(AppButton, 'Start with this plan');
   await tap(btn, last: true);
 
   // The template's exercise is listed first; the added one is last.
@@ -86,15 +86,15 @@ Future<void> runWorkoutFlow(
     await tester.tap(find.bySemanticsLabel('Decrease Reps'));
     await tester.pump();
   }
-  await tap(find.text('LOG SET'));
+  await tap(find.text('Log set'));
 
-  await tap(find.text('FINISH'));
+  await tap(find.text('Finish'));
   expect(
     find.textContaining('Incline Dumbbell Bench Press: 20 kg → 22.5 kg'),
     findsOneWidget,
   );
   await tap(
-    find.descendant(of: find.byType(BottomSheet), matching: find.text('DONE')),
+    find.descendant(of: find.byType(BottomSheet), matching: find.text('Done')),
   );
 
   await tap(find.text('Progress'));

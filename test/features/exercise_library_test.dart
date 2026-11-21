@@ -86,18 +86,18 @@ void main() {
     await tester.tap(find.byTooltip('New exercise'));
     await settle(tester);
     await tester.enterText(find.byType(TextField).last, name);
-    if (category != null) await tester.tap(find.text(category));
-    await tester.tap(find.text('CREATE EXERCISE'));
+    if (category != null) await tester.tap(find.text(category).last);
+    await tester.tap(find.text('Create exercise'));
     await settle(tester);
   }
 
   testWidgets('lists categories with seeded exercises', (tester) async {
     await pump(tester);
     expect(find.text('Gym Exercise Library'), findsOneWidget);
-    for (final g in ['CHEST', 'BACK', 'LEGS', 'SHOULDERS', 'ARMS']) {
+    for (final g in ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms']) {
       expect(find.text(g), findsOneWidget);
     }
-    expect(find.text('CUSTOM'), findsNothing);
+    expect(find.text('Custom'), findsNothing);
     await unmount(tester);
   });
 
@@ -117,9 +117,9 @@ void main() {
     await pump(tester);
     await createExercise(tester, 'Hip Thrust', category: 'Legs');
     expect(find.text('Hip Thrust'), findsOneWidget);
-    expect(find.text('CUSTOM'), findsNothing);
-    final legsY = tester.getTopLeft(find.text('LEGS')).dy;
-    final shouldersY = tester.getTopLeft(find.text('SHOULDERS')).dy;
+    expect(find.text('Custom'), findsNothing);
+    final legsY = tester.getTopLeft(find.text('Legs')).dy;
+    final shouldersY = tester.getTopLeft(find.text('Shoulders')).dy;
     final y = tester.getTopLeft(find.text('Hip Thrust')).dy;
     expect(y, greaterThan(legsY));
     expect(y, lessThan(shouldersY));
@@ -131,7 +131,7 @@ void main() {
   ) async {
     await pump(tester);
     await createExercise(tester, 'Hip Thrust');
-    expect(find.text('CUSTOM'), findsOneWidget);
+    expect(find.text('Custom'), findsOneWidget);
     await tester.tap(find.byTooltip('Options for Hip Thrust'));
     await settle(tester);
     await tester.tap(find.text('Edit'));
@@ -139,12 +139,12 @@ void main() {
     expect(find.text('Edit exercise'), findsOneWidget);
     expect(find.text('Hip Thrust'), findsWidgets);
     await tester.enterText(find.byType(TextField).last, 'Glute Bridge');
-    await tester.tap(find.text('Legs'));
-    await tester.tap(find.text('SAVE'));
+    await tester.tap(find.text('Legs').last);
+    await tester.tap(find.text('Save'));
     await settle(tester);
     expect(find.text('Hip Thrust'), findsNothing);
     expect(find.text('Glute Bridge'), findsOneWidget);
-    expect(find.text('CUSTOM'), findsNothing);
+    expect(find.text('Custom'), findsNothing);
     expect(find.byTooltip('Options for Glute Bridge'), findsOneWidget);
     await unmount(tester);
   });
@@ -153,7 +153,7 @@ void main() {
     await pump(tester);
     await createExercise(tester, 'barbell bench press');
     expect(find.textContaining('already exists'), findsOneWidget);
-    expect(find.text('CREATE EXERCISE'), findsOneWidget);
+    expect(find.text('Create exercise'), findsOneWidget);
     await unmount(tester);
   });
 
@@ -175,7 +175,7 @@ void main() {
     await tester.tap(find.byTooltip('Edit exercise'));
     await settle(tester);
     expect(find.text('Edit exercise'), findsOneWidget);
-    expect(find.text('SAVE'), findsOneWidget);
+    expect(find.text('Save'), findsOneWidget);
     await unmount(tester);
   });
 
@@ -184,7 +184,7 @@ void main() {
     await tester.tap(find.text('All exercises'));
     await settle(tester);
     expect(find.byTooltip('New exercise'), findsOneWidget);
-    expect(find.text('CHEST'), findsOneWidget);
+    expect(find.text('Chest'), findsOneWidget);
     await unmount(tester);
   });
 

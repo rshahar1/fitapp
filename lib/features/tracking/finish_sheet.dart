@@ -1,3 +1,4 @@
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
@@ -224,7 +225,7 @@ class _FinishSheetState extends ConsumerState<_FinishSheet> {
             const SizedBox(height: Space.s),
             AppButton(
               label: 'Save',
-              icon: Icons.check,
+              icon: AppIcons.check,
               expand: true,
               onPressed: _busy ? null : _save,
             ),

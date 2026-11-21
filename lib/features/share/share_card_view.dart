@@ -44,39 +44,37 @@ class ShareCardView extends StatelessWidget {
       // Opaque base first: the PNG must have no transparent pixels.
       child: DecoratedBox(
         decoration: const BoxDecoration(color: AppColors.background),
-        child: DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-              colors: [
-                AppColors.accentSoft,
-                AppColors.surface,
-                AppColors.background,
-              ],
-              stops: [0, 0.35, 1],
-            ),
-          ),
-          child: DefaultTextStyle(
-            style: base.copyWith(
-              color: AppColors.textPrimary,
-              fontSize: ShareCardSize.minText + 2,
-              height: 1.2,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(Space.l),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _Header(data: data),
-                  const SizedBox(height: Space.m),
-                  Expanded(child: _body(list)),
-                  const SizedBox(height: Space.s),
-                  const _Footer(),
-                ],
+        child: Stack(
+          children: [
+            DefaultTextStyle(
+              style: base.copyWith(
+                color: AppColors.textPrimary,
+                fontSize: ShareCardSize.minText + 2,
+                height: 1.2,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(Space.l),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _Header(data: data),
+                    const SizedBox(height: Space.m),
+                    Expanded(child: _body(list)),
+                    const SizedBox(height: Space.s),
+                    const _Footer(),
+                  ],
+                ),
               ),
             ),
-          ),
+            // Yellow top rule of the poster.
+            const Positioned(
+              left: 0,
+              top: 0,
+              right: 0,
+              height: Strokes.cardTop,
+              child: ColoredBox(color: AppColors.accent),
+            ),
+          ],
         ),
       ),
     );
@@ -103,10 +101,7 @@ class _Header extends StatelessWidget {
         Container(
           width: Sizes.tap - Space.s,
           height: Sizes.tap - Space.s,
-          decoration: const BoxDecoration(
-            color: AppColors.accentSoft,
-            shape: BoxShape.circle,
-          ),
+          decoration: const BoxDecoration(color: AppColors.accentSoft),
           alignment: Alignment.center,
           child: data.typeId == 'gym'
               ? const Icon(
@@ -130,8 +125,11 @@ class _Header extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
+                  fontFamily: AppFonts.display,
                   fontSize: ShareCardSize.title,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w900,
+                  height: 1.1,
+                  letterSpacing: 0.4,
                 ),
               ),
               Text(
@@ -139,6 +137,7 @@ class _Header extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: ShareCardSize.minText + 1,
                   color: AppColors.textSecondary,
+                  fontFeatures: tabular,
                 ),
               ),
             ],
@@ -158,9 +157,11 @@ class _Footer extends StatelessWidget {
       Text(
         'FitApp',
         style: TextStyle(
+          fontFamily: AppFonts.display,
           color: AppColors.accent,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w900,
           fontSize: ShareCardSize.minText + 3,
+          letterSpacing: 0.8,
         ),
       ),
       SizedBox(width: Space.s),
@@ -206,15 +207,18 @@ class _StatGrid extends StatelessWidget {
                     ? stat.parts[i].text
                     : ' ${stat.parts[i].text}',
                 style: TextStyle(
+                  fontFamily: AppFonts.number,
                   fontSize: unitSize,
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w600,
+                  fontFeatures: tabular,
                 ),
               )
             else
               TextSpan(
                 text: i == 0 ? stat.parts[i].text : ' ${stat.parts[i].text}',
                 style: TextStyle(
+                  fontFamily: AppFonts.number,
                   fontSize: size,
                   fontWeight: FontWeight.w800,
                   fontFeatures: tabular,
@@ -298,14 +302,15 @@ class _Stat extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          stat.label.toUpperCase(),
+          stat.label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
+            fontFamily: AppFonts.display,
             fontSize: ShareCardSize.minText,
             color: AppColors.textSecondary,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.6,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.8,
           ),
         ),
         const SizedBox(height: Space.xxs),
@@ -329,7 +334,6 @@ class _RouteBox extends StatelessWidget {
   Widget build(BuildContext context) => SizedBox(
     height: height,
     child: ClipRRect(
-      borderRadius: BorderRadius.circular(Radii.card),
       child: ColoredBox(
         color: AppColors.surfaceHigh,
         child: CustomPaint(painter: painter, size: Size.infinite),
@@ -407,7 +411,6 @@ class _TimeBar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(Radii.pill),
           child: SizedBox(
             height: ShareCardSize.barHeight,
             child: Row(
@@ -432,10 +435,7 @@ class _TimeBar extends StatelessWidget {
                     Container(
                       width: Space.s,
                       height: Space.s,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                      ),
+                      decoration: BoxDecoration(color: color),
                     ),
                     const SizedBox(width: Space.xs),
                     Flexible(
@@ -444,8 +444,9 @@ class _TimeBar extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
+                          fontFamily: AppFonts.number,
                           fontSize: ShareCardSize.minText + 1,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                           fontFeatures: tabular,
                         ),
                       ),
@@ -480,7 +481,11 @@ class _StrengthBody extends StatelessWidget {
         if (data.stats.isNotEmpty)
           _StatGrid(stats: data.stats, columns: data.stats.length.clamp(1, 4)),
         const SizedBox(height: Space.m - Space.xs),
-        const Divider(height: 1, thickness: Sizes.hairline),
+        const Divider(
+          height: 1,
+          thickness: Strokes.rule,
+          color: AppColors.surfaceHigh,
+        ),
         const SizedBox(height: Space.xs),
         Expanded(
           child: LayoutBuilder(
@@ -549,7 +554,9 @@ class _ExerciseRow extends StatelessWidget {
   Widget build(BuildContext context) {
     const nameStyle = TextStyle(fontWeight: FontWeight.w600);
     const detailStyle = TextStyle(
+      fontFamily: AppFonts.number,
       color: AppColors.textSecondary,
+      fontWeight: FontWeight.w700,
       fontFeatures: tabular,
     );
     final content = stacked
@@ -616,8 +623,10 @@ class _BasicBody extends StatelessWidget {
           const Text(
             'Logged in FitApp',
             style: TextStyle(
+              fontFamily: AppFonts.display,
               fontSize: ShareCardSize.statValue,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.4,
             ),
           ),
         ],

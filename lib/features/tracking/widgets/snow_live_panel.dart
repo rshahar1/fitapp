@@ -1,4 +1,5 @@
 import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/domain/activity_types.dart' show formatGrouped;
@@ -29,11 +30,7 @@ class SnowLivePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     final m = context.metrics;
-    final style = text.displayLarge?.copyWith(
-      fontWeight: FontWeight.w800,
-      color: AppColors.textPrimary,
-      fontFeatures: tabular,
-    );
+    final style = context.plate.number(56);
     final tiles = [
       MetricTile(label: 'Runs', value: '${snowRunCount(snow)}'),
       MetricTile(
@@ -136,17 +133,14 @@ class _StatusChip extends StatelessWidget {
       child: DecoratedBox(
         decoration: const ShapeDecoration(
           color: AppColors.surfaceHigh,
-          shape: StadiumBorder(),
+          shape: RoundedRectangleBorder(),
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: Space.m,
             vertical: Space.xs,
           ),
-          child: Text(
-            label,
-            style: TextStyle(color: color, fontWeight: FontWeight.w700),
-          ),
+          child: Text(label, style: context.plate.tag(color: color)),
         ),
       ),
     );

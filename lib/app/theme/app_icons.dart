@@ -3,7 +3,7 @@ import 'package:material_ui/material_ui.dart';
 
 /// The app's only icon set (feature 034): Material Symbols **Sharp**, drawn
 /// heavy by the theme (`IconThemeData.weight`), with square corners and
-/// terminals. Widgets use these names, never `Icons.*`.
+/// terminals. Widgets use these names, never the stock Material set.
 abstract final class AppIcons {
   // Actions.
   static const IconData add = Symbols.add_sharp;

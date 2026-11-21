@@ -15,7 +15,10 @@ The only place look values exist. Widgets read these; they never hard-code value
 | `accent` | `#F5C518` | single action color |
 | `onAccent` | `#15120F` | text/icons on accent |
 | `accentSoft` | accent at 15 % | current-set tint, selected chips |
-| `live` / `liveSoft` | `#F2711C` / 15 % | session in progress |
+| `info` / `infoText` / `infoSoft` | `#3D7BF2` / `#6FA0FF` / 15 % | information (owner review): info cards' top rules (steps, exercise chart), "this week" counts, the current weekly bar, calendar workout days |
+| `live` / `liveSoft` | `#E5352B` / 15 % | session in progress: rules, rails, blinking square (owner review: orange read too close to yellow, chalk did not fit) |
+| `liveText` | `#FF6A5C` | the "LIVE" label |
+| `liveFill` / `onLive` | `#C42A20` / chalk | the filled Continue button (4.6:1) |
 | `danger` | `#FF6A5C` | destructive text and icons |
 | `plateRed` | `#E5352B` | red fills, sets bars |
 | `plateBlue` | `#3D7BF2` | blue fills, volume bars |
@@ -25,7 +28,7 @@ The only place look values exist. Widgets read these; they never hard-code value
 | `metricVolume` | `#6FA0FF` | volume (readable) |
 | `metricWeight` | `#EDE6D8` | weight (plate white) |
 | `routeLift` | `#9C9284` | lift stretches |
-| `heat` | blue `#3D7BF2` → green `#2FB85C` → yellow `#F5C518` → orange `#F2711C` → red `#E5352B` | speed |
+| `heat` | blue `#3D7BF2` → green `#2FB85C` → yellow `#F5C518` → orange `heatOrange #F2711C` → red `#E5352B` | speed |
 | `accentBright` | `#FFD84A` | reward flash |
 | `mint` | `#EDE6D8` | reward highlight (chalk) |
 | `gold` | `#F5C518` | reward spark |

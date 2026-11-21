@@ -13,6 +13,8 @@ class AppCard extends StatelessWidget {
     this.borderColor,
     this.topRule = false,
     this.topRuleColor = AppColors.accent,
+    this.color = AppColors.surface,
+    this.leftRule = false,
   });
 
   /// Content.
@@ -33,11 +35,17 @@ class AppCard extends StatelessWidget {
   /// Color of the top rule.
   final Color topRuleColor;
 
+  /// Fill.
+  final Color color;
+
+  /// Also draws the rule down the left edge (session in progress).
+  final bool leftRule;
+
   @override
   Widget build(BuildContext context) {
     const radius = BorderRadius.all(Radius.circular(Radii.card));
     final card = Material(
-      color: AppColors.surface,
+      color: color,
       shape: RoundedRectangleBorder(
         borderRadius: radius,
         side: borderColor == null
@@ -50,12 +58,14 @@ class AppCard extends StatelessWidget {
         child: Padding(padding: padding, child: child),
       ),
     );
-    if (!topRule) return card;
+    if (!topRule && !leftRule) return card;
+    final rule = BorderSide(color: topRuleColor, width: Strokes.cardTop);
     return DecoratedBox(
       position: DecorationPosition.foreground,
       decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(color: topRuleColor, width: Strokes.cardTop),
+          top: topRule ? rule : BorderSide.none,
+          left: leftRule ? rule : BorderSide.none,
         ),
       ),
       child: card,

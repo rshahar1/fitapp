@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:fitapp/app/router.dart';
-import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/core/step_source.dart';
@@ -128,17 +128,14 @@ class _StepsCardState extends ConsumerState<StepsCard> {
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
-                  Text(
-                    value,
-                    style: text.headlineMedium?.copyWith(fontFeatures: tabular),
-                  ),
+                  Text(value, style: context.plate.number(36)),
                   if (km != null) ...[
                     const SizedBox(width: Space.s),
                     Text(
                       km,
-                      style: text.titleMedium?.copyWith(
+                      style: context.plate.number(
+                        22,
                         color: AppColors.textSecondary,
-                        fontFeatures: tabular,
                       ),
                     ),
                   ],
@@ -190,6 +187,8 @@ class _StepsCardState extends ConsumerState<StepsCard> {
     return Padding(
       padding: const EdgeInsets.only(top: Space.s),
       child: AppCard(
+        topRule: true,
+        topRuleColor: AppColors.info,
         onTap: access == StepAccess.granted ? _openCalendar : null,
         child: SizedBox(width: double.infinity, child: body),
       ),

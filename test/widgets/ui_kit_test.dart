@@ -1,4 +1,5 @@
 import 'package:fitapp/app/backdrop.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/domain/stats.dart';
@@ -86,9 +87,9 @@ void main() {
         _FakeHaptics(),
       ),
     );
-    await tester.tap(find.text('OFF'));
+    await tester.tap(find.text('Off'));
     expect(taps, 0);
-    await tester.tap(find.text('ON'));
+    await tester.tap(find.text('On'));
     expect(taps, 1);
   });
 
@@ -119,7 +120,7 @@ void main() {
               const StatTile(value: '5', label: 'Sets'),
               const SizedBox(
                 height: 200,
-                child: EmptyState(icon: Icons.add, title: 'Nothing'),
+                child: EmptyState(icon: AppIcons.add, title: 'Nothing'),
               ),
             ],
           ),
@@ -127,7 +128,7 @@ void main() {
         _FakeHaptics(),
       ),
     );
-    expect(find.text('HEAD'), findsOneWidget);
+    expect(find.text('Head'), findsOneWidget);
     expect(find.textContaining('▲'), findsOneWidget);
     expect(find.text('—'), findsOneWidget);
   });

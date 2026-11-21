@@ -97,11 +97,9 @@ class WeeklyBarChart extends StatelessWidget {
                         toY: entries[i].value.toDouble(),
                         width: _barWidth,
                         color: i == entries.length - 1
-                            ? AppColors.accent
+                            ? AppColors.info
                             : AppColors.surfaceHigh,
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(Radii.chip),
-                        ),
+                        borderRadius: BorderRadius.zero,
                       ),
                     ],
                   ),

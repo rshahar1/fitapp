@@ -92,8 +92,8 @@ void main() {
 
   testWidgets('lists 16 library exercises grouped', (tester) async {
     await pump(tester);
-    expect(find.text('CHEST'), findsOneWidget);
-    expect(find.text('ARMS'), findsOneWidget);
+    expect(find.text('Chest'), findsOneWidget);
+    expect(find.text('Arms'), findsOneWidget);
     expect(find.byType(GroupRow), findsNWidgets(16));
     expect(find.textContaining('per hand · +2.5 kg'), findsWidgets);
   });
@@ -131,7 +131,7 @@ void main() {
     await settle(tester);
     await tester.tap(find.text('Create "Hack Squat"'));
     await settle(tester);
-    await tester.tap(find.text('CREATE EXERCISE'));
+    await tester.tap(find.text('Create exercise'));
     await settle(tester);
     expect(find.text('Add exercise'), findsNothing);
     expect(await workoutNames(tester), ['Hack Squat']);
@@ -147,7 +147,7 @@ void main() {
     await tester.tap(find.text('Create "barbell bench pres"'));
     await settle(tester);
     await tester.enterText(find.byType(TextField).last, 'barbell bench press');
-    await tester.tap(find.text('CREATE EXERCISE'));
+    await tester.tap(find.text('Create exercise'));
     await settle(tester);
     expect(find.textContaining('already exists'), findsOneWidget);
     expect(await workoutNames(tester), isEmpty);

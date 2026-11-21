@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:fitapp/app/router.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
@@ -56,12 +57,12 @@ class ActivityDetailScreen extends ConsumerWidget {
         actions: [
           if (activity != null) ...[
             IconButton(
-              icon: const Icon(Icons.edit_outlined),
+              icon: const Icon(AppIcons.edit),
               tooltip: 'Edit activity',
               onPressed: () => showActivitySheet(context, existing: activity),
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline),
+              icon: const Icon(AppIcons.delete),
               color: AppColors.danger,
               tooltip: 'Delete activity',
               onPressed: () => _delete(context, ref, activity),
@@ -71,11 +72,11 @@ class ActivityDetailScreen extends ConsumerWidget {
               onSelected: (_) =>
                   context.push(Routes.shareActivity(activity.id)),
               itemBuilder: (_) => [
-                PopupMenuItem(
+                const PopupMenuItem(
                   value: 'share',
                   child: ListTile(
-                    leading: Icon(Icons.adaptive.share),
-                    title: const Text('Share'),
+                    leading: Icon(AppIcons.share),
+                    title: Text('Share'),
                     contentPadding: EdgeInsets.zero,
                   ),
                 ),
@@ -90,7 +91,7 @@ class ActivityDetailScreen extends ConsumerWidget {
           ? (async.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : const EmptyState(
-                    icon: Icons.search_off,
+                    icon: AppIcons.searchOff,
                     title: 'Activity not found',
                     message: 'It may have been deleted.',
                   ))
@@ -153,14 +154,14 @@ class _Body extends StatelessWidget {
           _Metrics(activity: activity),
           if (splits.isNotEmpty) ...[
             const SizedBox(height: Space.l),
-            Text('SPLITS', style: text.labelSmall),
+            Text('Splits', style: text.labelSmall),
             const SizedBox(height: Space.s),
             _Splits(splits: splits),
           ],
         ],
         if (note != null && note.isNotEmpty) ...[
           const SizedBox(height: Space.l),
-          Text('NOTE', style: text.labelSmall),
+          Text('Note', style: text.labelSmall),
           const SizedBox(height: Space.s),
           Text(note, style: text.bodyLarge),
         ],
@@ -281,7 +282,7 @@ class _Splits extends StatelessWidget {
                               color: splits[i] == fastest
                                   ? AppColors.accent
                                   : AppColors.textTertiary,
-                              borderRadius: BorderRadius.circular(Radii.chip),
+                              borderRadius: BorderRadius.zero,
                             ),
                           ),
                         ),

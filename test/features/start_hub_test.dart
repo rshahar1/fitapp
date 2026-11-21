@@ -127,11 +127,14 @@ void main() {
       expect(go.width, greaterThanOrEqualTo(48));
       expect(go.height, greaterThanOrEqualTo(48));
       expect(find.bySemanticsLabel(_plus), findsOneWidget);
-      final circle = find.byWidgetPredicate(
-        (w) => w is Material && w.shape is CircleBorder,
+      final block = find.byWidgetPredicate(
+        (w) =>
+            w is Material &&
+            w.color == AppColors.accent &&
+            w.shape is RoundedRectangleBorder,
       );
       expect(
-        find.descendant(of: circle, matching: find.text('Go')),
+        find.descendant(of: block, matching: find.text('Go')),
         findsOneWidget,
       );
       await unmount(tester);
@@ -183,10 +186,10 @@ void main() {
       tester,
     ) async {
       await pumpApp(tester);
-      expect(find.text('START GYM WORKOUT'), findsNothing);
+      expect(find.text('Start gym workout'), findsNothing);
       expect(find.byTooltip('Settings'), findsNothing);
       expect(find.byTooltip('Exercises'), findsNothing);
-      expect(find.text('LOG ACTIVITY'), findsNothing);
+      expect(find.text('Log activity'), findsNothing);
       await unmount(tester);
     });
 
@@ -201,7 +204,7 @@ void main() {
       await pumpApp(tester);
       expect(find.text('Home'), findsWidgets);
       expect(find.text('Push'), findsNothing);
-      expect(find.text('START'), findsNothing);
+      expect(find.text('Start'), findsNothing);
       expect(find.bySemanticsLabel('Start Push template'), findsNothing);
       await unmount(tester);
     });
@@ -210,7 +213,7 @@ void main() {
       await tester.runAsync(startTracking);
       await pumpApp(tester);
       expect(find.text('Running in progress'), findsOneWidget);
-      expect(find.text('CONTINUE RUNNING'), findsOneWidget);
+      expect(find.text('Continue running'), findsOneWidget);
       await unmount(tester);
     });
   });
@@ -346,7 +349,6 @@ void main() {
         ),
       );
       expect(find.byType(FunctionalIcon), findsOneWidget);
-      expect(find.byIcon(Icons.sports_gymnastics), findsNothing);
       // Drawn in the row's icon colour, like the other activities (022).
       final paint = tester.widget<CustomPaint>(
         find.descendant(
@@ -405,10 +407,10 @@ void main() {
       expect(find.text('Log a past session'), findsOneWidget); // form title
       await tester.tap(find.text('Running'));
       await settle(tester);
-      expect(find.text('START LIVE'), findsNothing);
+      expect(find.text('Start live'), findsNothing);
       expect(find.text('Start live'), findsNothing);
       expect(find.text('or log it manually below'), findsNothing);
-      expect(find.text('DISTANCE'), findsOneWidget);
+      expect(find.text('Distance'), findsOneWidget);
       await unmount(tester);
     });
 
@@ -418,7 +420,7 @@ void main() {
       await tester.tap(find.text('Pilates'));
       await settle(tester);
       expect(find.text('Today'), findsOneWidget);
-      await tester.tap(find.text('SAVE'));
+      await tester.tap(find.text('Save'));
       await settle(tester);
       final rows = await tester.runAsync(() => db.select(db.activities).get());
       expect(rows!.single.typeId, 'pilates');

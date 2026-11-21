@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show DatabaseConnection, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:fitapp/app/app.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/core/rest_alerts.dart';
 import 'package:fitapp/data/db/app_database.dart';
@@ -10,7 +11,6 @@ import 'package:fitapp/features/history/history_rows.dart';
 import 'package:fitapp/features/tracking/widgets/route_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:material_ui/material_ui.dart';
 
 import '../data/fake_location_source.dart';
 import '../domain/tracking/snow_fixtures.dart';
@@ -79,8 +79,8 @@ Future<void> runGpsFlow(
 
   source.emit(track.first);
   await tester.pump();
-  await tap(find.text('START'));
-  expect(find.text('TIME'), findsOneWidget);
+  await tap(find.text('Start'));
+  expect(find.text('Time'), findsOneWidget);
 
   for (var i = 1; i < track.length; i++) {
     now = track[i].t;
@@ -90,7 +90,7 @@ Future<void> runGpsFlow(
   await tester.pump(const Duration(seconds: 1));
 
   final gesture = await tester.startGesture(
-    tester.getCenter(find.text('FINISH')),
+    tester.getCenter(find.text('Finish')),
   );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 1100));
@@ -98,14 +98,14 @@ Future<void> runGpsFlow(
   await settle();
   expect(find.text('Running summary'), findsOneWidget);
 
-  await tap(find.text('SAVE'));
+  await tap(find.text('Save'));
   expect(find.textContaining('Running · 5'), findsOneWidget);
-  final runRow = find.widgetWithIcon(HistoryIconBadge, Icons.directions_run);
+  final runRow = find.widgetWithIcon(HistoryIconBadge, AppIcons.running);
   expect(runRow, findsOneWidget);
 
   await tap(runRow);
-  expect(find.text('SPLITS'), findsOneWidget);
-  expect(find.text('AVG PACE'), findsOneWidget);
+  expect(find.text('Splits'), findsOneWidget);
+  expect(find.text('Avg pace'), findsOneWidget);
   expect(find.byType(RouteMap), findsOneWidget);
 }
 
@@ -157,8 +157,8 @@ Future<void> runSnowFlow(
 
   source.emit(day.first);
   await tester.pump();
-  await tap(find.text('START'));
-  expect(find.text('RUNS'), findsOneWidget);
+  await tap(find.text('Start'));
+  expect(find.text('Runs'), findsOneWidget);
 
   for (var i = 1; i < day.length; i++) {
     now = day[i].t;
@@ -172,7 +172,7 @@ Future<void> runSnowFlow(
   expect(find.text('Resting'), findsOneWidget);
 
   final gesture = await tester.startGesture(
-    tester.getCenter(find.text('FINISH')),
+    tester.getCenter(find.text('Finish')),
   );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 1100));
@@ -180,11 +180,11 @@ Future<void> runSnowFlow(
   await settle();
   expect(find.text('Snowboarding summary'), findsOneWidget);
   // On the sheet and on the live screen behind it.
-  expect(find.text('VERTICAL'), findsWidgets);
+  expect(find.text('Vertical'), findsWidgets);
 
-  await tap(find.text('SAVE'));
+  await tap(find.text('Save'));
   expect(find.textContaining(runsText), findsOneWidget);
-  final snowRow = find.widgetWithIcon(HistoryIconBadge, Icons.snowboarding);
+  final snowRow = find.widgetWithIcon(HistoryIconBadge, AppIcons.snowboarding);
   expect(snowRow, findsOneWidget);
 
   await tap(snowRow);

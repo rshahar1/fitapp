@@ -1,17 +1,18 @@
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Icon of a gym workout in lists.
-const gymWorkoutIcon = Icons.fitness_center;
+const gymWorkoutIcon = AppIcons.gym;
 
 /// Icon for an activity type; a generic one for unknown ids. Functional
 /// training has no Material icon: render it with [ActivityIcon].
 IconData activityIcon(String typeId) => switch (typeId) {
-  'cycling' => Icons.directions_bike,
-  'snowboarding' => Icons.snowboarding,
-  'running' => Icons.directions_run,
-  'pilates' => Icons.self_improvement,
-  _ => Icons.sports,
+  'cycling' => AppIcons.cycling,
+  'snowboarding' => AppIcons.snowboarding,
+  'running' => AppIcons.running,
+  'pilates' => AppIcons.pilates,
+  _ => AppIcons.sport,
 };
 
 /// Icon of an activity type: the [FunctionalIcon] for functional training,
@@ -83,7 +84,7 @@ class LifterPainter extends CustomPainter {
     final limb = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
+      ..strokeCap = StrokeCap.square
       ..strokeWidth = 1.9;
     RRect box(double l, double t, double r, double b, double radius) =>
         RRect.fromLTRBR(l, t, r, b, Radius.circular(radius));

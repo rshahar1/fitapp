@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:fitapp/app/theme/app_icons.dart';
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/features/start/start_hub_sheet.dart';
 import 'package:go_router/go_router.dart';
@@ -15,20 +17,20 @@ class ShellScaffold extends StatelessWidget {
 
   /// Branches in bar order; the "Go" sits between History and Progress.
   static const _tabs = [
-    (Icons.fitness_center_outlined, Icons.fitness_center, 'Home'),
-    (Icons.history_outlined, Icons.history, 'History'),
-    (Icons.show_chart_outlined, Icons.show_chart, 'Progress'),
-    (Icons.person_outline, Icons.person, 'You'),
+    (AppIcons.gym, 'Home'),
+    (AppIcons.history, 'History'),
+    (AppIcons.chart, 'Progress'),
+    (AppIcons.person, 'You'),
   ];
 
   @override
   Widget build(BuildContext context) {
     Widget tab(int branch) {
-      final (icon, selectedIcon, label) = _tabs[branch];
+      final (icon, label) = _tabs[branch];
       final selected = shell.currentIndex == branch;
       return Expanded(
         child: _Tab(
-          icon: selected ? selectedIcon : icon,
+          icon: icon,
           label: label,
           selected: selected,
           onTap: () => shell.goBranch(branch, initialLocation: selected),
@@ -103,21 +105,12 @@ class _Tab extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: selected ? AppColors.accentSoft : Colors.transparent,
-                  borderRadius: const BorderRadius.all(
-                    Radius.circular(Radii.pill),
-                  ),
+                  borderRadius: BorderRadius.zero,
                 ),
                 child: Icon(icon, color: color),
               ),
               const SizedBox(height: Space.xs),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
-              ),
+              Text(label, style: context.plate.display(12, color: color)),
             ],
           ),
         ),
@@ -126,7 +119,8 @@ class _Tab extends StatelessWidget {
   }
 }
 
-/// Raised accent circle with the play icon and "Go" inside, in the centre slot.
+/// Rectangular plate-yellow block with the play icon and "Go" inside, in the
+/// centre slot.
 class _GoButton extends StatelessWidget {
   const new({required this.onTap});
 
@@ -144,30 +138,26 @@ class _GoButton extends StatelessWidget {
       message: label,
       child: Material(
         color: AppColors.accent,
-        shape: const CircleBorder(),
-        elevation: 4,
+        shape: const RoundedRectangleBorder(),
+        elevation: 0,
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          child: const SizedBox.square(
-            dimension: 56,
+          child: SizedBox(
+            width: 64,
+            height: Sizes.tap,
             child: Center(
-              child: Column(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.play_arrow_rounded,
-                    size: 26,
+                  const Icon(
+                    AppIcons.play,
+                    size: 22,
                     color: AppColors.onAccent,
                   ),
                   Text(
                     label,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.onAccent,
-                      height: 1,
-                    ),
+                    style: context.plate.display(16, color: AppColors.onAccent),
                   ),
                 ],
               ),

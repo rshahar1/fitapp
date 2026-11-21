@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/image_sharer.dart';
 import 'package:fitapp/data/db/app_database.dart';
@@ -162,8 +163,8 @@ class _SharePreviewState extends ConsumerState<SharePreviewScreen> {
           : data == null
           ? (card.isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : EmptyState(
-                    icon: Icons.adaptive.share,
+                : const EmptyState(
+                    icon: AppIcons.share,
                     title: 'Nothing to share',
                     message:
                         'This session no longer exists or is not finished.',
@@ -194,7 +195,7 @@ class _SharePreviewState extends ConsumerState<SharePreviewScreen> {
                     const SizedBox(height: Space.m),
                     AppButton(
                       label: _busy ? 'Preparing…' : 'Share image',
-                      icon: Icons.adaptive.share,
+                      icon: AppIcons.share,
                       expand: true,
                       onPressed: _busy ? null : () => _share(data),
                     ),

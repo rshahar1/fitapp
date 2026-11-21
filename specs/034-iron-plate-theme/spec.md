@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-21
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: Owner (2026-11-21): replace the whole visual identity with the "Iron plate" direction
 (chalk, steel and competition plates) everywhere in the app, with no leftover of the previous style:
@@ -35,7 +35,7 @@ anything is merged to main or released as an APK.
 | Text secondary (muted) | `#9C9284` | 5.5:1 on surface |
 | Text tertiary (graphics only) | `#7A7064` | 3.5:1 on surface, never body text |
 | Accent (plate yellow) | `#F5C518` | 10.4:1 on surface; soot text on it 11.5:1 |
-| Live (safety orange) | `#F2711C` | 5.8:1 on surface |
+| Live (plate red, owner review) | `#E5352B` rules and square, `#FF6A5C` label, `#C42A20` button | label 6.0:1; chalk on button 4.6:1 |
 | Plate red (fills) / readable red (text) | `#E5352B` / `#FF6A5C` | fill 3.9:1; text 6.0:1 |
 | Plate blue (fills) / readable blue (text) | `#3D7BF2` / `#6FA0FF` | fill 4.3:1; text 6.6:1 |
 | Plate green | `#2FB85C` | 6.6:1 |
@@ -108,8 +108,9 @@ none shows old green, iOS grey, pill or rounded-card styling.
 3. **Given** a GPS or snowboard route, **When** it is drawn, **Then** the speed heatmap runs
    blue → green → yellow → orange → red (plate order), lifts are muted, start/finish markers are
    square.
-4. **Given** a session in progress, **When** the live indicator shows, **Then** it is safety
-   orange, distinct from the yellow accent and from red.
+4. **Given** a session in progress, **When** the live indicator shows, **Then** it is plate
+   red (red rails, a blinking red square and a deep-red Continue button), distinct from the yellow
+   accent; this applies to Home's card, the Go sheet's Continue row and live tracking.
 5. **Given** the set milestone reward, **When** it plays, **Then** its colors are yellow, chalk
    and plate green (no mint or old green).
 

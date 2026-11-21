@@ -5,7 +5,7 @@ import 'package:fitapp/core/format.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Smooth line chart with glow, gradient fill and a highlighted last point.
+/// Flat line chart with a 15 % area fill and a square last point.
 class GlowLineChart extends StatelessWidget {
   /// Creates the chart.
   const new({
@@ -29,12 +29,9 @@ class GlowLineChart extends StatelessWidget {
   final List<String>? labels;
 
   static const _height = 200.0;
-  static const _glowBlur = 8.0;
   static const _lineWidth = 3.0;
-  static const _dotRadius = 6.0;
-  static const _dotRing = 3.0;
-  static const _fillAlpha = 0.35;
-  static const _glowAlpha = 0.6;
+  static const _dotSize = 10.0;
+  static const _fillAlpha = 0.15;
 
   @override
   Widget build(BuildContext context) {
@@ -122,36 +119,21 @@ class GlowLineChart extends StatelessWidget {
                     for (var i = 0; i < n; i++)
                       FlSpot(n == 1 ? 0 : i.toDouble(), values[i]),
                   ],
-                  isCurved: true,
-                  preventCurveOverShooting: true,
                   color: color,
                   barWidth: _lineWidth,
-                  isStrokeCapRound: true,
-                  shadow: Shadow(
-                    color: color.withValues(alpha: _glowAlpha),
-                    blurRadius: _glowBlur,
-                  ),
                   dotData: FlDotData(
                     checkToShowDot: (spot, _) =>
                         spot.x == (n == 1 ? 0 : lastIndex),
                     getDotPainter: (spot, percent, bar, index) =>
-                        FlDotCirclePainter(
-                          radius: _dotRadius,
+                        FlDotSquarePainter(
+                          size: _dotSize,
                           color: color,
-                          strokeWidth: _dotRing,
-                          strokeColor: color.withValues(alpha: _fillAlpha),
+                          strokeWidth: 0,
                         ),
                   ),
                   belowBarData: BarAreaData(
                     show: true,
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        color.withValues(alpha: _fillAlpha),
-                        color.withValues(alpha: 0),
-                      ],
-                    ),
+                    color: color.withValues(alpha: _fillAlpha),
                   ),
                 ),
               ],

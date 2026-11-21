@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -94,9 +92,9 @@ final _torso = _svg(
 );
 final _neck = _svg('M91 42 L91 54 C96 57 104 57 109 54 L109 42 Z');
 final _abs = [
-  RRect.fromLTRBR(87, 102, 99, 113, const Radius.circular(4)),
-  RRect.fromLTRBR(87, 116, 99, 127, const Radius.circular(4)),
-  RRect.fromLTRBR(88, 130, 99, 142, const Radius.circular(4)),
+  RRect.fromLTRBR(87, 102, 99, 113, Radius.zero),
+  RRect.fromLTRBR(87, 116, 99, 127, Radius.zero),
+  RRect.fromLTRBR(88, 130, 99, 142, Radius.zero),
 ];
 const _strainLines = [
   (Offset(40, 50), Offset(40, 40)),
@@ -105,7 +103,7 @@ const _strainLines = [
   (Offset(144, 50), Offset(138, 42)),
 ];
 
-/// Neon line-art bodybuilder in a double-biceps pose (feature 008).
+/// Line-art bodybuilder in a double-biceps pose (feature 008).
 ///
 /// [icon] draws the compact pill version: thick strokes, a dark green fill
 /// and no inner detail lines, with no glow.
@@ -124,35 +122,11 @@ class MuscleFigurePainter extends CustomPainter {
     if (icon) {
       _figure(canvas);
     } else {
-      _glow(canvas);
       canvas.translate(pose.shake.dx, pose.shake.dy);
-      // Blurred copy under a sharp copy = neon glow.
-      final bounds = Offset.zero & figureViewBox;
-      canvas.saveLayer(
-        bounds.inflate(20),
-        Paint()..imageFilter = ui.ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5),
-      );
-      _figure(canvas);
-      _strain(canvas);
-      canvas.restore();
       _figure(canvas);
       _strain(canvas);
     }
     canvas.restore();
-  }
-
-  void _glow(Canvas canvas) {
-    const center = Offset(100, 85);
-    final r = 95 * pose.glowScale;
-    canvas.drawCircle(
-      center,
-      r,
-      Paint()
-        ..shader = ui.Gradient.radial(center, r, [
-          AppColors.accent.withValues(alpha: 0.35 * pose.glow),
-          AppColors.accent.withValues(alpha: 0),
-        ]),
-    );
   }
 
   void _strain(Canvas canvas) {
@@ -160,7 +134,7 @@ class MuscleFigurePainter extends CustomPainter {
     final paint = Paint()
       ..color = AppColors.mint.withValues(alpha: pose.strain.clamp(0, 1))
       ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round;
+      ..strokeCap = StrokeCap.square;
     for (final (a, b) in _strainLines) {
       canvas.drawLine(a, b, paint);
     }
@@ -170,8 +144,8 @@ class MuscleFigurePainter extends CustomPainter {
     final stroke = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = icon ? 6 : 2
-      ..strokeJoin = StrokeJoin.round
-      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.miter
+      ..strokeCap = StrokeCap.square
       ..color = Color.lerp(
         AppColors.accent,
         AppColors.textPrimary,
@@ -180,7 +154,7 @@ class MuscleFigurePainter extends CustomPainter {
     final detail = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5
-      ..strokeCap = StrokeCap.round
+      ..strokeCap = StrokeCap.square
       ..color = stroke.color;
     final fill = Paint()
       ..color = Color.lerp(

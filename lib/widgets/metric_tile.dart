@@ -1,4 +1,4 @@
-import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/widgets/app_card.dart';
 import 'package:material_ui/material_ui.dart';
@@ -14,7 +14,7 @@ class MetricTile extends StatelessWidget {
     this.caption,
   });
 
-  /// Label (uppercase).
+  /// Label (the display face draws capitals).
   final String label;
 
   /// Value text.
@@ -38,13 +38,13 @@ class MetricTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(label.toUpperCase(), style: text.labelSmall),
+            Text(label, style: text.labelSmall),
             const SizedBox(height: Space.xs),
             Text(
               value,
-              style: text.headlineMedium?.copyWith(
+              style: context.plate.number(
+                32,
                 color: color ?? AppColors.textPrimary,
-                fontFeatures: tabular,
               ),
             ),
             if (caption != null)

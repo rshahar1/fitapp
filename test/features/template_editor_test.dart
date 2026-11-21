@@ -92,7 +92,7 @@ void main() {
       tester.pumpWidget(const SizedBox());
 
   Future<void> addExercise(WidgetTester tester, String name) async {
-    await tester.tap(find.text('ADD EXERCISE'));
+    await tester.tap(find.text('Add exercise'));
     await settle(tester);
     await tester.tap(find.text(name));
     await settle(tester);
@@ -279,7 +279,7 @@ void main() {
     expect(find.text('Template plan · ${e.name}'), findsOneWidget);
     await tester.tap(find.bySemanticsLabel('Increase Target reps'));
     await tester.pump();
-    await tester.tap(find.text('DONE'));
+    await tester.tap(find.text('Done'));
     await settle(tester);
     expect(find.text('Template plan · ${e.name}'), findsNothing);
     await tester.tap(find.text('Save'));
@@ -298,7 +298,7 @@ void main() {
     await settle(tester);
     await tester.tap(find.bySemanticsLabel('Increase Target reps'));
     await tester.pump();
-    await tester.tap(find.text('DONE'));
+    await tester.tap(find.text('Done'));
     await settle(tester);
     await tester.binding.handlePopRoute();
     await settle(tester);

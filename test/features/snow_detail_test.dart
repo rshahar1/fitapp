@@ -6,6 +6,7 @@ import 'package:fitapp/data/db/app_database.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/data/repositories/activity_repository.dart';
 import 'package:fitapp/data/repositories/settings_repository.dart';
+import 'package:fitapp/domain/tracking/snow_review.dart' show RunMetric;
 import 'package:fitapp/features/tracking/map_style.dart';
 import 'package:fitapp/features/tracking/widgets/route_map.dart';
 import 'package:fitapp/widgets/widgets.dart';
@@ -137,14 +138,18 @@ void main() {
       await pumpApp(tester, location: Routes.activity(id));
       expect(find.byType(RouteMap), findsOneWidget);
       for (final label in [
-        'RUNS',
-        'VERTICAL',
-        'DISTANCE',
-        'MAX SPEED',
-        'AVG SPEED',
-        'DURATION',
+        'Runs',
+        'Vertical',
+        'Distance',
+        'Max speed',
+        'Avg speed',
+        'Duration',
       ]) {
-        expect(find.text(label), findsOneWidget, reason: label);
+        expect(
+          find.widgetWithText(MetricTile, label),
+          findsOneWidget,
+          reason: label,
+        );
       }
       expect(find.text('3'), findsOneWidget);
       expect(find.text(metersGrouped(summary.dropMeters)), findsOneWidget);
@@ -161,8 +166,8 @@ void main() {
       expect(find.textContaining('Ride '), findsOneWidget);
       expect(find.textContaining('Lift '), findsOneWidget);
       expect(find.bySemanticsLabel('Speed legend'), findsOneWidget);
-      expect(find.text('SPLITS'), findsNothing);
-      expect(find.text('MOVING TIME'), findsNothing);
+      expect(find.text('Splits'), findsNothing);
+      expect(find.text('Moving time'), findsNothing);
       for (final n in [1, 2, 3]) {
         expect(inTimeline(find.text('Run $n')), findsOneWidget);
       }
@@ -205,7 +210,12 @@ void main() {
                 .first,
           )
           .dy;
-      await tester.tap(find.text('Distance'));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(ChipSelector<RunMetric>),
+          matching: find.text('Distance'),
+        ),
+      );
       await tester.pump();
       expect(top(3), lessThan(top(1)));
       expect(top(3), lessThan(top(2)));
@@ -258,10 +268,10 @@ void main() {
       final id = (await tester.runAsync(addManual))!;
       await pumpApp(tester, location: Routes.activity(id));
       expect(find.byType(RouteMap), findsNothing);
-      expect(find.text('RUNS'), findsNothing);
+      expect(find.text('Runs'), findsNothing);
       expect(find.text('Compare runs'), findsNothing);
-      expect(find.text('TIMELINE'), findsNothing);
-      expect(find.text('DISTANCE'), findsOneWidget);
+      expect(find.text('Timeline'), findsNothing);
+      expect(find.text('Distance'), findsOneWidget);
       expect(find.text('Powder'), findsOneWidget);
       await unmount(tester);
     });

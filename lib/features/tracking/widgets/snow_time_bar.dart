@@ -41,7 +41,6 @@ class SnowTimeBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           ClipRRect(
-            borderRadius: const BorderRadius.all(Radius.circular(Radii.pill)),
             child: SizedBox(
               height: _height,
               child: total <= 0
@@ -68,10 +67,7 @@ class SnowTimeBar extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: p.color,
-                          shape: BoxShape.circle,
-                        ),
+                        decoration: BoxDecoration(color: p.color),
                         child: const SizedBox.square(dimension: Space.s),
                       ),
                       const SizedBox(width: Space.xs),

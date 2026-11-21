@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' show DatabaseConnection, driftRuntimeOptions;
 import 'package:drift/native.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/core/step_source.dart';
 import 'package:fitapp/data/db/app_database.dart';
@@ -116,13 +117,13 @@ void main() {
   ) async {
     await pumpCalendar(tester);
     expect(find.text('November 2026'), findsOneWidget);
-    expect(find.byIcon(Icons.fitness_center), findsWidgets);
+    expect(find.byIcon(AppIcons.gym), findsWidgets);
     // 5 Nov: cycling first (08:00), then gym => bike icon and +1.
     await tester.ensureVisible(cell('Thursday 5 November'));
     expect(
       find.descendant(
         of: cell('Thursday 5 November'),
-        matching: find.byIcon(Icons.directions_bike),
+        matching: find.byIcon(AppIcons.cycling),
       ),
       findsOneWidget,
     );
@@ -146,7 +147,7 @@ void main() {
     expect(
       tester
           .widget<IconButton>(
-            find.widgetWithIcon(IconButton, Icons.chevron_right),
+            find.widgetWithIcon(IconButton, AppIcons.chevronRight),
           )
           .onPressed,
       isNull,

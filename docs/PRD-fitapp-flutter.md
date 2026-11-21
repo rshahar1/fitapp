@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.19, 21 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.20, 21 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -71,39 +71,64 @@ Hevy patterns to adopt:
 | Bottom navigation with a few clear destinations | **MUST** (section 6) |
 | Routines (saved workout templates) | Templates exist since feature 003 and carry their own progression (feature 005); folders are **LATER** |
 
-### 2.2 Visual identity (keep these customizations from the prototype)
+### 2.2 Visual identity ("Iron plate", feature 034)
 The owner explicitly approved this look. Hevy is the *structure* model; this is the *skin*.
 
-- **Always dark.** Pure black background with dark grey grouped cards. There is no light theme in v1.
-- **One accent color** for every action: buttons, active tab, checkmarks, completed rows.
-- **A fixed color per metric**, used everywhere (numbers, chart lines, metric bars), so values can be read
-  without labels.
-- **Subtle backdrop** behind every screen: a soft accent glow from the top-right corner, a faint grid fading out
-  toward the middle, a thin barely-visible rising curve near the top, and a very faint blue glow bottom-left.
-  It must stay **not conspicuous**: cards are opaque and content is never harder to read.
-- Pill-shaped bold uppercase primary buttons, small uppercase grey section headers, rounded cards (radius 14),
-  and hairline separators inside grouped lists.
-- **Haptics:** a selection tick on taps and steppers, a success pulse when a set is logged or the base weight
-  goes up, and a warning pulse when a set is cleared.
+- **Always dark.** Soot background (`#15120F`) with chalk text (`#EDE6D8`) and warm dark grouped cards. There is no
+  light theme in v1.
+- **Plate yellow (`#F5C518`) is the single action color:** buttons, active tab, selected chips, the Go block. Text and
+  icons on it use soot (`onAccent`).
+- **A fixed color per metric**, used everywhere (numbers, chart lines, metric bars): sets = red, reps = green,
+  volume = blue, weight = plate white (chalk).
+- **Type:** `PlateDisplay` capitals for titles, names, section headers, tags and Go; Barlow Condensed with tabular
+  figures for big or ticking numbers; Barlow for body text.
+- **Square shapes:** cards have a 2 dp corner radius; chips, tags, check boxes and blocks have 0. Primary cards carry a
+  4 dp plate-yellow rule along the top edge; lists use 1 dp rules between rows. Chips are tape-label rectangles,
+  check boxes are solid squares, and Go is a rectangular yellow block with the play glyph and "Go".
+- **Icons:** Material Symbols Sharp at heavy weight (600, no fill), through one icon map (`AppIcons`).
+- **Backdrop:** the photo backdrop stays behind every screen, covered by soot scrims (45 % / 65 % on reward) so cards
+  stay opaque and content is never harder to read.
+- **Haptics (unchanged):** a selection tick on taps and steppers, a success pulse when a set is logged or the base
+  weight goes up, and a warning pulse when a set is cleared.
+- **App icon and splash:** a heavy square-capped plate-yellow chevron above a bar on soot (`tool/draw_launcher_icon.swift`).
 
 #### Design tokens (MUST be defined once in a theme file, never hard-coded in widgets)
 
 | Token | Value | Use |
 |---|---|---|
-| `background` | `#000000` | Screen background |
-| `surface` | `#1C1C1E` | Cards, grouped rows |
-| `surfaceHigh` | `#2C2C2E` | Pressed rows, steppers, chips, separators |
-| `textPrimary` | `#FFFFFF` | |
-| `textSecondary` | `#8E8E93` | Labels, captions |
-| `textTertiary` | `#5A5A5F` | Chevrons, empty check circles |
-| `accent` | `#11D16C` | Primary actions, active states, success |
-| `onAccent` | `#000000` | Text and icons on the accent color |
-| `accentSoft` | `#11D16C` at 15% opacity | Badges, timer pill, completed row tint |
-| `danger` | `#FF453A` | Destructive actions, missed reps |
-| `metricSets` | `#FF453A` | Sets |
-| `metricReps` | `#11D16C` | Reps |
-| `metricVolume` | `#64D2FF` | Volume |
-| `metricWeight` | `#FF9F0A` | Weight |
+| `background` | `#15120F` | screen, nav bar, canvas |
+| `surface` | `#201C18` | cards, sheets, dialogs, menus |
+| `surfaceHigh` | `#2E2822` | rules, pressed rows, stepper wells, empty bars |
+| `textPrimary` | `#EDE6D8` | chalk text |
+| `textSecondary` | `#9C9284` | labels, captions |
+| `textTertiary` | `#7A7064` | chevrons, empty check squares (graphics only) |
+| `accent` | `#F5C518` | single action color |
+| `onAccent` | `#15120F` | text/icons on accent |
+| `accentSoft` | accent at 15 % | current-set tint, selected chips |
+| `info` / `infoText` / `infoSoft` | `#3D7BF2` / `#6FA0FF` / 15 % | information (owner review): info cards' top rules (steps, exercise chart), "this week" counts, the current weekly bar, calendar workout days |
+| `live` / `liveSoft` | `#E5352B` / 15 % | session in progress: red rails and a blinking red square (Home card, Go sheet Continue row, live tracking) |
+| `liveText` | `#FF6A5C` | the "LIVE" label |
+| `liveFill` / `onLive` | `#C42A20` / chalk | the filled Continue button |
+| `danger` | `#FF6A5C` | destructive text and icons |
+| `plateRed` | `#E5352B` | red fills, sets bars |
+| `plateBlue` | `#3D7BF2` | blue fills, volume bars |
+| `plateGreen` | `#2FB85C` | done squares, reps |
+| `metricSets` | `#FF6A5C` | sets (readable) |
+| `metricReps` | `#2FB85C` | reps |
+| `metricVolume` | `#6FA0FF` | volume (readable) |
+| `metricWeight` | `#EDE6D8` | weight (plate white) |
+| `routeLift` | `#9C9284` | lift stretches |
+| `heat` | blue `#3D7BF2` → green `#2FB85C` → yellow `#F5C518` → orange `#F2711C` → red `#E5352B` | speed |
+| `accentBright` | `#FFD84A` | reward flash |
+| `mint` | `#EDE6D8` | reward highlight (chalk) |
+| `gold` | `#F5C518` | reward spark |
+| `rewardIconFill` | `#2E2822` | reward figure fill |
+| scrims | soot at 45 % / 65 % | backdrop, reward |
+
+Shapes: `Radii.card = 2`, `Radii.chip = 0`, `Radii.block = 0` (no pill). Strokes: `rule = 1`, `section = 2`,
+`cardTop = 4`, `outline = 1.5`.
+Type: `PlateDisplay` 800/900, `BarlowCondensed` 600/700/800 (+ `tnum`), `Barlow` 400/500/600/700; text styles via
+`context.plate` (`display(size)`, `number(size)`, `tag`).
 
 Spacing scale: 2 / 4 / 8 / 16 / 24 / 32 / 64. Minimum tap target: **48×48 dp** (steppers 56×60).
 Numbers use tabular figures.
@@ -312,7 +337,7 @@ back to the exercise plan.
     session. Show the last 20 sessions.
   - **PR badge** when the latest session set a record.
   - Last session vs the one before it ("compared to previous").
-  - History: sessions newest first, each with its sets as `reps (green) … weight (orange)` rows. Tap one to open
+  - History: sessions newest first, each with its sets as `reps (green) … weight (chalk)` rows. Tap one to open
     that workout.
   - Plan card with **Edit**.
 - **Personal records:** heaviest weight, best Est. 1RM, best single-set volume. Detect which PR types a new set
@@ -379,7 +404,7 @@ back to the exercise plan.
 - The live route thins itself to at most 2,000 points for every tracked type (feature 017).
 
 ### 5.9 Start/Log hub and You tab (feature 011)
-- **Go action** in the middle of the bottom bar (56 dp accent circle with the play icon and "Go" inside it, label "Go"; was "+" before
+- **Go action** in the middle of the bottom bar (rectangular plate-yellow block with the play glyph and "Go" inside it; was a 56 dp accent circle until feature 034 and "+" before
   feature 031); opens the Go sheet from any
   tab and is never a selected tab. **You** tab (`/you`) lists **Exercise library** (`/exercises`), **Gym Templates** (`/templates`:
   template list, tap to edit, *New template*; feature 028) and **Settings** (`/settings`).
@@ -685,7 +710,7 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 | **M3** | Theme and UI kit (tokens, backdrop, buttons, groups, stepper, chips, metric tiles), bottom navigation, Train tab, live workout screen (Hevy-style header, set table with PREVIOUS column, one-tap logging, bottom-sheet editor, plan setup, countdown rest timer in the footer, Settings screen with the default rest time, compare-to-previous, finish summary, discard empty) | A full workout can be logged on a real phone; widget tests pass |
 | **M4** | History tab and edit mode (auto-save, Done, Resume, Delete, clear set, remove exercise, add exercise to a past workout) | Section 11 scenarios 4–8 work in the UI |
 | **M5** | Progress tab and exercise detail (weekly bars, exercise list with base weight, metric tiles, glow line chart with chips, PR badge, history, plan edit) | Charts render with 1, 2 and 20+ sessions |
-| **M6** | Polish: haptics, accessibility labels, empty states, app icon and splash (black), release APK build documented and verified on the phone | APK installed and used for a real workout |
+| **M6** | Polish: haptics, accessibility labels, empty states, app icon and splash (soot), release APK build documented and verified on the phone | APK installed and used for a real workout |
 | **M7** (built, feature 013; manual two-phone check pending) | Phase 2: Supabase auth, push sync, pull/restore, RLS migrations with tests | Sign in on a second phone restores full history |
 
 ---
@@ -727,10 +752,11 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 | Distinct icons per row in History, including a dumbbell for gym workouts | Owner's decision (13 Nov 2026); tell sports and gym apart at a glance |
 | Resume any finished workout, discard live workouts, backdate gym sessions | Owner's decision (13 Nov 2026); a backdated or older session never rewrites a plan's base |
 | Exercises library with custom categories; History calendar | Owner's decision (13 Nov 2026); browse and edit exercises, review training by day |
-| Keep the approved dark green look | Owner's decision; Hevy is the structure model only, not the palette |
+| Keep the approved dark green look (replaced by Iron plate, feature 034) | Owner's decision; Hevy is the structure model only, not the palette |
+| Iron plate look: soot, chalk, plate yellow, square shapes, PlateDisplay/Barlow type, Sharp icons | Owner's decision (21 Nov 2026, feature 034) |
 
 ## 16. Open items
-1. **App icon artwork:** a black background with a green mark. To be designed; a simple placeholder is fine for M6.
+1. **App icon artwork:** delivered in feature 034 (plate-yellow mark on soot, `tool/draw_launcher_icon.swift`).
 
 There are no other open questions. The earlier ones (app name, warm-up sets, rest-timer default, color palette) were
 resolved on 12 Nov 2026; see the decisions log.
@@ -807,3 +833,7 @@ resolved on 12 Nov 2026; see the decisions log.
   - No share sends predefined caption text, for gym and every activity type: the image only, the owner adds their own text. The sharer interface takes no text and the caption helpers are removed (section 5.11).
 - **2.19 (21 Nov 2026):** feature 033, Go button polish (owner request of 21 Nov 2026). The "Go" text moves inside the play
   button (no caption below it), and Go sheet template rows show the template name only, without the exercise list (section 5.9).
+- **2.20 (21 Nov 2026):** feature 034, Iron plate theme (owner request of 21 Nov 2026). The whole app is reskinned: soot and
+  chalk, plate yellow as the single action color, square shapes (cards 2 dp, chips and check boxes 0), 4 dp yellow card top
+  rule, PlateDisplay/Barlow Condensed/Barlow type, Material Symbols Sharp icons, a rectangular yellow Go block, and a new
+  yellow-on-soot launcher icon and splash. Behaviour is unchanged (sections 2.2, 5.9).

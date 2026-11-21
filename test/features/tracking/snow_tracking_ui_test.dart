@@ -92,7 +92,7 @@ void main() {
     await settle(tester);
     source.emit(day.first);
     await tester.pump();
-    await tester.tap(find.text('START'));
+    await tester.tap(find.text('Start'));
     await settle(tester);
   }
 
@@ -116,7 +116,7 @@ void main() {
   Future<void> toSheet(WidgetTester tester, {Size? size}) async {
     await goLive(tester, size: size ?? const Size(800, 1600));
     await replay(tester, 1, day.length);
-    await hold(tester, find.text('FINISH'));
+    await hold(tester, find.text('Finish'));
     await settle(tester);
   }
 
@@ -126,7 +126,7 @@ void main() {
       await goLive(tester);
       await replay(tester, 1, day.length);
       expect(find.text('km/h'), findsWidgets);
-      expect(find.text('RUNS'), findsOneWidget);
+      expect(find.text('Runs'), findsOneWidget);
       expect(
         find.descendant(
           of: find.bySemanticsLabel('Runs: 3'),
@@ -134,15 +134,15 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('VERTICAL'), findsOneWidget);
-      expect(find.text('MAX SPEED'), findsOneWidget);
-      expect(find.text('AVG SPEED'), findsOneWidget);
-      expect(find.text('DISTANCE'), findsOneWidget);
-      expect(find.text('ELAPSED'), findsOneWidget);
+      expect(find.text('Vertical'), findsOneWidget);
+      expect(find.text('Max speed'), findsOneWidget);
+      expect(find.text('Avg speed'), findsOneWidget);
+      expect(find.text('Distance'), findsOneWidget);
+      expect(find.text('Elapsed'), findsOneWidget);
       expect(find.text('Resting'), findsOneWidget);
       expect(find.bySemanticsLabel('Status: Resting'), findsOneWidget);
-      expect(find.text('AVG PACE'), findsNothing);
-      expect(find.text('LAST KM'), findsNothing);
+      expect(find.text('Avg pace'), findsNothing);
+      expect(find.text('Last km'), findsNothing);
       semantics.dispose();
       await unmount(tester);
     });
@@ -160,14 +160,14 @@ void main() {
     testWidgets('pause shows Paused and Resume works', (tester) async {
       await goLive(tester);
       await replay(tester, 1, 300);
-      await tester.tap(find.text('PAUSE'));
+      await tester.tap(find.text('Pause'));
       await settle(tester);
       expect(find.text('Paused'), findsOneWidget);
       expect(find.text('On lift'), findsNothing);
-      await tester.tap(find.text('RESUME'));
+      await tester.tap(find.text('Resume'));
       await settle(tester);
       expect(find.text('Paused'), findsNothing);
-      expect(find.text('PAUSE'), findsOneWidget);
+      expect(find.text('Pause'), findsOneWidget);
       await unmount(tester);
     });
 
@@ -175,15 +175,15 @@ void main() {
       await goLive(tester, size: const Size(360, 640));
       await replay(tester, 1, day.length);
       expect(tester.takeException(), isNull);
-      expect(find.text('RUNS'), findsOneWidget);
+      expect(find.text('Runs'), findsOneWidget);
       await unmount(tester);
     });
 
     testWidgets('running keeps its own tiles', (tester) async {
       await goLive(tester, type: 'running');
-      expect(find.text('AVG PACE'), findsOneWidget);
-      expect(find.text('LAST KM'), findsOneWidget);
-      expect(find.text('RUNS'), findsNothing);
+      expect(find.text('Avg pace'), findsOneWidget);
+      expect(find.text('Last km'), findsOneWidget);
+      expect(find.text('Runs'), findsNothing);
       await unmount(tester);
     });
   });
@@ -192,15 +192,15 @@ void main() {
     testWidgets('shows the snow summary and saves it', (tester) async {
       await toSheet(tester);
       expect(find.text('Snowboarding summary'), findsOneWidget);
-      expect(find.text('RUNS'), findsWidgets);
-      expect(find.text('VERTICAL'), findsWidgets);
-      expect(find.text('MAX SPEED'), findsWidgets);
-      expect(find.text('TIME'), findsWidgets);
-      expect(find.text('CLIMB'), findsNothing);
+      expect(find.text('Runs'), findsWidgets);
+      expect(find.text('Vertical'), findsWidgets);
+      expect(find.text('Max speed'), findsWidgets);
+      expect(find.text('Time'), findsWidgets);
+      expect(find.text('Climb'), findsNothing);
       expect(find.textContaining('Ride'), findsWidgets);
       expect(find.textContaining('Lift'), findsWidgets);
       expect(find.textContaining('Rest'), findsWidgets);
-      await tester.tap(find.text('SAVE'));
+      await tester.tap(find.text('Save'));
       await settle(tester);
       final rows = (await tester.runAsync(
         () => ActivityRepository(db).list(),
@@ -214,7 +214,7 @@ void main() {
     testWidgets('does not overflow at 360 x 640', (tester) async {
       await toSheet(tester, size: const Size(360, 640));
       expect(tester.takeException(), isNull);
-      expect(find.text('RUNS'), findsWidgets);
+      expect(find.text('Runs'), findsWidgets);
       await unmount(tester);
     });
   });

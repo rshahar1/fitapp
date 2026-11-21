@@ -334,10 +334,7 @@ ThemeData buildAppTheme() {
       selectedColor: AppColors.accent,
       disabledColor: AppColors.surfaceHigh,
       checkmarkColor: AppColors.onAccent,
-      side: BorderSide(
-        color: AppColors.textTertiary,
-        width: Strokes.outline,
-      ),
+      side: BorderSide(color: AppColors.textTertiary, width: Strokes.outline),
       shape: _sharp,
       labelStyle: TextStyle(
         fontFamily: AppFonts.display,
@@ -366,10 +363,7 @@ ThemeData buildAppTheme() {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.zero,
-        borderSide: BorderSide(
-          color: AppColors.accent,
-          width: Strokes.section,
-        ),
+        borderSide: BorderSide(color: AppColors.accent, width: Strokes.section),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.zero,

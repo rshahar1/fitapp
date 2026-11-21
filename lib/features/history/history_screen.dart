@@ -1,3 +1,4 @@
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/data/models.dart';
@@ -28,7 +29,7 @@ class HistoryScreen extends ConsumerWidget {
           ),
           data: (items) => items.isEmpty
               ? const EmptyState(
-                  icon: Icons.history,
+                  icon: AppIcons.history,
                   title: 'Nothing logged yet',
                   message: 'Finished workouts and activities show up here.',
                 )
@@ -89,12 +90,12 @@ class _HistoryList extends ConsumerWidget {
           segments: const [
             ButtonSegment(
               value: HistoryView.list,
-              icon: Icon(Icons.view_list),
+              icon: Icon(AppIcons.list),
               label: Text('List'),
             ),
             ButtonSegment(
               value: HistoryView.calendar,
-              icon: Icon(Icons.calendar_month),
+              icon: Icon(AppIcons.calendar),
               label: Text('Calendar'),
             ),
           ],

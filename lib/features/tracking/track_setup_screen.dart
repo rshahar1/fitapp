@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:fitapp/app/router.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/haptics.dart';
 import 'package:fitapp/data/providers.dart';
@@ -137,7 +139,7 @@ class _TrackSetupScreenState extends ConsumerState<TrackSetupScreen>
     final Widget body;
     if (type == null) {
       body = const EmptyState(
-        icon: Icons.location_off_outlined,
+        icon: AppIcons.locationOff,
         title: 'This activity has no live tracking',
       );
     } else if (_checking) {
@@ -185,10 +187,11 @@ class _Rationale extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         AppCard(
+          topRule: true,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.my_location, color: AppColors.accent),
+              const Icon(AppIcons.myLocation, color: AppColors.accent),
               const SizedBox(height: Space.s),
               Text('Location is needed', style: text.titleLarge),
               const SizedBox(height: Space.s),
@@ -249,13 +252,12 @@ class _Acquiring extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           AppCard(
+            topRule: true,
+            topRuleColor: AppColors.danger,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.location_off_outlined,
-                  color: AppColors.danger,
-                ),
+                const Icon(AppIcons.locationOff, color: AppColors.danger),
                 const SizedBox(height: Space.s),
                 Text('Location permission denied', style: text.titleLarge),
                 const SizedBox(height: Space.s),
@@ -290,10 +292,12 @@ class _Acquiring extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           AppCard(
+            topRule: true,
+            topRuleColor: AppColors.danger,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.location_disabled, color: AppColors.danger),
+                const Icon(AppIcons.locationDisabled, color: AppColors.danger),
                 const SizedBox(height: Space.s),
                 Text('Location is turned off', style: text.titleLarge),
                 const SizedBox(height: Space.s),
@@ -381,7 +385,7 @@ class _Acquiring extends StatelessWidget {
         const SizedBox(height: Space.m),
         AppButton(
           label: 'Start',
-          icon: Icons.play_arrow,
+          icon: AppIcons.play,
           expand: true,
           onPressed: state.hasGoodFix && !busy ? onStart : null,
         ),
@@ -420,14 +424,14 @@ class _AccuracyChip extends StatelessWidget {
       null => (
         'Searching for GPS',
         AppColors.textSecondary,
-        Icons.gps_not_fixed,
+        AppIcons.gpsSearching,
       ),
       _ when a > 20 => (
         'Weak GPS (±${a.round()} m)',
         context.metrics.weight,
-        Icons.gps_not_fixed,
+        AppIcons.gpsSearching,
       ),
-      _ => ('GPS ready (±${a.round()} m)', AppColors.accent, Icons.gps_fixed),
+      _ => ('GPS ready (±${a.round()} m)', AppColors.accent, AppIcons.gpsFixed),
     };
     return Semantics(
       container: true,
@@ -439,17 +443,14 @@ class _AccuracyChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: Space.m),
         decoration: const ShapeDecoration(
           color: AppColors.surfaceHigh,
-          shape: StadiumBorder(),
+          shape: RoundedRectangleBorder(),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: color),
             const SizedBox(width: Space.s),
-            Text(
-              label,
-              style: TextStyle(color: color, fontWeight: FontWeight.w700),
-            ),
+            Text(label, style: context.plate.tag(color: color)),
           ],
         ),
       ),

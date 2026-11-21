@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:fitapp/app/router.dart';
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/data/providers.dart';
 import 'package:fitapp/domain/activity_types.dart';
@@ -102,19 +103,39 @@ class StartHubSheet extends ConsumerWidget {
               header: 'Start now',
               children: [
                 if (session != null)
-                  GroupRow(
-                    title: session.continueLabel,
-                    subtitle: 'In progress',
-                    leading: session.kind == SessionKind.gym
-                        ? _icon(gymWorkoutIcon, accent: true)
-                        : _activityIcon(session.typeId!, accent: true),
-                    showChevron: true,
-                    onTap: () => pick(ContinueChoice(session)),
+                  // A session in progress is plate red, like Home's card
+                  // (feature 034): red rail, red tint, blinking LIVE tag.
+                  ColoredBox(
+                    color: AppColors.liveSoft,
+                    child: DecoratedBox(
+                      position: DecorationPosition.foreground,
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          left: BorderSide(
+                            color: AppColors.live,
+                            width: Strokes.cardTop,
+                          ),
+                        ),
+                      ),
+                      child: GroupRow(
+                        title: session.continueLabel,
+                        subtitle: 'In progress',
+                        leading: session.kind == SessionKind.gym
+                            ? _icon(gymWorkoutIcon, color: AppColors.liveText)
+                            : _activityIcon(
+                                session.typeId!,
+                                color: AppColors.liveText,
+                              ),
+                        trailing: const LiveTag(),
+                        showChevron: true,
+                        onTap: () => pick(ContinueChoice(session)),
+                      ),
+                    ),
                   ),
                 if (templates.isEmpty)
                   GroupRow(
                     title: 'Create a gym template',
-                    leading: _icon(Icons.add),
+                    leading: _icon(AppIcons.add),
                     showChevron: true,
                     onTap: () => pick(const CreateTemplateChoice()),
                   )
@@ -152,7 +173,7 @@ class StartHubSheet extends ConsumerWidget {
               children: [
                 GroupRow(
                   title: 'Log a past session',
-                  leading: _icon(Icons.history),
+                  leading: _icon(AppIcons.history),
                   showChevron: true,
                   onTap: () => pick(const LogPastChoice()),
                 ),
@@ -164,12 +185,9 @@ class StartHubSheet extends ConsumerWidget {
     );
   }
 
-  static Widget _activityIcon(String typeId, {bool accent = false}) =>
-      ActivityIcon(
-        typeId,
-        color: accent ? AppColors.accent : AppColors.textSecondary,
-      );
+  static Widget _activityIcon(String typeId, {Color? color}) =>
+      ActivityIcon(typeId, color: color ?? AppColors.textSecondary);
 
-  static Widget _icon(IconData icon, {bool accent = false}) =>
-      Icon(icon, color: accent ? AppColors.accent : AppColors.textSecondary);
+  static Widget _icon(IconData icon, {Color? color}) =>
+      Icon(icon, color: color ?? AppColors.textSecondary);
 }

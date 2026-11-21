@@ -111,7 +111,7 @@ Finder _rowText(String weId, int setNo, String text) => find.descendant(
 );
 
 void main() {
-  testWidgets('unlogged rows are dimmed and show the prescription', (
+  testWidgets('unlogged rows are chalk and show the prescription', (
     tester,
   ) async {
     final env = _Env();
@@ -121,7 +121,7 @@ void main() {
     expect(_rowText(env.weId, 1, '20'), findsOneWidget);
     expect(_rowText(env.weId, 3, '22.5'), findsOneWidget);
     final weight = tester.widget<Text>(_rowText(env.weId, 1, '20'));
-    expect(weight.style!.color, AppColors.textTertiary);
+    expect(weight.style!.color, AppColors.textPrimary);
     expect(
       find.bySemanticsLabel(
         RegExp(r'^Set 3, overload: 10 reps at 22\.5 kg\. Opens editor\.$'),
@@ -146,7 +146,7 @@ void main() {
     expect(sets.single.isOverload, isTrue);
     expect(env.haptics.calls, contains('success'));
     final weight = tester.widget<Text>(_rowText(env.weId, 3, '22.5'));
-    expect(weight.style!.color, AppColors.textPrimary);
+    expect(weight.style!.color, AppColors.textSecondary);
     await _dispose(tester, env);
   });
 

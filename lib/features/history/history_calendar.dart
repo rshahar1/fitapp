@@ -1,4 +1,6 @@
+import 'package:fitapp/app/theme/app_icons.dart';
 import 'package:fitapp/app/theme/app_theme.dart';
+import 'package:fitapp/app/theme/text_styles.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart';
 import 'package:fitapp/data/models.dart';
@@ -111,7 +113,7 @@ class _HistoryCalendarState extends ConsumerState<HistoryCalendar> {
                 minWidth: Sizes.tap,
                 minHeight: Sizes.tap,
               ),
-              icon: const Icon(Icons.chevron_left),
+              icon: const Icon(AppIcons.chevronLeft),
               onPressed: () => _step(-1),
             ),
             Expanded(
@@ -121,7 +123,7 @@ class _HistoryCalendarState extends ConsumerState<HistoryCalendar> {
                 excludeSemantics: true,
                 child: InkWell(
                   onTap: _pickMonth,
-                  borderRadius: BorderRadius.circular(Radii.chip),
+                  borderRadius: BorderRadius.zero,
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(minHeight: Sizes.tap),
                     child: Center(
@@ -129,7 +131,7 @@ class _HistoryCalendarState extends ConsumerState<HistoryCalendar> {
                         fit: BoxFit.scaleDown,
                         child: Text(
                           DateFormat('MMMM y').format(anchor),
-                          style: text.titleMedium,
+                          style: context.plate.display(22),
                         ),
                       ),
                     ),
@@ -143,7 +145,7 @@ class _HistoryCalendarState extends ConsumerState<HistoryCalendar> {
                 minWidth: Sizes.tap,
                 minHeight: Sizes.tap,
               ),
-              icon: const Icon(Icons.chevron_right),
+              icon: const Icon(AppIcons.chevronRight),
               onPressed: _canGoNext ? () => _step(1) : null,
             ),
             TextButton(
@@ -298,42 +300,58 @@ class _DayCell extends StatelessWidget {
         padding: const EdgeInsets.all(Space.xxs),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(Radii.chip),
+          borderRadius: BorderRadius.zero,
           child: Container(
             height: Sizes.tap + Space.xs,
             decoration: BoxDecoration(
               color: isSelected ? AppColors.accent : null,
-              borderRadius: BorderRadius.circular(Radii.chip),
+              borderRadius: BorderRadius.zero,
               border: isToday && !isSelected
-                  ? Border.all(color: AppColors.accent)
+                  ? Border.all(color: AppColors.accent, width: Strokes.outline)
                   : null,
             ),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '${day.day}',
-                    style: text.bodyMedium?.copyWith(
-                      color: fg,
-                      fontFeatures: tabular,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                if (n > 0)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: Space.xs,
+                    child: ColoredBox(
+                      color: isSelected
+                          ? AppColors.onAccent
+                          : inMonth
+                          ? AppColors.info
+                          : AppColors.surfaceHigh,
                     ),
                   ),
-                  if (icon != null)
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        icon,
-                        if (n > 1)
-                          Text(
-                            '+${n - 1}',
-                            style: text.labelSmall?.copyWith(color: fg),
-                          ),
-                      ],
-                    ),
-                ],
-              ),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${day.day}',
+                        style: context.plate.number(18, color: fg),
+                      ),
+                      if (icon != null)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            icon,
+                            if (n > 1)
+                              Text(
+                                '+${n - 1}',
+                                style: text.labelSmall?.copyWith(color: fg),
+                              ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -364,20 +382,17 @@ class _MonthYearDialogState extends State<_MonthYearDialog> {
         children: [
           IconButton(
             tooltip: 'Previous year',
-            icon: const Icon(Icons.chevron_left),
+            icon: const Icon(AppIcons.chevronLeft),
             onPressed: _year > minYear ? () => setState(() => _year--) : null,
           ),
           Expanded(
             child: Center(
-              child: Text(
-                '$_year',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+              child: Text('$_year', style: context.plate.display(22)),
             ),
           ),
           IconButton(
             tooltip: 'Next year',
-            icon: const Icon(Icons.chevron_right),
+            icon: const Icon(AppIcons.chevronRight),
             onPressed: _year < maxYear ? () => setState(() => _year++) : null,
           ),
         ],
@@ -437,10 +452,10 @@ class _MonthButton extends StatelessWidget {
       excludeSemantics: true,
       child: Material(
         color: selected ? AppColors.accentSoft : Colors.transparent,
-        borderRadius: BorderRadius.circular(Radii.chip),
+        borderRadius: BorderRadius.zero,
         child: InkWell(
           onTap: enabled ? onTap : null,
-          borderRadius: BorderRadius.circular(Radii.chip),
+          borderRadius: BorderRadius.zero,
           child: Center(
             child: Text(
               name,

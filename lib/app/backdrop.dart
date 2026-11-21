@@ -79,10 +79,10 @@ class _BackdropLayers extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: const [
-                    Color(0x00000000),
-                    Color(0xFF000000),
-                    Color(0xFF000000),
-                    Color(0x00000000),
+                    AppColors.backgroundClear,
+                    AppColors.background,
+                    AppColors.background,
+                    AppColors.backgroundClear,
                   ],
                   stops: [0, fade, 1 - fade, 1],
                 ).createShader(rect),
@@ -108,7 +108,10 @@ class _BackdropLayers extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [AppColors.backdropHeaderScrim, Color(0x00000000)],
+                    colors: [
+                      AppColors.backdropHeaderScrim,
+                      AppColors.backgroundClear,
+                    ],
                   ),
                 ),
               ),
@@ -123,7 +126,10 @@ class _BackdropLayers extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Color(0x00000000), AppColors.backdropBottomScrim],
+                    colors: [
+                      AppColors.backgroundClear,
+                      AppColors.backdropBottomScrim,
+                    ],
                   ),
                 ),
               ),

@@ -127,8 +127,8 @@ class _SharePreviewState extends ConsumerState<SharePreviewScreen> {
           : data == null
           ? (card.isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : const EmptyState(
-                    icon: Icons.ios_share,
+                : EmptyState(
+                    icon: Icons.adaptive.share,
                     title: 'Nothing to share',
                     message:
                         'This session no longer exists or is not finished.',
@@ -159,7 +159,7 @@ class _SharePreviewState extends ConsumerState<SharePreviewScreen> {
                     const SizedBox(height: Space.m),
                     AppButton(
                       label: _busy ? 'Preparing…' : 'Share image',
-                      icon: Icons.ios_share,
+                      icon: Icons.adaptive.share,
                       expand: true,
                       onPressed: _busy ? null : () => _share(data),
                     ),

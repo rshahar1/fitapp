@@ -73,7 +73,7 @@ Future<FinishChoice> showFinishSummary(
           const SizedBox(height: Space.s),
           AppButton(
             label: 'Share workout',
-            icon: Icons.ios_share,
+            icon: Icons.adaptive.share,
             expand: true,
             variant: AppButtonVariant.secondary,
             onPressed: () => Navigator.of(context).pop(FinishChoice.share),

@@ -134,10 +134,10 @@ will be tuned after a real day on the mountain. No new packages.
 
 ## Share a workout as an image (feature 027)
 
-Every finished gym workout and every activity has a Share icon (activity detail and finished-workout screens; the gym
-finish summary has "Share workout"). It opens a preview of a 1080x1350 dark PNG card tailored to the type: route
+Every finished gym workout and every activity can be shared from the ⋮ menu (activity detail and finished-workout screens; the gym
+finish summary has a "Share workout" button). It opens a preview of a 1080x1350 dark PNG card tailored to the type: route
 drawing (no map tiles) with distance, pace, speed, duration and best km for runs and rides; ride / lift / rest time,
-top speed, vertical and runs for snowboarding days; totals and up to 7 exercise lines ("+N more exercises") for gym;
+top speed, vertical and runs for snowboarding days; totals and every exercise for gym (taller card, columns or smaller rows when needed);
 duration, distance and pace for other activities. "Share image" hands the PNG to the OS share sheet. The app sends
 nothing itself, the image is a temporary cache file and notes are never printed on it. New package: `share_plus`.
 

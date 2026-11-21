@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:fitapp/app/theme/app_theme.dart';
 import 'package:fitapp/app/theme/tokens.dart';
 import 'package:fitapp/core/format.dart' show formatShortDuration;
@@ -13,18 +15,32 @@ import 'package:material_ui/material_ui.dart';
 /// The shared workout image (feature 027): a fixed
 /// [ShareCardSize.width] × [ShareCardSize.height] canvas that renders
 /// [data] with a layout per [ShareLayout]. Captured at
-/// [ShareCardSize.pixelRatio] it becomes a 1080 × 1350 PNG.
+/// [ShareCardSize.pixelRatio] it becomes a 1080 × 1350 PNG; gym cards with
+/// many exercises grow up to [ShareCardSize.maxHeight] (1080 × 1920).
 class ShareCardView extends StatelessWidget {
   const new({required this.data, super.key});
 
   final ShareCardData data;
 
+  /// The exercise list layout of a gym card with [count] exercises.
+  static ShareListLayout listLayout(int count) => shareListLayout(
+    count,
+    baseHeight: ShareCardSize.height,
+    maxHeight: ShareCardSize.maxHeight,
+    overhead: ShareCardSize.strengthOverhead,
+    rowHeight: ShareCardSize.exerciseRow,
+    twoColumnRowHeight: ShareCardSize.twoColumnRow,
+  );
+
   @override
   Widget build(BuildContext context) {
     final base = Theme.of(context).textTheme.bodyMedium ?? const TextStyle();
+    final list = data.layout == ShareLayout.strength
+        ? listLayout(data.exercises.length)
+        : null;
     return SizedBox(
       width: ShareCardSize.width,
-      height: ShareCardSize.height,
+      height: list?.cardHeight ?? ShareCardSize.height,
       // Opaque base first: the PNG must have no transparent pixels.
       child: DecoratedBox(
         decoration: const BoxDecoration(color: AppColors.background),
@@ -54,7 +70,7 @@ class ShareCardView extends StatelessWidget {
                 children: [
                   _Header(data: data),
                   const SizedBox(height: Space.m),
-                  Expanded(child: _body()),
+                  Expanded(child: _body(list)),
                   const SizedBox(height: Space.s),
                   const _Footer(),
                 ],
@@ -66,10 +82,10 @@ class ShareCardView extends StatelessWidget {
     );
   }
 
-  Widget _body() => switch (data.layout) {
+  Widget _body(ShareListLayout? list) => switch (data.layout) {
     ShareLayout.route => _RouteBody(data: data),
     ShareLayout.snow => _SnowBody(data: data),
-    ShareLayout.strength => _StrengthBody(data: data),
+    ShareLayout.strength => _StrengthBody(data: data, list: list!),
     ShareLayout.basic => _BasicBody(data: data),
   };
 }
@@ -163,7 +179,9 @@ class _Footer extends StatelessWidget {
   );
 }
 
-/// A grid of stats, [columns] per row.
+/// A grid of stats, [columns] per row. When a value is too wide for its
+/// column, every value in the grid shrinks by the same factor, so a long
+/// duration stays the same size as the sets and reps beside it.
 class _StatGrid extends StatelessWidget {
   const new({
     required this.stats,
@@ -175,49 +193,107 @@ class _StatGrid extends StatelessWidget {
   final int columns;
   final double valueSize;
 
+  static const _unitSize = ShareCardSize.minText + 1;
+
+  /// The value of [stat] with its digits at [size].
+  static TextSpan valueSpan(ShareStat stat, double size, double unitSize) =>
+      TextSpan(
+        children: [
+          for (var i = 0; i < stat.parts.length; i++)
+            if (stat.parts[i].isUnit)
+              TextSpan(
+                text: stat.parts[i].tight
+                    ? stat.parts[i].text
+                    : ' ${stat.parts[i].text}',
+                style: TextStyle(
+                  fontSize: unitSize,
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              )
+            else
+              TextSpan(
+                text: i == 0 ? stat.parts[i].text : ' ${stat.parts[i].text}',
+                style: TextStyle(
+                  fontSize: size,
+                  fontWeight: FontWeight.w800,
+                  fontFeatures: tabular,
+                ),
+              ),
+        ],
+      );
+
   @override
   Widget build(BuildContext context) {
     final rows = <List<ShareStat>>[
       for (var i = 0; i < stats.length; i += columns)
         stats.sublist(i, (i + columns).clamp(0, stats.length)),
     ];
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var r = 0; r < rows.length; r++) ...[
-          if (r > 0) const SizedBox(height: Space.m - Space.xs),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (var c = 0; c < columns; c++)
-                Expanded(
-                  child: c < rows[r].length
-                      ? Padding(
-                          padding: EdgeInsets.only(
-                            right: c < columns - 1 ? Space.s : 0,
-                          ),
-                          child: _Stat(stat: rows[r][c], valueSize: valueSize),
-                        )
-                      : const SizedBox.shrink(),
-                ),
+    final base = DefaultTextStyle.of(context).style;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cell = (constraints.maxWidth - (columns - 1) * Space.s) / columns;
+        var scale = 1.0;
+        for (final stat in stats) {
+          final painter = TextPainter(
+            text: TextSpan(
+              style: base,
+              children: [valueSpan(stat, valueSize, _unitSize)],
+            ),
+            textDirection: Directionality.of(context),
+            maxLines: 1,
+          )..layout();
+          final width = painter.width;
+          painter.dispose();
+          if (width > cell && width > 0) scale = math.min(scale, cell / width);
+        }
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var r = 0; r < rows.length; r++) ...[
+              if (r > 0) const SizedBox(height: Space.m - Space.xs),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var c = 0; c < columns; c++)
+                    Expanded(
+                      child: c < rows[r].length
+                          ? Padding(
+                              padding: EdgeInsets.only(
+                                right: c < columns - 1 ? Space.s : 0,
+                              ),
+                              child: _Stat(
+                                stat: rows[r][c],
+                                valueSize: valueSize * scale,
+                                unitSize: _unitSize * scale,
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                ],
+              ),
             ],
-          ),
-        ],
-      ],
+          ],
+        );
+      },
     );
   }
 }
 
 class _Stat extends StatelessWidget {
-  const new({required this.stat, required this.valueSize});
+  const new({
+    required this.stat,
+    required this.valueSize,
+    required this.unitSize,
+  });
 
   final ShareStat stat;
   final double valueSize;
+  final double unitSize;
 
   @override
   Widget build(BuildContext context) {
-    final unit = stat.unit;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -233,32 +309,10 @@ class _Stat extends StatelessWidget {
           ),
         ),
         const SizedBox(height: Space.xxs),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text: stat.value,
-                  style: TextStyle(
-                    fontSize: valueSize,
-                    fontWeight: FontWeight.w800,
-                    fontFeatures: tabular,
-                  ),
-                ),
-                if (unit != null)
-                  TextSpan(
-                    text: ' $unit',
-                    style: const TextStyle(
-                      fontSize: ShareCardSize.minText + 1,
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-              ],
-            ),
-          ),
+        Text.rich(
+          _StatGrid.valueSpan(stat, valueSize, unitSize),
+          maxLines: 1,
+          softWrap: false,
         ),
       ],
     );
@@ -407,13 +461,19 @@ class _TimeBar extends StatelessWidget {
 }
 
 class _StrengthBody extends StatelessWidget {
-  const new({required this.data});
+  const new({required this.data, required this.list});
 
   final ShareCardData data;
+  final ShareListLayout list;
 
   @override
   Widget build(BuildContext context) {
-    final hidden = data.hiddenExercises;
+    final exercises = data.exercises;
+    final two = list.columns == 2;
+    final perColumn = two ? (exercises.length + 1) ~/ 2 : exercises.length;
+    final natural = two
+        ? ShareCardSize.twoColumnRow
+        : ShareCardSize.exerciseRow;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -423,24 +483,43 @@ class _StrengthBody extends StatelessWidget {
         const Divider(height: 1, thickness: Sizes.hairline),
         const SizedBox(height: Space.xs),
         Expanded(
-          child: ClipRect(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (final e in data.exercises) _ExerciseRow(line: e),
-                if (hidden > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(top: Space.xs),
-                    child: Text(
-                      '+$hidden more exercise${hidden == 1 ? '' : 's'}',
-                      style: const TextStyle(
-                        color: AppColors.accent,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+          child: LayoutBuilder(
+            builder: (context, c) {
+              // Never taller than the space left, so nothing is clipped.
+              final row = perColumn == 0
+                  ? list.rowHeight
+                  : math.min(list.rowHeight, c.maxHeight / perColumn);
+              Widget column(Iterable<ShareExerciseLine> lines, double width) =>
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final e in lines)
+                        _ExerciseRow(
+                          line: e,
+                          height: row,
+                          naturalHeight: natural,
+                          width: width,
+                          stacked: two,
+                        ),
+                    ],
+                  );
+              if (!two) return column(exercises, c.maxWidth);
+              final width = (c.maxWidth - Space.m) / 2;
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: width,
+                    child: column(exercises.take(perColumn), width),
                   ),
-              ],
-            ),
+                  const SizedBox(width: Space.m),
+                  SizedBox(
+                    width: width,
+                    child: column(exercises.skip(perColumn), width),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ],
@@ -448,35 +527,73 @@ class _StrengthBody extends StatelessWidget {
   }
 }
 
+/// One exercise: name and set line side by side, or [stacked] (two-column
+/// cards). Laid out at [naturalHeight] and scaled down as a whole when the
+/// row gets only [height].
 class _ExerciseRow extends StatelessWidget {
-  const new({required this.line});
+  const new({
+    required this.line,
+    required this.height,
+    required this.naturalHeight,
+    required this.width,
+    required this.stacked,
+  });
 
   final ShareExerciseLine line;
+  final double height;
+  final double naturalHeight;
+  final double width;
+  final bool stacked;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-    height: ShareCardSize.exerciseRow,
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(
-            line.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-        ),
-        const SizedBox(width: Space.s),
-        Text(
-          line.detail,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontFeatures: tabular,
-          ),
-        ),
-      ],
-    ),
-  );
+  Widget build(BuildContext context) {
+    const nameStyle = TextStyle(fontWeight: FontWeight.w600);
+    const detailStyle = TextStyle(
+      color: AppColors.textSecondary,
+      fontFeatures: tabular,
+    );
+    final content = stacked
+        ? Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                line.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: nameStyle,
+              ),
+              Text(
+                line.detail,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: detailStyle.copyWith(fontSize: ShareCardSize.minText),
+              ),
+            ],
+          )
+        : Row(
+            children: [
+              Expanded(
+                child: Text(
+                  line.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: nameStyle,
+                ),
+              ),
+              const SizedBox(width: Space.s),
+              Text(line.detail, style: detailStyle),
+            ],
+          );
+    return SizedBox(
+      height: height,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: SizedBox(width: width, height: naturalHeight, child: content),
+      ),
+    );
+  }
 }
 
 class _BasicBody extends StatelessWidget {

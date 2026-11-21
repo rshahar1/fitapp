@@ -111,6 +111,32 @@ abstract final class ShareCardSize {
   static const statValue = 22.0;
   static const statValueLarge = 30.0;
 
+  /// Tallest card (9:16, 1080 × 1920): only gym cards with many exercises
+  /// grow past [height] (feature 029).
+  static const maxHeight = 640.0;
+
+  /// Typical heights of the header, the gym totals and the footer, used to
+  /// size gym cards (rows shrink if the real ones are taller).
+  static const header = 48.0;
+  static const statBlock = 52.0;
+  static const footer = 20.0;
+
+  /// Everything on a gym card except its exercise rows: padding, header,
+  /// gaps, totals, divider and footer.
+  static const strengthOverhead =
+      2 * Space.l +
+      header +
+      Space.m +
+      statBlock +
+      (Space.m - Space.xs) +
+      1 +
+      Space.xs +
+      Space.s +
+      footer;
+
+  /// A two-column exercise row (name above the set line).
+  static const twoColumnRow = 40.0;
+
   /// Header icon, one exercise line, the icon of a card without stats.
   static const icon = 22.0;
   static const exerciseRow = 30.0;

@@ -389,12 +389,6 @@ class _WorkoutView extends ConsumerWidget {
         ),
         actions: [
           if (!isLive) ...[
-            if (!editing)
-              IconButton(
-                icon: const Icon(Icons.ios_share),
-                tooltip: 'Share workout',
-                onPressed: () => context.push(Routes.shareWorkout(w.id)),
-              ),
             IconButton(
               icon: Icon(editing ? Icons.check : Icons.edit_outlined),
               tooltip: editing ? 'Done editing' : 'Edit workout',
@@ -410,15 +404,25 @@ class _WorkoutView extends ConsumerWidget {
               onPressed: () => _delete(context, ref),
             ),
           ],
-          if (isLive || detail.exercises.isNotEmpty || canResume)
+          if (isLive || detail.exercises.isNotEmpty || canResume || readOnly)
             PopupMenuButton<String>(
               tooltip: 'Workout options',
               onSelected: (v) => switch (v) {
                 'discard' => _discard(context, ref, session),
                 'resume' => _resume(context, ref),
+                'share' => context.push(Routes.shareWorkout(w.id)),
                 _ => _saveAsTemplate(context, ref),
               },
               itemBuilder: (_) => [
+                if (readOnly)
+                  PopupMenuItem(
+                    value: 'share',
+                    child: ListTile(
+                      leading: Icon(Icons.adaptive.share),
+                      title: const Text('Share'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
                 if (canResume)
                   const PopupMenuItem(
                     value: 'resume',

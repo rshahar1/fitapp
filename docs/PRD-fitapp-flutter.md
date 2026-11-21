@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 2.14, 21 Nov 2026 (see the changelog in section 17) |
+| **Version** | 2.15, 21 Nov 2026 (see the changelog in section 17) |
 | **Platform** | Android first (APK), iOS later |
 | **Framework** | Flutter (Dart), built from https://flutter.dev |
 | **Status** | Ready to implement from scratch in a new repository |
@@ -390,17 +390,19 @@ back to the exercise plan.
   "<Workout|Running|Cycling|Snowboarding> in progress. Finish it first." with **Open**. Logging a past session is never blocked.
 - Train stats and Recent are unchanged (a later slice reworks them). Details: `specs/011-start-hub/` and `docs/ux/unified-start-proposal.md`.
 
-### 5.11 Sharing a session as an image (feature 027)
+### 5.11 Sharing a session as an image (features 027, 029)
 - **Share action:** every finished gym workout and every activity (running, cycling, snowboarding, functional training, Pilates; GPS and manual)
-  has a Share icon in the app bar of `/activity/:id` and `/workout/:id`, plus **Share workout** on the gym finish summary.
+  has **Share** as an item in the ⋮ overflow menu of `/activity/:id` and `/workout/:id` (finished, not editing; no app-bar icon), plus a
+  **Share workout** button on the gym finish summary. Every share control uses the platform-adaptive share glyph (Material share on Android) (feature 029).
 - **Preview screen** (`/share/workout/:id`, `/share/activity/:id`) shows a 1080×1350 PNG card in the dark style, tailored per type:
   run and ride: route drawing (no map tiles) with distance, pace, speed, duration, moving time, climb and best km; snowboarding day: speed-heat route,
-  ride / lift / rest time breakdown, top speed, vertical, runs, distance and longest run; gym: totals plus one compressed line per exercise, capped at 7
-  with "+N more exercises"; other activities: duration, distance and pace when present.
+  ride / lift / rest time breakdown, top speed, vertical, runs, distance and longest run; gym: totals plus one compressed line for **every** exercise, never "+N more"
+  (feature 029): 4:5 (1080×1350) up to 8 exercises, taller up to 9:16 (1080×1920) for more, then two columns, then smaller rows; other activities: duration, distance and pace when present.
 - **Share image** hands the PNG to the OS share sheet (`share_plus`). The app sends nothing over the network; the image is a temporary cache file.
-  Notes are never printed on the image.
+  Notes are never printed on the image. Durations read "27 min" / "1h 3m" / "4h" with digits as large as the other values; stat grids scale all
+  values together so sizes stay balanced (feature 029).
 - Pure logic lives in `lib/domain/share/` (`share_card.dart`, `route_projection.dart`), the sharer in `lib/core/image_sharer.dart`, UI in `lib/features/share/`.
-  No schema change. Details: `specs/027-workout-share/`.
+  No schema change. Details: `specs/027-workout-share/`, `specs/029-share-polish/`.
 
 ## 6. Navigation and screens
 
@@ -717,6 +719,7 @@ Plan: `base 20, reps 10, sets 3, inc 2.5` (Incline Dumbbell Bench Press, per han
 | Train tiles become This week, This month, All time; By type shows only types trained this week; Recent mixes gym workouts and activities; template creation moves to You → Gym Templates; Progress shows a weight for every exercise (template plan base, else latest working weight) | Owner request (21 Nov 2026, feature 028) |
 | Progress bars use the same Sunday-to-Saturday weeks as Train, labelled by the week's Sunday date instead of ISO week numbers | Owner's decision (20 Nov 2026, feature 026, "Yes, align it"); one week definition across the app |
 | Share a finished session as a 1080×1350 image through the OS share sheet; no social features, nothing sent by the app, notes never on the image | Owner's decision (20 Nov 2026, feature 027); image export is not a social feature |
+| Share lives in the ⋮ menu with the platform-adaptive share icon; the gym card lists every exercise (taller card, columns, smaller rows) and durations are balanced with other stats | Owner's decision (21 Nov 2026, feature 029 review of 027); cleaner app bars, no hidden exercises, readable durations |
 | Distinct icons per row in History, including a dumbbell for gym workouts | Owner's decision (13 Nov 2026); tell sports and gym apart at a glance |
 | Resume any finished workout, discard live workouts, backdate gym sessions | Owner's decision (13 Nov 2026); a backdated or older session never rewrites a plan's base |
 | Exercises library with custom categories; History calendar | Owner's decision (13 Nov 2026); browse and edit exercises, review training by day |
@@ -785,3 +788,8 @@ resolved on 12 Nov 2026; see the decisions log.
     latest working weight); the detail tile is renamed *Current weight*.
   - Train: *By type* lists only types trained this week; *Week streak* replaced by *This month*; *Recent* shows all
     session types; the *New* template button moved to You → **Gym Templates** (`/templates`).
+- **2.15 (21 Nov 2026):** feature 029, Share polish (owner review of feature 027, 21 Nov 2026).
+  - Share moved into the ⋮ overflow menu of the activity detail and finished workout screens (no app-bar icon); the
+    gym finish summary keeps its **Share workout** button; the icon is the platform-adaptive share glyph.
+  - The gym card lists every exercise (4:5 up to 8, taller up to 9:16, then two columns, then smaller rows); the
+    "+N more exercises" cap is removed. Durations show as "27 min" / "1h 3m" / "4h" and stat grids scale all values together.
